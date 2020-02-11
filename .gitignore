@@ -1,0 +1,5 @@
+# ignore all data
+*.txt
+*.c3d
+*.mat
+
