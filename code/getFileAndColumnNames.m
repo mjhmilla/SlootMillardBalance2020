@@ -1,7 +1,12 @@
 function [data, headerData] = ...
-    getFileAndColumnNames(folderName,dataFileName,delimiter,...
-                          keywordInRowBeforeData, headerRows, nanNumber) 
+    getFileAndColumnNames(folderName,dataFileName,...
+                          keywordInRowBeforeData, headerRows, nanNumber,...
+                          flag_verbose) 
 
+if(flag_verbose)
+  fprintf('\t%s:\t%s\n','Scanning', [folderName,dataFileName]);
+end
+                        
 fid = fopen([folderName,dataFileName]);
 
 tline = fgetl(fid);
@@ -88,4 +93,8 @@ end
 
 
 fclose(fid);
+
+if(flag_verbose)
+  fprintf('\t%s:\t%s\n','        ', 'success');
+end
 
