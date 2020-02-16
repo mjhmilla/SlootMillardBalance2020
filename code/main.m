@@ -9,6 +9,7 @@ flag_readData   = 0;
 flag_verbose    = 0;
 flag_visualize  = 1;
     numberOfFramesToDraw = 50;
+    scaleForceToDistance = 1/1000;
 
 %%
 % Configuration variables
@@ -44,6 +45,8 @@ addpath(pathToBTK);
 %%
 % Get the c3d data
 %%
+
+%Markers
 [c3dH, c3dByteOrder, c3dStorageFormat] = ...
     btkReadAcquisition([dataFolderRaw,c3dFileName]);
 
@@ -53,7 +56,53 @@ c3dMarkerNames = fieldnames(c3dMarkers);
 numberOfItems = size(c3dMarkers.(c3dMarkerNames{1}),1);
 c3dTime = [0:1:(numberOfItems-1)]'./c3dMarkersInfo.frequency;
 
+%Force plates
+inGlobalFrame=1;
+fpw = btkGetForcePlatformWrenches(c3dH, inGlobalFrame);
+[forceplates, forceplatesInfo] = btkGetForcePlatforms(c3dH);
 
+numberSkip = size(fpw(1).P,1)/numberOfItems;
+timeForcePlate = (size(fpw(1).P,1)-1)/forceplatesInfo(1).frequency;
+
+assert( abs(max(c3dTime) - timeForcePlate) < 1/c3dMarkersInfo.frequency,...
+    'Error: Markers and Forceplates have different collection durations.');
+
+c3dGrf(length(forceplates)) = struct('cop',zeros(numberOfItems,3),...
+                                     'forces',zeros(numberOfItems,3),...
+                                     'moment',zeros(numberOfItems,3));
+                                   
+for i=1:1:length(forceplates)
+  origin = forceplates(i).origin';
+  for j=1:1:numberOfItems
+    k = numberSkip*(j-1)+1;
+    p = fpw(i).P(k,:) + origin;
+    f = fpw(i).F(k,:);
+    m = fpw(i).M(k,:);
+    
+    fx = f(1,1);
+    fy = f(1,2);
+    fz = f(1,3);
+
+    mx = m(1,1);
+    my = m(1,2);
+    mz = m(1,3);    
+
+    dx = -my/fz;
+    dy =  mx/fz;
+    dz = 0;
+    
+    xR = [   0,  -dz,  dy;...
+            dz,   0, -dx;...
+           -dy,  dx,  0];
+    dm = (xR * f')';         
+    
+    c3dGrf(i).forces(j,:) = f;
+    c3dGrf(i).cop(j,:)    = p + [dx,dy,dz];
+    c3dGrf(i).moment(j,:) = m - dm;
+    
+  end
+end
+ 
 if(flag_verbose==1)
   
 
@@ -284,6 +333,14 @@ if(flag_visualize == 1)
   ylabel('Inertia (kg m^2)');
   title('Inertia Matrix Eigen Values');
   
+  %%
+  % Plot forces
+  %%
+  fig_forces = figure;
+  subplot(2,2,1);
+  %plot( c3dTime(timeInterval,1),...
+        
+  
 
   %%
   % Animate the markers and CoM position
@@ -298,9 +355,10 @@ if(flag_visualize == 1)
   comVelColor = [0,0,0];
   comAngVelColor = [0,0,1];
   
-  xAxisExtents = [-800,  800];
-  yAxisExtents = [-800,  800];
-  zAxisExtents = [   0, 1600];
+  extent = 2000;
+  xAxisExtents = [-0.5,  0.5].*extent;
+  yAxisExtents = [-0.5,  0.5].*extent;
+  zAxisExtents = [   0,  1  ].*extent;
   
   numberOfFramesToDraw = 50;
   numberOfFramesToSkip = floor((length(c3dTime)-indexPadding*2)/numberOfFramesToDraw);
@@ -395,10 +453,49 @@ if(flag_visualize == 1)
       
     end
     
+    %%
+    %Draw the force plates and forces
+    %%
+    
+    for j=1:1:length(forceplates)
+      plot3( forceplates(j).corners(1,:),...
+             forceplates(j).corners(2,:),...
+             forceplates(j).corners(3,:),...
+             'k','LineWidth',1);
+      hold on;
+      plot3( forceplates(j).corners(1,1),...
+             forceplates(j).corners(2,1),...
+             forceplates(j).corners(3,1),...
+             'ko','LineWidth',1,...
+             'MarkerSize',10,...
+             'MarkerFaceColor',[1,1,1]);
+      hold on;
+      
+      fa = (c3dGrf(j).cop(i,:));
+      fb = (c3dGrf(j).cop(i,:) ...
+         + (c3dGrf(j).forces(i,:).*scaleForceToDistance).*m2mm);
+      
+      f = [fa;fb];
+      plot3(f(:,1),f(:,2),f(:,3),...
+            'r','LineWidth',1);
+      hold on;
+      plot3(f(1,1),f(1,2),f(1,3),...
+            'ro','LineWidth',1,...
+            'MarkerSize',10,...
+            'MarkerFaceColor',[1,1,1]);
+      hold on;
+      
+      text(fb(1,1),fb(1,2),fb(1,3),...
+           sprintf('%1.1f',norm(c3dGrf(j).forces(i,:))));
+         
+      hold on;
+      
+    end
+    
     xlim(xAxisExtents);
     ylim(yAxisExtents);
     zlim(zAxisExtents);
-    view(0,0);     
+    view(26,22);     
     grid on;
     
     xlabel('X');
