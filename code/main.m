@@ -3,16 +3,16 @@ close all;
 clear all;
 
 %%
-% Process control flags
+% Processing Flags
 %%
-flag_readData   = 0;
-flag_verbose    = 0;
-flag_visualize  = 1;
+flag_loadMatFileData    = 1;
+flag_verbose            = 0;
+flag_visualize          = 1;
     numberOfFramesToDraw = 50;
     scaleForceToDistance = 1/1000;
 
 %%
-% Configuration variables
+% Input Data 
 %%
 pathToBTK  = '/home/mjhmilla/dev/BTKRoot/BTKCore-install/share/btk-0.3dev/Wrapping/Matlab/btk';
 
@@ -23,183 +23,70 @@ c3dFileName             = 'sts_0001_Side.c3d';
 wholeBodyFileName       = 'DATA.txt';
 anthroFileName          = 'Metrics.txt';
 
+headerRows          = 4; 
 textInRowBeforeData = 'ITEM';
-nanNumber           = 1234567890;
-headerRows          = 4;
+nanNumberCode       = 1234567890;
 
-indexPadding = 3; %Numerical differentiation has made the 
-                  %indices in velocity-related quantites undefined at the
-                  %the ends
 %%
 % Constants
 %%
 
-m2mm = 1000;
-
+m2mm         = 1000;
+mm2m         = 1/m2mm;
+indexPadding = 3; %Numerical differentiation has made the 
+                  %indices in velocity-related quantites undefined at the
+                  %the ends
 
 %%
 % External libraries/folders
 %%
 addpath(pathToBTK);
-
+                                    
 %%
-% Get the c3d data
+% Get the trial data
 %%
 
-%Markers
-[c3dH, c3dByteOrder, c3dStorageFormat] = ...
-    btkReadAcquisition([dataFolderRaw,c3dFileName]);
+[c3dTime, ...
+ c3dMarkers, ... 
+ c3dMarkerNames,...
+ c3dForcePlates, ... 
+ c3dForcePlateInfo, ...
+ c3dGrf] = getC3DTrialData( dataFolderRaw,dataFolderMat, c3dFileName,...
+                            flag_loadMatFileData, flag_verbose);
 
-[c3dMarkers, c3dMarkersInfo, c3dMarkersResidual] = btkGetMarkers(c3dH);
-c3dMarkerNames = fieldnames(c3dMarkers);
+[ wholeBodyData, ...
+  wholeBodyColNames] = ...
+    getWholeBodyTrialData( dataFolderRaw,dataFolderMat,wholeBodyFileName,...
+                          headerRows,textInRowBeforeData, nanNumberCode,...
+                          flag_loadMatFileData, flag_verbose);
 
-numberOfItems = size(c3dMarkers.(c3dMarkerNames{1}),1);
-c3dTime = [0:1:(numberOfItems-1)]'./c3dMarkersInfo.frequency;
-
-%Force plates
-inGlobalFrame=1;
-fpw = btkGetForcePlatformWrenches(c3dH, inGlobalFrame);
-[forceplates, forceplatesInfo] = btkGetForcePlatforms(c3dH);
-
-numberSkip = size(fpw(1).P,1)/numberOfItems;
-timeForcePlate = (size(fpw(1).P,1)-1)/forceplatesInfo(1).frequency;
-
-assert( abs(max(c3dTime) - timeForcePlate) < 1/c3dMarkersInfo.frequency,...
-    'Error: Markers and Forceplates have different collection durations.');
-
-c3dGrf(length(forceplates)) = struct('cop',zeros(numberOfItems,3),...
-                                     'forces',zeros(numberOfItems,3),...
-                                     'moment',zeros(numberOfItems,3));
-                                   
-for i=1:1:length(forceplates)
-  origin = forceplates(i).origin';
-  for j=1:1:numberOfItems
-    k = numberSkip*(j-1)+1;
-    p = fpw(i).P(k,:) + origin;
-    f = fpw(i).F(k,:);
-    m = fpw(i).M(k,:);
-    
-    fx = f(1,1);
-    fy = f(1,2);
-    fz = f(1,3);
-
-    mx = m(1,1);
-    my = m(1,2);
-    mz = m(1,3);    
-
-    dx = -my/fz;
-    dy =  mx/fz;
-    dz = 0;
-    
-    xR = [   0,  -dz,  dy;...
-            dz,   0, -dx;...
-           -dy,  dx,  0];
-    dm = (xR * f')';         
-    
-    c3dGrf(i).forces(j,:) = f;
-    c3dGrf(i).cop(j,:)    = p + [dx,dy,dz];
-    c3dGrf(i).moment(j,:) = m - dm;
-    
-  end
-end
- 
-if(flag_verbose==1)
+assert( size(wholeBodyData,1) == size(c3dTime,1),...
+        ['Error: number of items in c3d marker data',...
+        ' and whole body data should match']);                        
+                        
+ [anthroData, anthroColNames] = ...
+    getAnthropometryData( dataFolderRaw,dataFolderMat,anthroFileName,...
+                          headerRows,textInRowBeforeData, nanNumberCode,...
+                          flag_loadMatFileData, flag_verbose);                        
   
 
-  disp('Mocap Marker Information:');
-  fprintf('\t%s:\t%d Hz\n','Freq',c3dMarkersInfo.frequency);
-  fprintf('\t%s:\t%s\n'   ,'Units',c3dMarkersInfo.units.ALLMARKERS);
-  
-  for i=1:1:length(c3dMarkerNames)
-    fprintf('\t%d. %s\n',i,c3dMarkerNames{i,1});
-  end
-end
-btkCloseAcquisition(c3dH);
 
-
+                        
 %%
-% Get the subject's height and weight
-%%
-anthroData      = [];
-anthroColNames  = [];
+% Extract often used data
+%%                        
+%
 
-if(flag_readData == 1)
-  if(flag_verbose)
-    disp('Anthropometry Data');
-  end
-  
-  [anthroData, anthroColNames] = ...
-    getFileAndColumnNames(dataFolderRaw, anthroFileName, ...
-                          textInRowBeforeData, headerRows, nanNumber,...
-                          flag_verbose);
+%Anthropometry
+colMass     = getColumnIndex({'MASS';'METRIC';'PROCESSED';'X'},...
+                              headerRows,anthroColNames);
+mass        = anthroData(1,colMass);
 
-  i=strfind(anthroFileName,'.');
-  fname = [anthroFileName(1:1:i),'mat'];
-  save([dataFolderMat,fname],'anthroData','anthroColNames');
+colHeight   = getColumnIndex({'HEIGHT';'METRIC';'PROCESSED';'X'},...
+                            headerRows,anthroColNames);
+height      = anthroData(1,colHeight);
 
-else
-  if(flag_verbose)
-    disp('Anthropometry Data: reading in saved mat structures');
-  end
-  
-  i=strfind(anthroFileName,'.');
-  fname = [anthroFileName(1:1:i),'mat'];
-  data = load([dataFolderMat,fname]);
-  anthroData = data.anthroData;
-  anthroColNames = data.anthroColNames;
-  
-end
-
-colHeight = getColumnIndex(...
-              {'HEIGHT';'METRIC';'PROCESSED';'X'},...
-              headerRows,anthroColNames);
-colMass = getColumnIndex(...
-              {'MASS';'METRIC';'PROCESSED';'X'},...
-              headerRows,anthroColNames);
-colID = getColumnIndex(...
-              {'SUBJECT_ID';'METRIC';'PROCESSED';'X'},...
-              headerRows,anthroColNames);
-    
-height = anthroData(1,colHeight);
-mass   = anthroData(1,colMass);
-id     = anthroData(1,colID);            
-
-                       
-%%
-% Get the whole-body data 
-%%
-wholeBodyData = [];
-wholeBodyColNames = [];
-
-if(flag_readData == 1)
-
-  if(flag_verbose)
-    disp('Wholebody Data');
-  end  
-  [wholeBodyData, wholeBodyColNames] = ...
-    getFileAndColumnNames(dataFolderRaw, wholeBodyFileName,...
-                          textInRowBeforeData, headerRows, nanNumber,...
-                          flag_verbose);
-
-  i=strfind(wholeBodyFileName,'.');
-  fname = [wholeBodyFileName(1:1:i),'mat'];
-  save([dataFolderMat,fname],'wholeBodyData','wholeBodyColNames');
-  
- 
-else
-  
-  if(flag_verbose)
-    disp('Wholebody Data: reading in saved mat structures');
-  end 
-  
-  i=strfind(wholeBodyFileName,'.');
-  fname = [wholeBodyFileName(1:1:i),'mat'];
-  data = load([dataFolderMat,fname]);
-  wholeBodyData = data.wholeBodyData;
-  wholeBodyColNames = data.wholeBodyColNames;
-    
-end
-                      
+%Whole body quantities
 colItem    = getColumnIndex({[];[];[];'ITEM'},headerRows,wholeBodyColNames);
 
 colComPos = zeros(1,3);
@@ -231,43 +118,87 @@ for i=2:1:9
   colJo(1,i) = colJo(1,i-1)+1;
 end
 
-%Go through the inertia matrix and evaluate its eigen values and
-%vectors. Do this for 2 reasons
-% 1. To ensure that the inertia matrix is valid: all eigen values > 0
-% 2. To plot/animate the pricipal axis to give the results a check
 
-assert( size(wholeBodyData,1) == size(c3dTime,1),...
-        ['Error: number of items in c3d marker data',...
-        ' and whole body data should match']);
+%%
+% Check the inertia matrix
+%   Go through the inertia matrix and evaluate its eigen values and
+%   vectors. Do this for 2 reasons
+%     1. To ensure that the inertia matrix is valid: all eigen values > 0
+%     2. To plot/animate the pricipal axis to give the results a check
+%%
+[ JcmEigenValuesDiag, ...
+  JcmEigenVectorsRowWise] = ...
+  decomposeInertiaMatrices(wholeBodyData(:,colJo(1,:)));
 
-JcmEigenValuesDiag   = zeros(length(c3dTime),3);
-JcmRadiusOfGyration  = zeros(length(c3dTime),3);
-JcmEigenVectorsRowWise  = zeros(length(c3dTime),9);
-WcmAngularVelocity   = zeros(length(c3dTime),3);
+%For plotting/debugging purposes compute the whole-body angular velocity
+%and the radius of gyration
 
-for i=1:1:length(c3dTime)
+JcmRadiusOfGyration = sqrt(JcmEigenValuesDiag./mass);
+WcmAngularVelocity = zeros(size(JcmEigenValuesDiag,1),3);
+for i=1:1:size(JcmEigenValuesDiag,1)
+  JC0 = [wholeBodyData(i,colJo(1,1:3));...
+       wholeBodyData(i,colJo(1,4:6));...
+       wholeBodyData(i,colJo(1,7:9))];
+  HC0 = [wholeBodyData(i,colHo(1,1:3))]';
+    
+  WcmAngularVelocity(i,:) = (JC0\HC0)';
+end
 
-  jrow = wholeBodyData(i,colJo(1,:));
-  Jcmi = [jrow(1,1),jrow(1,2),jrow(1,3);...
-          jrow(1,4),jrow(1,5),jrow(1,6);...
-          jrow(1,7),jrow(1,8),jrow(1,9)];  
-  Hcmi = wholeBodyData(i,colHo(1,:))';
+
+%%
+% Evaluate the foot placement estimator
+%%
+
+
+[valMaxRFax, idxMaxRFax] = max(c3dMarkers.('R_FAX')(:,3));
+[valMaxLFax, idxMaxLFax] = max(c3dMarkers.('L_FAX')(:,3));
+
+contactPlanes = [ 0,0, mean([valMaxRFax,valMaxLFax])*mm2m; ...
+                  0,0,0];
+
+idxSeat = 1;
+idxFloor= 2;
+                
+fpeData(length(contactPlanes)) = ...
+           struct('r0F0'             , zeros(length(c3dTime),3),...
+                  'projectionError' , zeros(length(c3dTime),3),...
+                  'f'               , zeros(length(c3dTime),3),...
+                  'phi'             , zeros(length(c3dTime),3));
+
+tol     = 1e-9;
+iterMax = 100;
+flag_fpeEvaluateDerivatives = 0;
+flag_fpeVerbose             = 0;
+
+for i=indexPadding:1:(length(c3dTime)-indexPadding)
+  r0C0 = wholeBodyData(i,colComPos)';
+  v0C0 = wholeBodyData(i,colComVel)';
+  JC0 = [wholeBodyData(i,colJo(1,1:3));...
+       wholeBodyData(i,colJo(1,4:6));...
+       wholeBodyData(i,colJo(1,7:9))];
+  HC0 = [wholeBodyData(i,colHo(1,1:3))]';    
+  g0 = [0;0;-9.81];
   
-  Wcmi = Jcmi\Hcmi;
-        
-  [v,d] = eig(Jcmi);
+  for j=1:1:size(contactPlanes,1)
   
-
-  
-  
-  JcmEigenValuesDiag(i,:)     = [d(1,1),d(2,2),d(3,3)];
-  JcmRadiusOfGyration(i,:)    = [sqrt(d(1,1)/mass),sqrt(d(2,2)/mass),sqrt(d(3,3)/mass)];
-  JcmEigenVectorsRowWise(i,:) = [v(1,:),v(2,:),v(3,:)];
-  WcmAngularVelocity(i,:)     = Wcmi';
-
-  assert( d(1,1) > 0 && d(2,2) > 0 && d(3,3) > 0,...  
-          ['Error: whole body inertia matrix has a negative eigen value,'...
-          'which is physically impossible. ']);
+    fpeInfo = calc3DFootPlacementEstimatorInfo(mass,...
+                                            r0C0,...
+                                            v0C0,...                                                    
+                                            JC0,...                                                    
+                                            HC0,...
+                                            contactPlanes(j,:)',...
+                                            g0,...
+                                            tol,...
+                                            iterMax,...
+                                            flag_fpeEvaluateDerivatives,...
+                                            flag_fpeVerbose);
+                                          
+    fpeData(j).r0F0(i,:)            = fpeInfo.r0F0;
+    fpeData(j).projectionError(i,:) = fpeInfo.projectionError;
+    fpeData(j).f(i,:)               = fpeInfo.f;
+    fpeData(j).phi(i,:)             = fpeInfo.phi;
+   
+  end
 end
 
 %%
@@ -356,19 +287,28 @@ if(flag_visualize == 1)
   comAngVelColor = [0,0,1];
   
   extent = 2000;
-  xAxisExtents = [-0.5,  0.5].*extent;
+  xAxisExtents = [   0,  1  ].*extent;
   yAxisExtents = [-0.5,  0.5].*extent;
   zAxisExtents = [   0,  1  ].*extent;
   
   numberOfFramesToDraw = 50;
-  numberOfFramesToSkip = floor((length(c3dTime)-indexPadding*2)/numberOfFramesToDraw);
+  numberOfFramesToSkip = 5;%floor((length(c3dTime)-indexPadding*2)/numberOfFramesToDraw);
   
   scaleAngularVelocityVector = 1;
   scaleVelocityVector = 1;
   scaleInertiaFrame = 1;
   
+  frameRate     = 25;
+  timeToAnimate = 2; 
+  
+  nFrames = indexPadding + numberOfFramesToSkip*frameRate*timeToAnimate;
+  
+  writerObj = VideoWriter('fpeVideo.avi');
+  writerObj.FrameRate = frameRate;
+  open(writerObj);
+  
   for i = indexPadding:numberOfFramesToSkip:(length(c3dTime)-indexPadding)
-    
+       
     %Plot the Mocap Markers
     for j=1:1:length(c3dMarkerNames)
       figure(fig_markers3d);
@@ -457,15 +397,15 @@ if(flag_visualize == 1)
     %Draw the force plates and forces
     %%
     
-    for j=1:1:length(forceplates)
-      plot3( forceplates(j).corners(1,:),...
-             forceplates(j).corners(2,:),...
-             forceplates(j).corners(3,:),...
+    for j=1:1:length(c3dForcePlates)
+      plot3( c3dForcePlates(j).corners(1,:),...
+             c3dForcePlates(j).corners(2,:),...
+             c3dForcePlates(j).corners(3,:),...
              'k','LineWidth',1);
       hold on;
-      plot3( forceplates(j).corners(1,1),...
-             forceplates(j).corners(2,1),...
-             forceplates(j).corners(3,1),...
+      plot3( c3dForcePlates(j).corners(1,1),...
+             c3dForcePlates(j).corners(2,1),...
+             c3dForcePlates(j).corners(3,1),...
              'ko','LineWidth',1,...
              'MarkerSize',10,...
              'MarkerFaceColor',[1,1,1]);
@@ -492,6 +432,26 @@ if(flag_visualize == 1)
       
     end
     
+    %%
+    % Plot the foot-placement estimator for the seat & floor
+    %%
+    plot3( fpeData(idxSeat).r0F0(i,1).*m2mm,...
+           fpeData(idxSeat).r0F0(i,2).*m2mm,...
+           fpeData(idxSeat).r0F0(i,3).*m2mm,...
+           'om','LineWidth',1,...
+           'MarkerSize',10,...
+           'MarkerFaceColor',[1,1,1]);    
+    
+    hold on;
+    plot3( fpeData(idxFloor).r0F0(i,1).*m2mm,...
+           fpeData(idxFloor).r0F0(i,2).*m2mm,...
+           fpeData(idxFloor).r0F0(i,3).*m2mm,...
+           'om','LineWidth',1,...
+           'MarkerSize',10,...
+           'MarkerFaceColor',[1,1,1]);    
+    %hold on;
+         
+         
     xlim(xAxisExtents);
     ylim(yAxisExtents);
     zlim(zAxisExtents);
@@ -501,10 +461,13 @@ if(flag_visualize == 1)
     xlabel('X');
     ylabel('Y');
     zlabel('Z');
+    
+    writeVideo(writerObj, getframe(gcf));
     pause(0.05);
     clf(fig_markers3d);
   end
-  
+  close(writerObj);  
+
 end
 
             

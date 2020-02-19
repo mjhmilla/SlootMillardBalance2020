@@ -1,0 +1,23 @@
+function [c3dTime, c3dMarkers,c3dMarkerNames,...
+   c3dForcePlates, c3dForcePlateInfo, c3dGrf] = ...
+    getC3DTrialData( dataFolderRaw,dataFolderMat,...
+                  c3dFileName, flag_loadMatFileData, flag_verbose)
+   
+   
+if(flag_loadMatFileData == 0)
+  [c3dTime, c3dMarkers,c3dMarkerNames,...
+   c3dForcePlates, c3dForcePlateInfo, c3dGrf] = ...
+    preprocessC3DData( [dataFolderRaw,c3dFileName], flag_verbose );
+  
+  idx = strfind(c3dFileName,'.');
+  c3dMatFileName = c3dFileName(1:1:(idx-1));    
+  save( [dataFolderMat,c3dMatFileName,'.mat'],...
+      'c3dTime', 'c3dMarkers','c3dMarkerNames',...
+      'c3dForcePlates','c3dForcePlateInfo','c3dGrf');
+else
+  idx = strfind(c3dFileName,'.');
+  c3dMatFileName = c3dFileName(1:1:(idx-1));    
+  load( [dataFolderMat,c3dMatFileName,'.mat']);
+end
+
+             
