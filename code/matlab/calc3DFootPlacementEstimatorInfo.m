@@ -177,6 +177,11 @@ fpeInfo = struct('f'               ,  zeros(1,1),...
                  'projectionError' ,  zeros(1,1),...
                  'n'               ,  zeros(3,1),...
                  'r0G0'            ,  zeros(3,1),...
+                 'omega'           ,  zeros(3,1),...
+                 'h'               ,  zeros(1,1),...
+                 'vx'              ,  zeros(1,1),...
+                 'vy'              ,  zeros(1,1),...
+                 'J'               ,  zeros(1,1),...                 
                  'Df_Dphi'         ,  zeros(1,1),...
                  'Df_Domega'       ,  zeros(1,1),...
                  'Df_Dh'           ,  zeros(1,1),...
@@ -220,6 +225,9 @@ fpeInfo.r0G0 = r0G0;
 rGC0x = getCrossProductMatrix(rGC0);
 HG0   = HC0 + rGC0x * (m.*v0C0);
 
+fpeInfo.HG0 = HG0;
+
+
 %   b. Direction vectors ux and uz
 
 %The projection plane has a positive direction k that opposes gravity
@@ -248,6 +256,10 @@ fpeInfo.n               = en0;
 JC0p    = en0' * JC0 * en0;
 w0C0p  = en0' * w0C0;
 v0C0p  = [(eu0'*v0C0);(ev0'*v0C0)];
+
+
+
+
 %hV is going to have to re-calculated at every new phi to allow for
 %contact surfaces that are not normal to the gravity vector.
 
@@ -279,6 +291,12 @@ h     = sqrt(rGC0'*rGC0);
 vx    = v0C0p(1,1);
 vy    = v0C0p(2,1);
 omega = w0C0p;
+
+fpeInfo.J = J;
+fpeInfo.h = h;
+fpeInfo.vx = vx;
+fpeInfo.vy = vy;
+fpeInfo.omega = omega;
 
 f     = numericTolerance*10; 
 iter  = 1;

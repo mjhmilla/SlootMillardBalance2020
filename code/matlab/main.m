@@ -2,12 +2,19 @@ clc;
 close all;
 clear all;
 
+
+%%
+% Subject Meta Data
+%%
+subjectAge                  = 65; %for now
+subjectGender1Male0Female   = 0;
 %%
 % Processing Flags
 %%
-flag_loadMatFileData    = 1;
-flag_verbose            = 0;
-flag_visualize          = 1;
+flag_loadMatFileData     = 1;
+flag_verbose             = 0;
+flag_loadFpeDataFromFile = 1;
+flag_visualize           = 0;
     numberOfFramesToDraw = 50;
     scaleForceToDistance = 1/1000;
 
@@ -16,9 +23,12 @@ flag_visualize          = 1;
 %%
 pathToBTK  = '/home/mjhmilla/dev/BTKRoot/BTKCore-install/share/btk-0.3dev/Wrapping/Matlab/btk';
 
-dataFolderRaw              = '../data/raw/';
-dataFolderMat              = '../data/mat/';
+dataFolderC3D              = '../../data/c3d/';
+dataFolderV3D              = '../../data/v3d/';
 
+dataFolderMat              = '../../data/mat/';
+
+c3dStaticFileName       = 'static2.c3d';
 c3dFileName             = 'sts_0001_Side.c3d';
 wholeBodyFileName       = 'DATA.txt';
 anthroFileName          = 'Metrics.txt';
@@ -27,6 +37,11 @@ headerRows          = 4;
 textInRowBeforeData = 'ITEM';
 nanNumberCode       = 1234567890;
 
+
+
+modelFactoryFileName = ['../../models/3DHumanDefault_',...
+        c3dStaticFileName(1:1:(strfind( c3dStaticFileName,'.')-1)),...
+        '.txt'];
 %%
 % Constants
 %%
@@ -51,12 +66,12 @@ addpath(pathToBTK);
  c3dMarkerNames,...
  c3dForcePlates, ... 
  c3dForcePlateInfo, ...
- c3dGrf] = getC3DTrialData( dataFolderRaw,dataFolderMat, c3dFileName,...
+ c3dGrf] = getC3DTrialData( dataFolderC3D,dataFolderMat, c3dFileName,...
                             flag_loadMatFileData, flag_verbose);
 
 [ wholeBodyData, ...
   wholeBodyColNames] = ...
-    getWholeBodyTrialData( dataFolderRaw,dataFolderMat,wholeBodyFileName,...
+    getWholeBodyTrialData( dataFolderV3D,dataFolderMat,wholeBodyFileName,...
                           headerRows,textInRowBeforeData, nanNumberCode,...
                           flag_loadMatFileData, flag_verbose);
 
@@ -65,7 +80,7 @@ assert( size(wholeBodyData,1) == size(c3dTime,1),...
         ' and whole body data should match']);                        
                         
  [anthroData, anthroColNames] = ...
-    getAnthropometryData( dataFolderRaw,dataFolderMat,anthroFileName,...
+    getAnthropometryData( dataFolderV3D,dataFolderMat,anthroFileName,...
                           headerRows,textInRowBeforeData, nanNumberCode,...
                           flag_loadMatFileData, flag_verbose);                        
   
@@ -118,7 +133,6 @@ for i=2:1:9
   colJo(1,i) = colJo(1,i-1)+1;
 end
 
-
 %%
 % Check the inertia matrix
 %   Go through the inertia matrix and evaluate its eigen values and
@@ -126,9 +140,10 @@ end
 %     1. To ensure that the inertia matrix is valid: all eigen values > 0
 %     2. To plot/animate the pricipal axis to give the results a check
 %%
+
 [ JcmEigenValuesDiag, ...
   JcmEigenVectorsRowWise] = ...
-  decomposeInertiaMatrices(wholeBodyData(:,colJo(1,:)));
+  decomposeInertiaMatrices(wholeBodyData(:,colJo(1,:)));  
 
 %For plotting/debugging purposes compute the whole-body angular velocity
 %and the radius of gyration
@@ -140,66 +155,98 @@ for i=1:1:size(JcmEigenValuesDiag,1)
        wholeBodyData(i,colJo(1,4:6));...
        wholeBodyData(i,colJo(1,7:9))];
   HC0 = [wholeBodyData(i,colHo(1,1:3))]';
-    
+
   WcmAngularVelocity(i,:) = (JC0\HC0)';
 end
 
-
 %%
-% Evaluate the foot placement estimator
+%
+% Evaluate the FPE / Retreive Data
+%
 %%
 
-
+gravityVector = [0;0;-9.81];
+%Planes to evaluate the FPE  
 [valMaxRFax, idxMaxRFax] = max(c3dMarkers.('R_FAX')(:,3));
 [valMaxLFax, idxMaxLFax] = max(c3dMarkers.('L_FAX')(:,3));
-
-contactPlanes = [ 0,0, mean([valMaxRFax,valMaxLFax])*mm2m; ...
-                  0,0,0];
-
 idxSeat = 1;
 idxFloor= 2;
-                
-fpeData(length(contactPlanes)) = ...
-           struct('r0F0'             , zeros(length(c3dTime),3),...
-                  'projectionError' , zeros(length(c3dTime),3),...
-                  'f'               , zeros(length(c3dTime),3),...
-                  'phi'             , zeros(length(c3dTime),3));
 
+contactPlanes = [ 0,0, mean([valMaxRFax,valMaxLFax])*mm2m; ...
+                  0,0,0];  
+
+%Numerical tolerances on the solution               
 tol     = 1e-9;
-iterMax = 100;
-flag_fpeEvaluateDerivatives = 0;
-flag_fpeVerbose             = 0;
+iterMax = 100;                
 
-for i=indexPadding:1:(length(c3dTime)-indexPadding)
-  r0C0 = wholeBodyData(i,colComPos)';
-  v0C0 = wholeBodyData(i,colComVel)';
-  JC0 = [wholeBodyData(i,colJo(1,1:3));...
-       wholeBodyData(i,colJo(1,4:6));...
-       wholeBodyData(i,colJo(1,7:9))];
-  HC0 = [wholeBodyData(i,colHo(1,1:3))]';    
-  g0 = [0;0;-9.81];
-  
-  for j=1:1:size(contactPlanes,1)
-  
-    fpeInfo = calc3DFootPlacementEstimatorInfo(mass,...
-                                            r0C0,...
-                                            v0C0,...                                                    
-                                            JC0,...                                                    
-                                            HC0,...
-                                            contactPlanes(j,:)',...
-                                            g0,...
-                                            tol,...
-                                            iterMax,...
-                                            flag_fpeEvaluateDerivatives,...
-                                            flag_fpeVerbose);
-                                          
-    fpeData(j).r0F0(i,:)            = fpeInfo.r0F0;
-    fpeData(j).projectionError(i,:) = fpeInfo.projectionError;
-    fpeData(j).f(i,:)               = fpeInfo.f;
-    fpeData(j).phi(i,:)             = fpeInfo.phi;
-   
-  end
-end
+%File to save/laod the file
+idx = strfind(c3dFileName,'.');
+fpeMatFileName = [c3dFileName(1:1:(idx-1)),'_FPE.mat'];  
+
+flag_fpeVerbose = 0;
+flag_fpeEvaluateDerivatives = 0;
+fpeData = process3DFootPlacementEstimator(...
+            mass,...
+            wholeBodyData,...
+            colComPos,colComVel,...
+            colJo,colHo,...
+            indexPadding,...
+            gravityVector,...
+            contactPlanes,...
+            tol,...
+            iterMax,...
+            flag_fpeEvaluateDerivatives,...
+            flag_fpeVerbose,...
+            [dataFolderMat,fpeMatFileName],...
+            flag_loadFpeDataFromFile)  ;
+
+
+%%
+%
+% Write ModelFactory File
+%   Note: this is used to generate an RBDL Lua model of the human
+%         subject which can be used to for visualization purposes
+%         and/or to check the results.
+%%
+
+pelvisWidth = ...
+  norm(c3dMarkers.('R_IAS')(1,:)-c3dMarkers.('L_IAS')(1,:))*mm2m;
+
+hipCenterWidth = 2*0.38*pelvisWidth; 
+% Leardini A, Cappozzo A, Catani F, Toksvig-Larsen S, Petitto A, Sforza V, 
+% Cassanelli G, Giannini S. Validation of a functional method for the 
+% estimation of hip joint centre location. Journal of biomechanics. 1999 
+% Jan 1;32(1):99-103.
+
+shoulderWidth = ...
+  norm(c3dMarkers.('R_SAE')(1,:)-c3dMarkers.('L_SAE')(1,:))*mm2m;
+
+heelLength = ...
+  (norm( 0.5*(c3dMarkers.('R_FAL')(1,:)+c3dMarkers.('R_TAM')(1,:)) ...
+        -c3dMarkers.('R_FCC')(1,:)))*mm2m;
+
+heelHeight = ...
+  0.5*(c3dMarkers.('R_FAL')(1,3)+c3dMarkers.('L_FAL')(1,3))*mm2m;
+
+footWidth = ...
+    norm(c3dMarkers.('R_FM1')(1,:)-c3dMarkers.('R_FM5')(1,:))*mm2m;
+
+shoulderToC7Length = ...
+    norm( 0.5.*(c3dMarkers.('R_SAE')(1,:)+c3dMarkers.('L_SAE')(1,:)) ...
+              - c3dMarkers.('CV7')(1,:) ).*mm2m;
+
+success = writeModelFactoryModelFile(modelFactoryFileName,...
+                    subjectAge,...
+                    height,...
+                    mass, ...
+                    subjectGender1Male0Female, ...
+                    pelvisWidth, ...
+                    hipCenterWidth, ...
+                    shoulderWidth, ...
+                    heelLength,...
+                    heelHeight,...
+                    shoulderToC7Length,...
+                    footWidth);
 
 %%
 % Vizualization
