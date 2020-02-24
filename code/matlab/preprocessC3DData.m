@@ -1,6 +1,6 @@
-function [c3dTime, c3dMarkers,c3dMarkerNames,...
+function [c3dTime, c3dMarkers,c3dMarkerNames, c3dMarkerUnits,...
           c3dForcePlates, c3dForcePlateInfo, c3dGrf] = ...
-    preprocessC3DData( c3dFileNameAndPath, flag_verbose )
+    preprocessC3DData( c3dFileNameAndPath, flag_MetersRadians, flag_verbose )
 %%
 % This function will read in a c3d file, resolve force plate readings to
 % forces and moments acting at the center of pressure, and give everything 
@@ -19,6 +19,28 @@ function [c3dTime, c3dMarkers,c3dMarkerNames,...
 [c3dH, c3dByteOrder, c3dStorageFormat] = ...
     btkReadAcquisition(c3dFileNameAndPath);
 
+if(flag_MetersRadians==1)
+  btkSetPointsUnit(c3dH,'MARKER','m');
+  btkSetPointsUnit(c3dH,'ANGLE','rad');
+  btkSetPointsUnit(c3dH,'MOMENT','Nm');
+  
+end
+  
+  unitMarker = btkGetPointsUnit(c3dH,'MARKER');
+  unitAngle  = btkGetPointsUnit(c3dH,'ANGLE');
+  unitMoment = btkGetPointsUnit(c3dH,'MOMENT');
+
+if(flag_verbose == 1)  
+  disp('C3D Units');
+  disp([unitMarker, ' : Points Distance Unit']);
+  disp([unitAngle, ' : Points Angle Unit']);
+  disp([unitMoment, ' : Points Moment Unit']);
+end
+
+c3dMarkerUnits = struct('marker',unitMarker,...
+                        'angle', unitAngle,...
+                        'moment',unitMoment);
+
 [c3dMarkers, c3dMarkersInfo, c3dMarkersResidual] = btkGetMarkers(c3dH);
 c3dMarkerNames = fieldnames(c3dMarkers);
 
@@ -27,7 +49,7 @@ c3dTime = [0:1:(numberOfItems-1)]'./c3dMarkersInfo.frequency;
 
 %Force plates
 inGlobalFrame=1;
-fpw = btkGetForcePlatformWrenches(c3dH, inGlobalFrame);
+fpw = btkGetGroundReactionWrenches(c3dH, inGlobalFrame);
 [c3dForcePlates, c3dForcePlateInfo] = btkGetForcePlatforms(c3dH);
 
 numberSkip = size(fpw(1).P,1)/numberOfItems;
@@ -37,10 +59,15 @@ assert( abs(max(c3dTime) - timeForcePlate) < 1/c3dMarkersInfo.frequency,...
     'Error: Markers and Forceplates have different collection durations.');
 
 c3dGrf(length(c3dForcePlates)) = struct('cop',zeros(numberOfItems,3),...
-                                     'forces',zeros(numberOfItems,3),...
+                                     'force',zeros(numberOfItems,3),...
                                      'moment',zeros(numberOfItems,3));
 
 %Resolve the force plate moments into a CoP location                                   
+scaleDistance = 1.0;
+if(flag_MetersRadians==1)
+  scaleDistance = 0.001;
+end
+
 for i=1:1:length(c3dForcePlates)
   origin = c3dForcePlates(i).origin';
   for j=1:1:numberOfItems
@@ -66,9 +93,9 @@ for i=1:1:length(c3dForcePlates)
            -dy,  dx,  0];
     dm = (xR * f')';         
     
-    c3dGrf(i).forces(j,:) = f;
-    c3dGrf(i).cop(j,:)    = p + [dx,dy,dz];
-    c3dGrf(i).moment(j,:) = m - dm;
+    c3dGrf(i).force(j,:) = f;        
+    c3dGrf(i).cop(j,:)    = (p + [dx,dy,dz]).*scaleDistance;
+    c3dGrf(i).moment(j,:) = (m - dm).*scaleDistance;
     
   end
 end
