@@ -1,6 +1,6 @@
 function [data, headerData] = ...
     getFileAndColumnNames(folderName,dataFileName,...
-                          keywordInRowBeforeData, headerRows, nanNumber,...
+                          keywordInRowBeforeData, headerRows, ...%nanNumber,...
                           flag_verbose) 
 
 if(flag_verbose)
@@ -66,11 +66,11 @@ while(ischar(tline))
     
     lineData = textscan(tline,dataFormat);
     for i=1:1:dataColumns
-      if( isnan(lineData{i})==1)
-        dataRow(1,i) = nanNumber;
-      else
+    %  if( isnan(lineData{i})==1)
+    %    dataRow(1,i) = nanNumber;
+    %  else
         dataRow(1,i) = lineData{i};
-      end
+    %  end
     end
     
     if(isempty(data) ==1)

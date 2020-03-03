@@ -1,4 +1,19 @@
 # ignore all data
+/inputData/E01/
+/inputData/E02/
+/inputData/E03/
+/inputData/E05/
+/inputData/E08/
+/inputData/H01/
+/inputData/H02/
+/inputData/H03/
+/inputData/H04/
+/inputData/H05/
+/inputData/H06/
+/inputData/H07/
+/inputData/H08/
+/inputData/H09/
+/inputData/H10/
 *.txt
 *.c3d
 *.mat
@@ -8,4 +23,9 @@
 *.jpg
 *.avi
 *.mpeg
+*.csv
+*.ff
+*.cmz
+*.cmx
+*.cmz.cmx
 

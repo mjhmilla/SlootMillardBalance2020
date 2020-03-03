@@ -8,7 +8,8 @@ function fpeInfo = calc3DFootPlacementEstimatorInfo(m,...
                                           numericTolerance,...
                                           maximumIterations,...
                                           flag_evaluateDerivatives,...
-                                          flag_verbose)
+                                          flag_verbose,...
+                                          fpeInfoGuess)
 %%
 % This function computes the location of a balance-restoring step on a horizontal
 % surface using the 3DFPE algorithm described by Millard et al. [1]. All 
@@ -171,183 +172,290 @@ function fpeInfo = calc3DFootPlacementEstimatorInfo(m,...
 %%%
 
 
-fpeInfo = struct('f'               ,  zeros(1,1),...
-                 'phi'             ,  zeros(1,1),...
-                 'r0F0'            ,  zeros(3,1),...
-                 'projectionError' ,  zeros(1,1),...
-                 'n'               ,  zeros(3,1),...
-                 'r0G0'            ,  zeros(3,1),...
-                 'omega'           ,  zeros(3,1),...
-                 'h'               ,  zeros(1,1),...
-                 'vx'              ,  zeros(1,1),...
-                 'vy'              ,  zeros(1,1),...
-                 'J'               ,  zeros(1,1),...                 
-                 'Df_Dphi'         ,  zeros(1,1),...
-                 'Df_Domega'       ,  zeros(1,1),...
-                 'Df_Dh'           ,  zeros(1,1),...
-                 'Df_Dvx'          ,  zeros(1,1),...
-                 'Df_Dvy'          ,  zeros(1,1),...
-                 'Df_DJ'           ,  zeros(1,1),...
-                 'Df_Dm'           ,  zeros(1,1),...
-                 'Df_Dg'           ,  zeros(1,1));
+fpeInfo = struct('f'               ,  zeros(1,1).*NaN,...
+                 'phi'             ,  zeros(1,1).*NaN,...
+                 'r0F0'            ,  zeros(3,1).*NaN,...
+                 'projectionError' ,  zeros(1,1).*NaN,...
+                 'n'               ,  zeros(3,1).*NaN,...
+                 'r0G0'            ,  zeros(3,1).*NaN,...
+                 'omega'           ,  zeros(1,1).*NaN,...
+                 'h'               ,  zeros(1,1).*NaN,...
+                 'vx'              ,  zeros(1,1).*NaN,...
+                 'vy'              ,  zeros(1,1).*NaN,...
+                 'J'               ,  zeros(1,1).*NaN,...                 
+                 'Df_Dphi'         ,  zeros(1,1).*NaN,...
+                 'Df_Domega'       ,  zeros(1,1).*NaN,...
+                 'Df_Dh'           ,  zeros(1,1).*NaN,...
+                 'Df_Dvx'          ,  zeros(1,1).*NaN,...
+                 'Df_Dvy'          ,  zeros(1,1).*NaN,...
+                 'Df_DJ'           ,  zeros(1,1).*NaN,...
+                 'Df_Dm'           ,  zeros(1,1).*NaN,...
+                 'Df_Dg'           ,  zeros(1,1).*NaN);
 
 
 %===============================================================================
-%1. Compute the projection plane
-%   a. Resolve the whole body angular momentum about the CoM ground projection
-%   b. Direction vectors ux and uz
-%   c. epsilon - the percentage of the body's Hg
+%
+% Check if the inputs are valid
+%
 %===============================================================================
-
-
-%   a. Resolve the whole body angular momentum about the CoM ground projection
-
-%Gravity normal vector in the lab frame
-gNorm= norm(g0);
-eg0 = g0./gNorm;
-
-%Compute the whole-body average angular velocity
-w0C0 = JC0 \ HC0;
-
-%Get the CoM projection onto the contacting surface
-%rSCS =  rmS0' * (r0C0-r0S0);
-%egS  = (rmS0' * g0) ./ norm(g0);
-%rSGS =  rSCS - (rSCS' * egS).*egS;
-%rSG0 =  rmS0 * rSGS;
-%r0G0 =  r0S0 + rSG0;
-
-rSC0  = (r0C0-r0S0);
-rGC0  = (rSC0'*eg0)*eg0;
-r0G0  = r0C0 - rGC0;
-fpeInfo.r0G0 = r0G0;
-
-%Compute the whole body angular momentum vector about the COM ground projection
-rGC0x = getCrossProductMatrix(rGC0);
-HG0   = HC0 + rGC0x * (m.*v0C0);
-
-fpeInfo.HG0 = HG0;
-
-
-%   b. Direction vectors ux and uz
-
-%The projection plane has a positive direction k that opposes gravity
-ev0   = -eg0;
-
-%The projection plane has a normal vector in the direction of the horizontal
-%component of HG0.
-HG0p  = HG0 - (HG0'*eg0).*eg0;    
-en0   = HG0p ./ ( max(numericTolerance,norm(HG0p)) );
-
-%The direction of the step lies along the plane found using the cross product
-%of the plane's vertical and normal vectors. Note that the stabilizing
-%step can be in the positive/negative direction of this direction vector.
-eu0   = getCrossProductMatrix(en0)*ev0;
-
-
-fpeInfo.projectionError = 1 - norm(HG0p)/norm(HG0);
-fpeInfo.n               = en0;
-
-
-%==========================================================================
-%2. Project the state of the body and its inertia onto
-%   the projection plane.
-%==========================================================================
-
-JC0p    = en0' * JC0 * en0;
-w0C0p  = en0' * w0C0;
-v0C0p  = [(eu0'*v0C0);(ev0'*v0C0)];
-
-
-
-
-%hV is going to have to re-calculated at every new phi to allow for
-%contact surfaces that are not normal to the gravity vector.
-
-%==========================================================================
-%3. Solve for phi the acute angle between the gravity direction vector and 
-%   the  diretion vector from the CoM to the foot placement location.
-%==========================================================================
-
-%The surface is not necessarily horizontal. To calculate the leg length
-%that will reach the surface we need to know the angle alpha the surface makes
-%with the horizontal vector eu0 in the direction of travel
-
-%etS0 : unit tangent direction vector on the surface S resolved in K0
-%etS0 = getCrossProductMatrix(en0)*enS0; 
-%etS0 = etS0 ./ (max(numericTolerance,norm(etS0)));
-%alpha: the angle between etS0 and the horizontal in the direction of travel
-%alpha = asin( etS0'*g0 );
-
-
-g       = gNorm;
-phi     = pi/4;  
-maxStep = pi/8;
-
-       
-%m : already defined
-%g : gravity magnitude - already defined
-J     = JC0p;
-h     = sqrt(rGC0'*rGC0);
-vx    = v0C0p(1,1);
-vy    = v0C0p(2,1);
-omega = w0C0p;
-
-fpeInfo.J = J;
-fpeInfo.h = h;
-fpeInfo.vx = vx;
-fpeInfo.vy = vy;
-fpeInfo.omega = omega;
-
-f     = numericTolerance*10; 
-iter  = 1;
-
-cosphi    = 0;
-cos2phi   = 0;
-sinphi    = 0;
-h2        = 0;   
-
-while( abs(f) > numericTolerance && iter < maximumIterations )
-         
-  cosphi    = cos(phi);
-  cos2phi   = cosphi*cosphi;
-  sinphi    = sin(phi);
-  h2        = h*h;      
-  
-  f      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
-  DfDphi = (2*cosphi*sinphi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)...
-              /(cos2phi*J+h2*m)^2+(2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))*((-2*cosphi*omega*sinphi*J)-h*m*sinphi*(sinphi*vy+cosphi*vx)+cosphi*h*m*(cosphi*vy-sinphi*vx)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
-            
-
-  deltaPhi = -f/DfDphi;
-
-  if(abs( deltaPhi ) > maxStep)
-     deltaPhi = maxStep*sign(deltaPhi); 
-  end
-  if(isnan(deltaPhi) == 0)
-    phi = phi + deltaPhi;
-  end
-
- iter = iter+1;      
+flag_validInputs=1;
+if(sum(isnan(m)) > 0 || m <= 0)
+  flag_validInputs =0;
+end
+if(sum(isnan(r0C0)) > 0)
+  flag_validInputs =0;
+end
+if(sum(isnan(v0C0)) > 0)
+  flag_validInputs =0;
+end
+if(sum(sum(isnan(JC0))) > 0)
+  flag_validInputs =0;
+end
+if(sum(isnan(HC0)) > 0)
+  flag_validInputs =0;
+end
+if(sum(isnan(r0S0)) > 0)
+  flag_validInputs =0;
+end
+if(sum(isnan(g0)) > 0)
+  flag_validInputs =0;
+end
+if(sum(isnan(numericTolerance)) > 0 || numericTolerance <= 0)
+  flag_validInputs =0;
+end
+if(sum(isnan(maximumIterations)) > 0 || maximumIterations <= 0)
+  flag_validInputs =0;
 end
 
-assert(abs(f) <= numericTolerance);  
-assert(phi >= -numericTolerance);   %Else we found the (non-physical negative root)
+if(flag_evaluateDerivatives ~= 0 && flag_evaluateDerivatives ~= 1)
+  flag_validInputs =0;
+end
+if(flag_verbose ~= 0 && flag_verbose ~= 1)
+  flag_validInputs =0;
+end
 
-rGF0    = h*tan(phi)*eu0;
-r0F0    = r0G0 + rGF0;
-      
-fpeInfo.f  = f;
-fpeInfo.phi= phi;
-fpeInfo.r0F0 = r0F0;
 
-if(flag_evaluateDerivatives==1)
-  fpeInfo.Df_Dphi    = (2*cosphi*sinphi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2+(2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))*((-2*cosphi*omega*sinphi*J)-h*m*sinphi*(sinphi*vy+cosphi*vx)+cosphi*h*m*(cosphi*vy-sinphi*vx)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
-  fpeInfo.Df_Domega  = (2*cos2phi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
-  fpeInfo.Df_Dh      = (-(2*h*m*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*m*(sinphi*vy+cosphi*vx)*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*m;
-  fpeInfo.Df_Dvx     = (2*cos2phi*h*m*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
-  fpeInfo.Df_Dvy     = (2*cosphi*h*m*sinphi*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
-  fpeInfo.Df_DJ      = (2*cos2phi*omega*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)-(cos2phi*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2;
-  fpeInfo.Df_Dm      = (-(h2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*h*(sinphi*vy+cosphi*vx)*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h;
-  fpeInfo.Df_Dg      = 2*(cosphi-1)*cosphi*h*m;                
+if(flag_validInputs==1)               
+  %===============================================================================
+  %1. Compute the projection plane
+  %   a. Resolve the whole body angular momentum about the CoM ground projection
+  %   b. Direction vectors ux and uz
+  %   c. epsilon - the percentage of the body's Hg
+  %===============================================================================
+
+
+  %   a. Resolve the whole body angular momentum about the CoM ground projection
+
+  %Gravity normal vector in the lab frame
+  gNorm= norm(g0);
+  eg0 = g0./gNorm;
+
+  %Compute the whole-body average angular velocity
+  w0C0 = JC0 \ HC0;
+
+  %Get the CoM projection onto the contacting surface
+  %rSCS =  rmS0' * (r0C0-r0S0);
+  %egS  = (rmS0' * g0) ./ norm(g0);
+  %rSGS =  rSCS - (rSCS' * egS).*egS;
+  %rSG0 =  rmS0 * rSGS;
+  %r0G0 =  r0S0 + rSG0;
+
+  rSC0  = (r0C0-r0S0);
+  rGC0  = (rSC0'*eg0)*eg0;
+  r0G0  = r0C0 - rGC0;
+  fpeInfo.r0G0 = r0G0;
+
+  %Compute the whole body angular momentum vector about the COM ground projection
+  rGC0x = getCrossProductMatrix(rGC0);
+  HG0   = HC0 + rGC0x * (m.*v0C0);
+
+  fpeInfo.HG0 = HG0;
+
+
+  %   b. Direction vectors ux and uz
+
+  %The projection plane has a positive direction k that opposes gravity
+  ev0   = -eg0;
+
+  %The projection plane has a normal vector in the direction of the horizontal
+  %component of HG0.
+  HG0p  = HG0 - (HG0'*eg0).*eg0;    
+  en0   = HG0p ./ ( max(numericTolerance,norm(HG0p)) );
+
+  %The direction of the step lies along the plane found using the cross product
+  %of the plane's vertical and normal vectors. Note that the stabilizing
+  %step can be in the positive/negative direction of this direction vector.
+  eu0   = getCrossProductMatrix(en0)*ev0;
+
+
+  fpeInfo.projectionError = 1 - norm(HG0p)/norm(HG0);
+  fpeInfo.n               = en0;
+
+
+  %==========================================================================
+  %2. Project the state of the body and its inertia onto
+  %   the projection plane.
+  %==========================================================================
+
+  JC0p    = en0' * JC0 * en0;
+  w0C0p  = en0' * w0C0;
+  v0C0p  = [(eu0'*v0C0);(ev0'*v0C0)];
+
+
+
+
+  %hV is going to have to re-calculated at every new phi to allow for
+  %contact surfaces that are not normal to the gravity vector.
+
+  %==========================================================================
+  %3. Solve for phi the acute angle between the gravity direction vector and 
+  %   the  diretion vector from the CoM to the foot placement location.
+  %==========================================================================
+
+  %The surface is not necessarily horizontal. To calculate the leg length
+  %that will reach the surface we need to know the angle alpha the surface makes
+  %with the horizontal vector eu0 in the direction of travel
+
+  %etS0 : unit tangent direction vector on the surface S resolved in K0
+  %etS0 = getCrossProductMatrix(en0)*enS0; 
+  %etS0 = etS0 ./ (max(numericTolerance,norm(etS0)));
+  %alpha: the angle between etS0 and the horizontal in the direction of travel
+  %alpha = asin( etS0'*g0 );
+
+
+  g       = gNorm;
+  phi     = pi/4;  
+  maxStep = pi/8;
+
+
+  %m : already defined
+  %g : gravity magnitude - already defined
+  J     = JC0p;
+  h     = sqrt(rGC0'*rGC0);
+  vx    = v0C0p(1,1);
+  vy    = v0C0p(2,1);
+  omega = w0C0p;
+
+  fpeInfo.J = J;
+  fpeInfo.h = h;
+  fpeInfo.vx = vx;
+  fpeInfo.vy = vy;
+  fpeInfo.omega = omega;
+
+  f     = numericTolerance*10; 
+  iter  = 1;
+ 
+  if(isempty(fpeInfoGuess)==1)
+    cosphi    = 0;
+    cos2phi   = 0;
+    sinphi    = 0;
+    h2        = 0;   
+
+    %Get close to the root using the bisection method
+
+    %Initial solution
+    cosphi    = cos(phi);
+    cos2phi   = cosphi*cosphi;
+    sinphi    = sin(phi);
+    h2        = h*h;      
+    f      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
+
+    phiBest = phi;
+    errBest = abs(f);
+    fBest = f;
+
+    delta = phi*0.5;
+
+    for i=1:1:5
+      phiL = phiBest-delta;
+      cosphi    = cos(phiL);
+      cos2phi   = cosphi*cosphi;
+      sinphi    = sin(phiL);
+      h2        = h*h;      
+      fL      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
+      errL   = abs(fL);
+
+      phiR = phiBest+delta;
+      cosphi    = cos(phiR);
+      cos2phi   = cosphi*cosphi;
+      sinphi    = sin(phiR);
+      h2        = h*h;      
+      fR      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
+      errR   = abs(fR);
+
+      if(errL < errBest && errL <= errR)
+        phiBest = phiL;
+        errBest = errL;
+        fBest = fL;
+      end
+
+      if(errR < errBest && errR < errL)
+        phiBest = phiR;
+        errBest = errR;    
+        fBest = fR;
+      end
+
+      delta = delta*0.5;
+
+    end
+
+    f = fBest;
+    phi=phiBest;
+  else
+    
+    phi = fpeInfoGuess.phi;
+    
+  end
+  
+  
+
+  %Polish off using Newton's method
+  while( abs(f) > numericTolerance && iter < maximumIterations )
+
+    cosphi    = cos(phi);
+    cos2phi   = cosphi*cosphi;
+    sinphi    = sin(phi);
+    h2        = h*h;      
+
+    f      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
+    DfDphi = (2*cosphi*sinphi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)...
+                /(cos2phi*J+h2*m)^2+(2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))*((-2*cosphi*omega*sinphi*J)-h*m*sinphi*(sinphi*vy+cosphi*vx)+cosphi*h*m*(cosphi*vy-sinphi*vx)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
+
+
+    deltaPhi = -f/DfDphi;
+
+    if(abs( deltaPhi ) > maxStep)
+       deltaPhi = maxStep*sign(deltaPhi); 
+    end
+    if(isnan(deltaPhi) == 0)
+      phi = phi + deltaPhi;
+    end
+
+   iter = iter+1;      
+  end
+  
+  if(abs(f) >= numericTolerance || phi <= -numericTolerance)
+    here=1;
+  end
+  assert(abs(f) <= numericTolerance);  
+  assert(phi >= -numericTolerance);   %Else we found the (non-physical negative root)
+
+  rGF0    = h*tan(phi)*eu0;
+  r0F0    = r0G0 + rGF0;
+
+  fpeInfo.f  = f;
+  fpeInfo.phi= phi;
+  fpeInfo.r0F0 = r0F0;
+
+  if(flag_evaluateDerivatives==1)
+    fpeInfo.Df_Dphi    = (2*cosphi*sinphi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2+(2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))*((-2*cosphi*omega*sinphi*J)-h*m*sinphi*(sinphi*vy+cosphi*vx)+cosphi*h*m*(cosphi*vy-sinphi*vx)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
+    fpeInfo.Df_Domega  = (2*cos2phi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
+    fpeInfo.Df_Dh      = (-(2*h*m*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*m*(sinphi*vy+cosphi*vx)*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*m;
+    fpeInfo.Df_Dvx     = (2*cos2phi*h*m*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
+    fpeInfo.Df_Dvy     = (2*cosphi*h*m*sinphi*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
+    fpeInfo.Df_DJ      = (2*cos2phi*omega*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)-(cos2phi*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2;
+    fpeInfo.Df_Dm      = (-(h2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*h*(sinphi*vy+cosphi*vx)*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h;
+    fpeInfo.Df_Dg      = 2*(cosphi-1)*cosphi*h*m;                
+  end
 end
 

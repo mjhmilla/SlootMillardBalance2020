@@ -19,16 +19,31 @@ function [c3dTime, c3dMarkers,c3dMarkerNames, c3dMarkerUnits,...
 [c3dH, c3dByteOrder, c3dStorageFormat] = ...
     btkReadAcquisition(c3dFileNameAndPath);
 
-if(flag_MetersRadians==1)
-  btkSetPointsUnit(c3dH,'MARKER','m');
-  btkSetPointsUnit(c3dH,'ANGLE','rad');
-  btkSetPointsUnit(c3dH,'MOMENT','Nm');
   
+
+unitMarker = btkGetPointsUnit(c3dH,'MARKER');
+unitAngle  = btkGetPointsUnit(c3dH,'ANGLE');
+unitMoment = btkGetPointsUnit(c3dH,'MOMENT');
+
+scaleDistance = 1.;
+scaleAngles   = 1.;
+scaleMoments  = 1.;
+
+if(flag_MetersRadians == 1)
+  if(strcmp(unitMarker,'mm')==1)
+    scaleDistance = 0.001;
+  end
+  if(strcmp(unitMoment,'Nmm')==1)
+    scaleMoments = 0.001;
+  end
+  if(strcmp(unitAngle,'deg')==1)
+    scaleAngles = 180/pi;
+  end
+    
+  unitMarker ='m';
+  unitAngle  = 'rad';
+  unitMoment = 'Nm';
 end
-  
-  unitMarker = btkGetPointsUnit(c3dH,'MARKER');
-  unitAngle  = btkGetPointsUnit(c3dH,'ANGLE');
-  unitMoment = btkGetPointsUnit(c3dH,'MOMENT');
 
 if(flag_verbose == 1)  
   disp('C3D Units');
@@ -38,11 +53,17 @@ if(flag_verbose == 1)
 end
 
 c3dMarkerUnits = struct('marker',unitMarker,...
-                        'angle', unitAngle,...
+                        'angle' ,unitAngle,...
                         'moment',unitMoment);
 
 [c3dMarkers, c3dMarkersInfo, c3dMarkersResidual] = btkGetMarkers(c3dH);
 c3dMarkerNames = fieldnames(c3dMarkers);
+
+for i=1:1:length(c3dMarkerNames)
+  c3dMarkers.(c3dMarkerNames{i}) = ...
+    c3dMarkers.(c3dMarkerNames{i}).*scaleDistance;
+end
+
 
 numberOfItems = size(c3dMarkers.(c3dMarkerNames{1}),1);
 c3dTime = [0:1:(numberOfItems-1)]'./c3dMarkersInfo.frequency;
@@ -51,6 +72,7 @@ c3dTime = [0:1:(numberOfItems-1)]'./c3dMarkersInfo.frequency;
 inGlobalFrame=1;
 fpw = btkGetGroundReactionWrenches(c3dH, inGlobalFrame);
 [c3dForcePlates, c3dForcePlateInfo] = btkGetForcePlatforms(c3dH);
+
 
 numberSkip = size(fpw(1).P,1)/numberOfItems;
 timeForcePlate = (size(fpw(1).P,1)-1)/c3dForcePlateInfo(1).frequency;
@@ -62,11 +84,6 @@ c3dGrf(length(c3dForcePlates)) = struct('cop',zeros(numberOfItems,3),...
                                      'force',zeros(numberOfItems,3),...
                                      'moment',zeros(numberOfItems,3));
 
-%Resolve the force plate moments into a CoP location                                   
-scaleDistance = 1.0;
-if(flag_MetersRadians==1)
-  scaleDistance = 0.001;
-end
 
 for i=1:1:length(c3dForcePlates)
   origin = c3dForcePlates(i).origin';
@@ -99,7 +116,13 @@ for i=1:1:length(c3dForcePlates)
     
   end
 end
- 
+
+for i=1:1:length(c3dForcePlates)
+  c3dForcePlates(i).corners = c3dForcePlates(i).corners.*scaleDistance;
+  c3dForcePlates(i).origin  = c3dForcePlates(i).origin.*scaleDistance;  
+end
+
+
 if(flag_verbose==1)
  
   disp('Mocap Marker Information:');

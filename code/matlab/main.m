@@ -2,12 +2,18 @@ clc;
 close all;
 clear all;
 
+%%
+% Get the subject data
+%%
+inputDataParentFolder = '../../inputData';
+outputDataParentFolder = '../../outputData';
 
-%%
-% Subject Meta Data
-%%
-subjectAge                  = 65; %for now
-subjectGender1Male0Female   = 0;
+codeDir = pwd;
+cd(inputDataParentFolder);
+configE02;
+cd(codeDir);
+
+
 %%
 % Processing Flags
 %%
@@ -16,7 +22,7 @@ flag_useMetersRadiansInC3DData  = 1;
 flag_verbose                    = 0;
 
 flag_loadFpeDataFromFile = 0;
-flag_visualize           = 0;
+flag_visualize           = 1;
     numberOfFramesToDraw = 50;
     scaleForceToDistance = 1/1000;
 flag_writeRBDLToolChainFiles = 1;
@@ -35,7 +41,7 @@ dataFolderMat              = '../../data/mat/';
 c3dStaticFileName       = 'static2.c3d';
 c3dFileName             = 'sts_0001_Side.c3d';
 wholeBodyFileName       = 'DATA.txt';
-anthroFileName          = 'Metrics.txt';
+anthroFileName          = 'SUBMETRICS.txt';
 
 headerRows          = 4; 
 textInRowBeforeData = 'ITEM';
@@ -182,7 +188,7 @@ gravityVector = [0;0;-9.81];
 idxSeat = 1;
 idxFloor= 2;
 
-contactPlanes = [ 0,0, mean([valMaxRFax,valMaxLFax])*mm2m; ...
+contactPlanes = [ 0,0, mean([valMaxRFax,valMaxLFax]); ...
                   0,0,0];  
 
 %Numerical tolerances on the solution               
@@ -222,7 +228,7 @@ if(flag_writeRBDLToolChainFiles == 1)
 
 
   pelvisWidth = ...
-    norm(c3dMarkers.('R_IAS')(1,:)-c3dMarkers.('L_IAS')(1,:))*mm2m;
+    norm(c3dMarkers.('R_IAS')(1,:)-c3dMarkers.('L_IAS')(1,:));
 
   hipCenterWidth = 2*0.38*pelvisWidth; 
   % Leardini A, Cappozzo A, Catani F, Toksvig-Larsen S, Petitto A, Sforza V, 
@@ -231,21 +237,21 @@ if(flag_writeRBDLToolChainFiles == 1)
   % Jan 1;32(1):99-103.
 
   shoulderWidth = ...
-    norm(c3dMarkers.('R_SAE')(1,:)-c3dMarkers.('L_SAE')(1,:))*mm2m;
+    norm(c3dMarkers.('R_SAE')(1,:)-c3dMarkers.('L_SAE')(1,:));
 
   heelLength = ...
     (norm( 0.5*(c3dMarkers.('R_FAL')(1,:)+c3dMarkers.('R_TAM')(1,:)) ...
-          -c3dMarkers.('R_FCC')(1,:)))*mm2m;
+          -c3dMarkers.('R_FCC')(1,:)));
 
   heelHeight = ...
-    0.5*(c3dMarkers.('R_FAL')(1,3)+c3dMarkers.('L_FAL')(1,3))*mm2m;
+    0.5*(c3dMarkers.('R_FAL')(1,3)+c3dMarkers.('L_FAL')(1,3));
 
   footWidth = ...
-      norm(c3dMarkers.('R_FM1')(1,:)-c3dMarkers.('R_FM5')(1,:))*mm2m;
+      norm(c3dMarkers.('R_FM1')(1,:)-c3dMarkers.('R_FM5')(1,:));
 
   shoulderToC7Length = ...
       norm( 0.5.*(c3dMarkers.('R_SAE')(1,:)+c3dMarkers.('L_SAE')(1,:)) ...
-                - c3dMarkers.('CV7')(1,:) ).*mm2m;
+                - c3dMarkers.('CV7')(1,:) );
 
   success = writeModelFactoryModelFile(modelFactoryFileName,...
                       subjectAge,...
@@ -356,6 +362,9 @@ if(flag_visualize == 1)
   comAngVelColor = [0,0,1];
   
   extent = 2000;
+  if(flag_useMetersRadiansInC3DData==1)
+    extent = extent.*0.001;
+  end
   xAxisExtents = [   0,  1  ].*extent;
   yAxisExtents = [-0.5,  0.5].*extent;
   zAxisExtents = [   0,  1  ].*extent;
@@ -396,18 +405,18 @@ if(flag_visualize == 1)
     %Plot the Com location
     figure(fig_markers3d);
       
-    plot3( wholeBodyData(i,colComPos(1,1)).*m2mm,...
-           wholeBodyData(i,colComPos(1,2)).*m2mm,...
-           wholeBodyData(i,colComPos(1,3)).*m2mm,...
+    plot3( wholeBodyData(i,colComPos(1,1)),...
+           wholeBodyData(i,colComPos(1,2)),...
+           wholeBodyData(i,colComPos(1,3)),...
            'o','Color',comMarkerFaceColor,...
            'MarkerFaceColor',comMarkerFaceColor,...
            'MarkerSize', comMarkerSize);
     hold on;      
 
     %Plot the Com velocity 
-    pointA = wholeBodyData(i,colComPos(1,:))'.*m2mm;
+    pointA = wholeBodyData(i,colComPos(1,:))';
     pointB = pointA ...
-          + (wholeBodyData(i,colComVel(1,:))'.*m2mm).*scaleVelocityVector;
+          + (wholeBodyData(i,colComVel(1,:))').*scaleVelocityVector;
     plot3( [pointA(1,1);pointB(1,1)],...
            [pointA(2,1);pointB(2,1)],...
            [pointA(3,1);pointB(3,1)], ...
@@ -422,9 +431,9 @@ if(flag_visualize == 1)
     hold on;
 
     %Plot the angular velocity vector    
-    pointA = wholeBodyData(i,colComPos(1,:))'.*m2mm;
+    pointA = wholeBodyData(i,colComPos(1,:))';
     pointB = pointA ...
-          + (WcmAngularVelocity(i,:))'.*(m2mm.*scaleAngularVelocityVector);
+          + (WcmAngularVelocity(i,:))'.*(scaleAngularVelocityVector);
     plot3( [pointA(1,1);pointB(1,1)],...
            [pointA(2,1);pointB(2,1)],...
            [pointA(3,1);pointB(3,1)], ...
@@ -441,11 +450,11 @@ if(flag_visualize == 1)
     %Plot the priciple axis of inertia matrix and scale each by the
     %size of the respective eigen value
     for j=1:1:3
-      pointA      = wholeBodyData(i,colComPos(1,:))'.*m2mm;
+      pointA      = wholeBodyData(i,colComPos(1,:))';
       JcmColIndex = [1,4,7] + (j-1);
       dirAB       = JcmEigenVectorsRowWise(i,JcmColIndex)';
       pointB      = pointA + ...
-               ((dirAB.*JcmRadiusOfGyration(i,j)).*m2mm).*scaleInertiaFrame;
+               ((dirAB.*JcmRadiusOfGyration(i,j))).*scaleInertiaFrame;
              
       plot3( [pointA(1,1);pointB(1,1)],...
              [pointA(2,1);pointB(2,1)],...
@@ -482,7 +491,7 @@ if(flag_visualize == 1)
       
       fa = (c3dGrf(j).cop(i,:));
       fb = (c3dGrf(j).cop(i,:) ...
-         + (c3dGrf(j).forces(i,:).*scaleForceToDistance).*m2mm);
+         + (c3dGrf(j).force(i,:).*scaleForceToDistance));
       
       f = [fa;fb];
       plot3(f(:,1),f(:,2),f(:,3),...
@@ -495,7 +504,7 @@ if(flag_visualize == 1)
       hold on;
       
       text(fb(1,1),fb(1,2),fb(1,3),...
-           sprintf('%1.1f',norm(c3dGrf(j).forces(i,:))));
+           sprintf('%1.1f',norm(c3dGrf(j).force(i,:))));
          
       hold on;
       
@@ -504,17 +513,17 @@ if(flag_visualize == 1)
     %%
     % Plot the foot-placement estimator for the seat & floor
     %%
-    plot3( fpeData(idxSeat).r0F0(i,1).*m2mm,...
-           fpeData(idxSeat).r0F0(i,2).*m2mm,...
-           fpeData(idxSeat).r0F0(i,3).*m2mm,...
+    plot3( fpeData(idxSeat).r0F0(i,1),...
+           fpeData(idxSeat).r0F0(i,2),...
+           fpeData(idxSeat).r0F0(i,3),...
            'om','LineWidth',1,...
            'MarkerSize',10,...
            'MarkerFaceColor',[1,1,1]);    
     
     hold on;
-    plot3( fpeData(idxFloor).r0F0(i,1).*m2mm,...
-           fpeData(idxFloor).r0F0(i,2).*m2mm,...
-           fpeData(idxFloor).r0F0(i,3).*m2mm,...
+    plot3( fpeData(idxFloor).r0F0(i,1),...
+           fpeData(idxFloor).r0F0(i,2),...
+           fpeData(idxFloor).r0F0(i,3),...
            'om','LineWidth',1,...
            'MarkerSize',10,...
            'MarkerFaceColor',[1,1,1]);    
