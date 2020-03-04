@@ -28,7 +28,8 @@ vx = [0:0.01:1]';
 phiA = zeros(length(vx),1);
 phiB = zeros(length(vx),1);
 
-
+fpeInfoAPrevious = [];
+fpeInfoBPrevious = [];
 
 for j=1:1:length(vx)
 
@@ -45,8 +46,10 @@ for j=1:1:length(vx)
                                           tol,...
                                           iterMax,...
                                           flag_fpeEvaluateDerivatives,...
-                                          flag_fpeVerbose);
-
+                                          flag_fpeVerbose,...
+                                          fpeInfoAPrevious);
+  fpeInfoAPrevious = fpeInfoA;
+  
   phiA(j,1) = fpeInfoA.phi;
   
   fpeInfoB = calc3DFootPlacementEstimatorInfo(mass,...
@@ -59,12 +62,17 @@ for j=1:1:length(vx)
                                           tol,...
                                           iterMax,...
                                           flag_fpeEvaluateDerivatives,...
-                                          flag_fpeVerbose);  
+                                          flag_fpeVerbose,...
+                                          fpeInfoBPrevious);  
+  fpeInfoBPrevious = fpeInfoB;
   phiB(j,1) = fpeInfoB.phi;
 
 end
 
 fig = figure;
-plot(phiA(:,1),'b');
+plot(vx,phiA(:,1),'b');
 hold on;
-plot(phiB(:,1),'r');
+plot(vx,phiB(:,1),'r');
+xlabel('Forward Velocity (m/s)');
+ylabel('Leg angle (phi)');
+legend('omega = 0', 'omega > 0');
