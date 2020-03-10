@@ -38,6 +38,45 @@ cd(codeDir);
 gravityVector = [0;0;-9.81];
 contactPlanes = [0,0,0];  
 
+%Motion segmentation constants
+%
+% The segmentData script classfies every data point 
+% into one of these six states:
+%
+% sitting-static
+%   on the chair and the fpe close to the CoM ground proj.
+% sitting-dynamic
+%   on the chair and the fpe far from the CoM ground proj.
+%
+% crouching-stable
+%   off the chair, legs bent, fpe within convex hull of feet
+% crouching-unstable
+%   off the chair, legs bent, fpe outside convex hull of feet
+%
+% standing-stable
+%   off the chair, legs straight, fpe inside convex hull of feet
+% standing-unstable
+%   off the chair, legs straight, fpe outside convex hull of feet
+%
+thresholdLowNormalizedForce           = 0.05;
+thresholdHighNormalizedForce          = 0.95;
+thresholdStaticSittingBalanceDistance = 0.01; 
+thresholdNormStandingHeight           = 0.95;                                 
+
+%%
+%Motion sequence constants
+%
+% This code goes through the segmented data and identifies motion 
+% sequences:
+%
+% quiet-sit-to-quiet-stand: subject progresses from
+%   -sitting-static for thresholdQuietTime
+%   -standing-stable for thresholdQuietTim
+%   -s.t. once seat-off occurs the subject does not contact the seat
+%         again until (eventually) a standing-stable pose is reached.
+%%
+thresholdQuietTime = 1.0;
+
 %%
 % Processing Flags
 %%
@@ -45,7 +84,7 @@ contactPlanes = [0,0,0];
 %Preprocessing of C3D data
 flag_loadC3DMatFileData         = 1;
 flag_useMetersRadiansInC3DData  = 1;
-flag_writeC3DData               = 0;
+flag_writeC3DDataForMeshup      = 0;
 flag_verbose                    = 0;
 
 %FPE processing
@@ -54,7 +93,14 @@ flag_writeFpeData        = 0;
 
 %Capture point processing
 flag_loadCapDataFromFile = 1;
-flag_writeCapData        = 1;
+flag_writeCapData        = 0;
+
+%Motion segmentation
+flag_loadSegmentedMotionDataFromFile = 1;
+
+%Motion sequence identification
+flag_loadMovementSequenceFromFile =1;
+
 
 %Plotting
 flag_visualize           = 0;
@@ -111,6 +157,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
   for indexTrial = 1:1:numberOfTrials
     
     disp(['    :',inputC3DFiles{indexTrial}]);
+        
     
     inputC3DFolder = inputC3DFolders{indexTrial};
     c3DFileName         = inputC3DFiles{indexTrial};
@@ -133,13 +180,14 @@ for indexSubject = 1:1:length(subjectsToProcess)
     end    
     
     
-    outputTrialFolder = outputTrialFolders{indexTrial};    
-    meshupGrfFileName    = outputMeshupGrfFiles{indexTrial};
-    meshupFpeFileName    = outputMeshupFpeFiles{indexTrial};  
-    meshupCapFileName    = outputMeshupCapFiles{indexTrial};  
-    outputFpeFileName    = outputFpeFileNames{indexTrial};
-    outputCapFileName    = outputCapFileNames{indexTrial};
-    
+    outputTrialFolder     = outputTrialFolders{indexTrial};    
+    meshupGrfFileName     = outputMeshupGrfFiles{indexTrial};
+    meshupFpeFileName     = outputMeshupFpeFiles{indexTrial};  
+    meshupCapFileName     = outputMeshupCapFiles{indexTrial};  
+    outputFpeFileName     = outputFpeFileNames{indexTrial};
+    outputCapFileName     = outputCapFileNames{indexTrial};
+    outputSegmentationFileName  = outputSegmentationFileNames{indexTrial};
+    outputSequenceFileName = outputMovementSequenceFileNames{indexTrial};    
     
     if(exist(outputTrialFolder,'dir') == 0)
       idx = strfind(outputTrialFolder,'/');
@@ -167,6 +215,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
                         flag_loadC3DMatFileData, ...
                         flag_useMetersRadiansInC3DData, ...
                         flag_verbose);
+                      
             
     [anthroData, anthroColNames] = ...
         getAnthropometryData( inputAnthroFolder,...
@@ -321,7 +370,40 @@ for indexSubject = 1:1:length(subjectsToProcess)
                   [outputTrialFolder,outputCapFileName],...
                   flag_loadCapDataFromFile);
         
-                      
+    %%
+    %
+    % Classify the state of the sit-to-stand process
+    %
+    %%
+    thresholdLowForce = ...
+        norm((thresholdLowNormalizedForce*mass).*gravityVector);
+    thresholdHighForce = ...
+        norm((thresholdHighNormalizedForce*mass).*gravityVector);
+    thresholdStanding = ...
+        max(wholeBodyData(:,colComPos(1,3))).*thresholdNormStandingHeight;
+      
+    c3DFootMarkerNames = {'R_FM1','R_FM2','R_FM5','R_FCC',...
+                      'L_FM1','L_FM2','L_FM5','L_FCC'};
+    
+    [segmentedData,segmentInfo] = segmentData(c3DTime,...
+                    c3DMarkers,...
+                    c3DFootMarkerNames,...
+                    wholeBodyData(:,colComPos),...                    
+                    c3DGrf(index_ChairForcePlate), ...
+                    c3DGrf(index_FeetForcePlate), ...
+                    fpeData(1), ...
+                    thresholdLowForce,...
+                    thresholdHighForce,...
+                    thresholdStaticSittingBalanceDistance,...
+                    thresholdStanding,...
+                    [outputTrialFolder,outputSegmentationFileName],...
+                    flag_loadSegmentedMotionDataFromFile);
+    
+    [sitToStandSequence] = ...
+      extractMovementSequence(c3DTime, segmentedData, segmentInfo,...
+          thresholdQuietTime, [outputTrialFolder,outputSequenceFileName],...
+          flag_loadMovementSequenceFromFile);          
+                  
     end
 
 
@@ -405,7 +487,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
         %
         
         nanVal = 0.;
-        if(flag_writeC3DData == 1)
+        if(flag_writeC3DDataForMeshup == 1)
           success = writeMeshupGroundForcesFile(...
                       [outputTrialFolder,meshupGrfFileName],...
                       c3DTime,  c3DGrf, nanVal);

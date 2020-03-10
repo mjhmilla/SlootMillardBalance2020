@@ -6,6 +6,12 @@ index_Leg         = 4;
 index_Side        = 5;
 index_Rob         = 6; %Rob?
 
+index_FeetForcePlate = 1;
+index_ChairForcePlate = 2;
+
+trialTypeNames = {'Static','Chest','Conv','Leg','Side','Rob'};
+
+
 %Keywords that distinguish C3D data from each trial
 %  and the folder that contains the corresponding data from Visual 3D
 c3DFileKeyWords = {  'static', 'Che','Con', 'Leg','Sid','Rob'};
@@ -47,6 +53,8 @@ outputMeshupCapFiles    = cell(numberOfC3DFiles,1);
 
 outputFpeFileNames = cell(numberOfC3DFiles,1);
 outputCapFileNames = cell(numberOfC3DFiles,1);
+outputSegmentationFileNames = cell(numberOfC3DFiles,1);
+outputMovementSequenceFileNames = cell(numberOfC3DFiles,1);
 
 %Model factory output file settings
 outputModelFactoryAnthropometryFile = ['modelFactoryAnthropometry'];
@@ -127,6 +135,8 @@ for j=1:1:numberOfC3DFiles
     inputAnthroFiles{j}    = ['SUBMETRICS.txt'];         
     outputFpeFileNames{j} = 'fpe.mat'; 
     outputCapFileNames{j} = 'cap.mat';
+    outputSegmentationFileNames{j} = 'motionSegmentation.mat';
+    outputMovementSequenceFileNames{j} = 'motionSequence.mat';
     
     idxInputFolder = 0;
     bestNumberOfMatchingCharacters = 0;

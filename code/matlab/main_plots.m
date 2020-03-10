@@ -2,19 +2,12 @@ clc;
 close all;
 clear all;
 
-subjectsToProcess = {'configE01'};%...
-%  {'configE01','configE02','configE03','configE05','configE08',...
-%   'configH01','configH02','configH03','configH04','configH05',...
-%   'configH06','configH07','configH08','configH09','configH10'};
+subjectsToProcess =  ...
+  {'configH01','configH02','configH03','configH04','configH05',...
+   'configH06','configH07','configH08','configH09','configH10',...
+   'configE01','configE02','configE03','configE05','configE08'};
 
-gravityVector = [0;0;-9.81];
-gravityScalar = -9.81;
 
-thresholdLowNormalForce = 0.05;
-thresholdHighNormalForce= 0.95;
-thresholdBalanceDistance = 0.01; % If GRF,CoP,FPE/CAP agree within this
-                                 % distance the person is considered
-                                 % quietly standing/sitting
 
 %%
 % Setup the input/output directory structure
@@ -29,14 +22,27 @@ codeDir = pwd;
   cd(outputDirRelative);
   outputPath = pwd;  
 cd(codeDir);
- 
 
- 
+figSubject(length(subjectsToProcess)) = struct('h',[]);
+figAll = figure;
+
+colorElderly = [0,0,0];
+colorYoung = [0.5,0.5,1];
+
+
 for indexSubject = 1:1:length(subjectsToProcess)
+  figSubject(indexSubject).h = figure;
   
-  %%
+  colorTrial = [1,0,1];
+  if( isempty(strfind(subjectsToProcess{indexSubject},'E'))==0)
+    colorTrial = colorElderly;
+  else
+    colorTrial = colorYoung;    
+  end
+  
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   % 1. Configure the list of input/output files for this subject
-  %%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   cd(inputDirRelative);
    eval(subjectsToProcess{indexSubject});
   cd(codeDir);
@@ -56,9 +62,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
     if( contains(c3DFileName,'static') == 0)
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      %
       % Fetch all of the data for this trial
-      %
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       load([trialFolder,c3DFileName]);
       % c3dTime
@@ -80,16 +84,32 @@ for indexSubject = 1:1:length(subjectsToProcess)
       load([trialFolder,anthroFileName]);
       % anthroData
       % anthroColNames
-
+      
       fpeFileName       = outputFpeFileNames{indexTrial};
       load([trialFolder,fpeFileName]);
 
       capFileName       = outputCapFileNames{indexTrial};  
       load([trialFolder,capFileName]);
 
-      %%
+      segmentFileName    = outputSegmentationFileNames{indexTrial};
+      load([trialFolder,segmentFileName]);
+      
+      movementSequenceFileName = outputMovementSequenceFileNames{indexTrial};
+      load([trialFolder,movementSequenceFileName]);
+      
+      indexSittingStatic      = 0;
+      indexSittingDynamic     = 1;
+
+      indexCrouchingStable    = 2;
+      indexCrouchingUnstable  = 3;
+
+      indexStandingStable     = 4;
+      indexStandingUnstable   = 5;        
+      
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %Useful columns from the V3D data
-      %%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
       headerRows          = 4; 
       textInRowBeforeData = 'ITEM';
 
@@ -101,9 +121,10 @@ for indexSubject = 1:1:length(subjectsToProcess)
                                   headerRows,anthroColNames);
       height      = anthroData(1,colHeight);   
       
-      %%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
       %Whole body quantities
-      %%
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      
       colItem    = getColumnIndex({[];[];[];'ITEM'},headerRows,wholeBodyColNames);
 
       colComPos = zeros(1,3);
@@ -136,22 +157,69 @@ for indexSubject = 1:1:length(subjectsToProcess)
       end      
       
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      %
-      % Extract timing
-      %
-      % -initiation time
-      % -seat-off time / flag_successSeatOff
-      % -stand time / flag_successStand
-      %
+      %Plot the FPE data at the sit-to-stand transition
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      fzLow  = -mass*gravityScalar*thresholdLowNormalForce;
-      fzHigh = -mass*gravityScalar*thresholdHighNormalForce;
-      
-      
+
+      if(indexTrial <= 6)
+        for figType = 1:1:2
+          if(figType==1)
+            figure(figSubject(indexSubject).h);          
+          else
+            figure(figAll);
+          end        
+          subplot(2,3,indexTrial-1);      
+          for z=1:1:length(sitToStandSequence)
+            if( sum(isnan(sitToStandSequence(z).phaseTransitions))==0)
+
+              idx0 = sitToStandSequence(z).phaseTransitionIndices(1);
+
+              idx1 = idx0;
+              numberOfTransitions = ...
+                  size(sitToStandSequence(z).phaseTransitionIndices,1);
+
+              for indexPhase=1:1:numberOfTransitions
+                if(sitToStandSequence(z).phaseTransitions(indexPhase,1)...
+                    ==indexSittingDynamic)
+                  idx1 = sitToStandSequence(z).phaseTransitionIndices(indexPhase);
+                end
+              end
+
+
+              idx2 = sitToStandSequence(z).phaseTransitionIndices(end);
+
+              timeBias = c3dTime(idx1);
+
+              rGF0 = fpeData.r0F0(idx0:1:idx2,:) ...
+                    -fpeData.r0G0(idx0:1:idx2,:);
+              distanceFromStability = sum(rGF0.^2,2).^0.5;
+
+              plot( c3dTime(idx0:1:idx2,1)-timeBias, distanceFromStability.*100,...
+                    'Color',colorTrial);
+              hold on;
+              xlabel('Time (s)');
+              ylabel('Distance from Stability (cm)');
+              box off;
+              %subjectId
+              if(figType==1)
+                title([subjectId,': ',trialTypeNames{indexTrial}]);        
+              else
+                title(['All: ',trialTypeNames{indexTrial}]);
+              end           
+
+            end
+
+          end
+
+        end
+      end
     end
     
   end
   
-  
+  figure(figSubject(indexSubject).h);
+  saveas(gcf,['../../plots/fig_FpeLenthAtSeatOff_',subjectId],'pdf');
   
 end
+  figure(figAll);
+  saveas(gcf,['../../plots/fig_FpeLenthAtSeatOff'],'pdf');
+
