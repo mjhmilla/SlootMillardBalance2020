@@ -1,15 +1,12 @@
-function [segmentedData, segmentInfo] = segmentData(...
+function [segmentedData, segmentInfo] = segmentDataKMeans(...
                       c3DTime,...
                       c3DMarkers,...
                       c3DFootMarkerNames,...
                       comPosition,...                      
                       c3DGrfChair,...
                       c3DGrfFeet,...
-                      fpeDataGroundPlane,...
-                      smallNormalForce,...
-                      staticSittingBalanceThreshold, ...
+                      fpeDataGroundPlane,...                      
                       standingHeightLowerBound,...
-                      sittingHeightUpperBound,...
                       segmentedDataFileName,...
                       flag_loadTimingDataFromFile)
 %highNormalForce,...                  
@@ -22,9 +19,6 @@ if(flag_loadTimingDataFromFile == 0)
   assert(size(c3DTime,1) == size(c3DGrfChair.force,1));
   assert(size(c3DGrfChair.force,1)==size(c3DGrfFeet.force,1));
   assert(size(c3DGrfChair.force,1)==size(fpeDataGroundPlane.r0G0,1));
-  assert(smallNormalForce > 0);% && smallNormalForce < highNormalForce)
-  assert(staticSittingBalanceThreshold > 0);
-  assert(sittingHeightUpperBound < standingHeightLowerBound);
   
   indexSittingStatic      = 0;
   indexSittingDynamic     = 1;
@@ -36,17 +30,7 @@ if(flag_loadTimingDataFromFile == 0)
   indexStandingUnstable   = 5;  
     
   indexUnclassified = NaN;
-%   
-%   [indexSittingStatic,indexSittingDynamic,...
-%                                         indexCrouchingStable,indexCrouchingUnstable,...
-%                                         indexStandingStable,indexStandingUnstable,...
-%                                         indexUnclassified]
-%   
-% ...
-%                               {'sittingStatic',  'sittingDynamic',...
-%                                'crouchingStable','crouchingUnstable',...
-%                                'standingStable','standingUnstable',...
-%                                'unclassified'}
+
   segmentInfo(6) = struct('phaseId',0,...
                           'phaseName', {''});
   
@@ -71,15 +55,72 @@ if(flag_loadTimingDataFromFile == 0)
 
   phasePrev = indexUnclassified;
   
-
   footMarkers = zeros(length(c3DFootMarkerNames),3);
-                    
+  
+  optionsKMeans = statset('Display','off');
+  
+  %Solve for 3 clusters on the chair side force plate
+  clusterChairForcePlate = kmeans(c3DGrfChair.force(:,3),3,...
+                                  'Options',optionsKMeans);  
+  
+  id1 = find(clusterChairForcePlate ==1);
+  id2 = find(clusterChairForcePlate ==2);
+  id3 = find(clusterChairForcePlate ==3);
+  
+  fz1 = mean(c3DGrfChair.force(id1,3));
+  fz2 = mean(c3DGrfChair.force(id2,3));
+  fz3 = mean(c3DGrfChair.force(id3,3));
+
+  [val,idx] = sort([fz1;fz2;fz3]);
+
+  idFzStanding   = idx(1);
+  idFzTransition = idx(2);
+  idFzSitting    = idx(3);
+  
+  %Solve for 3 clusters on com height
+  clusterComHeight = kmeans(comPosition(:,3),3,...
+                            'Options',optionsKMeans);
+  id1 = find(clusterComHeight ==1);
+  id2 = find(clusterComHeight ==2);
+  id3 = find(clusterComHeight ==3);
+  
+  h1 = mean(comPosition(id1,3));
+  h2 = mean(comPosition(id2,3));
+  h3 = mean(comPosition(id3,3));
+
+  [val,idx] = sort([h1;h2;h3]);
+
+  idComZSitting   = idx(1);
+  idComZCrouching = idx(2);
+  idComZStanding  = idx(3);
+  
+  %Solve for 2 foot placement stability clusters
+  rGF0 = fpeDataGroundPlane.r0F0 - fpeDataGroundPlane.r0G0;
+  lfpe = sum(rGF0.^2,2).^0.5;
+    
+  
+  lfpe( isnan(lfpe)==1 ) =  0.;
+  
+  clusterFpeStepLength = kmeans(lfpe,3, 'Options',optionsKMeans);
+  id1 = find(clusterFpeStepLength ==1);
+  id2 = find(clusterFpeStepLength ==2);
+  id3 = find(clusterFpeStepLength ==3);
+  
+  lfpe1 = mean(lfpe(id1,1));
+  lfpe2 = mean(lfpe(id2,1));
+  lfpe3 = mean(lfpe(id3,1));
+
+  [val,idx] = sort([lfpe1;lfpe2;lfpe3]);
+
+  idFpeStatic   = idx(1);
+  idFpeTransition= idx(2);
+  idFpeDynamic  = idx(3);
+  
   for i=1:1:size(c3DGrfChair.force,1)
     
     comHeight = comPosition(i,3);
 
-    distanceBalance = norm(  fpeDataGroundPlane.r0F0(i,:) ...
-                           - fpeDataGroundPlane.r0G0(i,:));
+
     
     for j=1:1:size(footMarkers,1)
       footMarkers(j,:) = c3DMarkers.(c3DFootMarkerNames{j})(i,:);
@@ -98,20 +139,25 @@ if(flag_loadTimingDataFromFile == 0)
                             footMarkersCentered);
     
     
-    if(i==877)
+    if(i==832)
       here=1;
     end
                 
     
     phase = indexUnclassified;
     
-    if(    isnan(comHeight)==0 && isnan(distanceBalance)==0 ...
+    if(    isnan(comHeight)==0 && isnan(lfpe(i,1))==0 ...
         && sum(isnan(r0F0))==0 && isnan(distanceToConvexHull) == 0)
       
-      if(    c3DGrfChair.force(i,3) >= smallNormalForce ...
-          && comHeight <= sittingHeightUpperBound)
+      if(    (clusterChairForcePlate(i,1)==idFzSitting) ...
+          || (clusterChairForcePlate(i,1)==idFzTransition) )   
+        
+        %c3DGrfChair.force(i,3) >= smallNormalForce ...
+        %  && comHeight <= sittingHeightUpperBound)
       %On the seat
-        if(distanceBalance <= staticSittingBalanceThreshold)
+        %if(distanceBalance <= staticSittingBalanceThreshold)
+        if(    (clusterFpeStepLength(i,1) == idFpeStatic) ...
+            || (clusterFpeStepLength(i,1) == idFpeTransition))
         %Static sitting
           phase = indexSittingStatic;
         else
@@ -120,7 +166,10 @@ if(flag_loadTimingDataFromFile == 0)
         end
       else
       %Off the seat
-        if(comHeight < standingHeightLowerBound)
+        if( comHeight <= standingHeightLowerBound)  
+          
+          %(clusterComHeight(i,1) == idComZCrouching) ...
+          %|| (clusterComHeight(i,1) == idComZSitting))
         %Crouching
           if(distanceToConvexHull > 0)
           %Unstable

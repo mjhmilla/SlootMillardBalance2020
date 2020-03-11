@@ -1,0 +1,23 @@
+# Data specifying anthropometric details of subject
+# Age in years
+age, 65.0
+# Height in m
+height, 1.630
+# Weight in kg
+weight, 97.000
+# Gender (1 = Male, 0 = Female)
+gender, 1
+# Maximum width of pelvis in m
+pelvisWidth, 0.273
+# Distance between hip centers in m
+hipCenterWidth, 0.208
+# Distance between shoulder centers in m
+shoulderCenterWidth, 0.261
+# Distance between heel and ankle center along foot length in m
+heelAnkleXOffset, 0.113
+# Vertical distance between heel and ankle center in m
+heelAnkleZOffset, 0.101
+# Vertical distance between shoulder centers and C7 in m
+shoulderNeckZOffset, 0.078
+# Maximum width of foot in m
+footWidth, 0.119

@@ -2,8 +2,8 @@ subjectAge                  = 65;
 subjectGender1Male0Female   = 0;
 
 subjectId = 'E03';
-inputFolder  = [subjectId,'/','3. V3D_Matt/'];
-outputFolder = [subjectId,'/'];
+inputFolder  = [subjectId,'/'];%^,'/','3. V3D_Matt/'];
+outputFolder = [subjectId,'/'];%,'/'];
 
 dataDir = pwd;
 cd(inputFolder)

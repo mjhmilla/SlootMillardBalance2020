@@ -98,9 +98,7 @@ if(flag_loadTimingDataFromFile == 0)
                             footMarkersCentered);
     
     
-    if(i==877)
-      here=1;
-    end
+                
                 
     
     phase = indexUnclassified;
@@ -109,7 +107,7 @@ if(flag_loadTimingDataFromFile == 0)
         && sum(isnan(r0F0))==0 && isnan(distanceToConvexHull) == 0)
       
       if(    c3DGrfChair.force(i,3) >= smallNormalForce ...
-          && comHeight <= sittingHeightUpperBound)
+          || sittingHeightUpperBound)
       %On the seat
         if(distanceBalance <= staticSittingBalanceThreshold)
         %Static sitting

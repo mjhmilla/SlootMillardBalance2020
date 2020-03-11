@@ -5,9 +5,10 @@ clear all;
 subjectsToProcess =  ...
   {'configH01','configH02','configH03','configH04','configH05',...
    'configH06','configH07','configH08','configH09','configH10',...
-   'configE01','configE02','configE03','configE05','configE08'};
+   'configE01','configE02','configE03','configE05', ...
+   'configE07','configE08'};
 
-
+%'configE06',...
 
 %%
 % Setup the input/output directory structure
@@ -168,24 +169,24 @@ for indexSubject = 1:1:length(subjectsToProcess)
             figure(figAll);
           end        
           subplot(2,3,indexTrial-1);      
-          for z=1:1:length(sitToStandSequence)
-            if( sum(isnan(sitToStandSequence(z).phaseTransitions))==0)
+          for z=1:1:length(sitToStandQuietSequence)
+            if( sum(isnan(sitToStandQuietSequence(z).phaseTransitions))==0)
 
-              idx0 = sitToStandSequence(z).phaseTransitionIndices(1);
+              idx0 = sitToStandQuietSequence(z).phaseTransitionIndices(1);
 
               idx1 = idx0;
               numberOfTransitions = ...
-                  size(sitToStandSequence(z).phaseTransitionIndices,1);
+                  size(sitToStandQuietSequence(z).phaseTransitionIndices,1);
 
               for indexPhase=1:1:numberOfTransitions
-                if(sitToStandSequence(z).phaseTransitions(indexPhase,1)...
+                if(sitToStandQuietSequence(z).phaseTransitions(indexPhase,1)...
                     ==indexSittingDynamic)
-                  idx1 = sitToStandSequence(z).phaseTransitionIndices(indexPhase);
+                  idx1 = sitToStandQuietSequence(z).phaseTransitionIndices(indexPhase);
                 end
               end
 
 
-              idx2 = sitToStandSequence(z).phaseTransitionIndices(end);
+              idx2 = sitToStandQuietSequence(z).phaseTransitionIndices(end);
 
               timeBias = c3dTime(idx1);
 
@@ -217,9 +218,9 @@ for indexSubject = 1:1:length(subjectsToProcess)
   end
   
   figure(figSubject(indexSubject).h);
-  saveas(gcf,['../../plots/fig_FpeLenthAtSeatOff_',subjectId],'pdf');
+  saveas(gcf,['../../plots/fig_FpeLengthAtSeatOff_',subjectId],'pdf');
   
 end
   figure(figAll);
-  saveas(gcf,['../../plots/fig_FpeLenthAtSeatOff'],'pdf');
+  saveas(gcf,['../../plots/fig_FpeLengthAtSeatOff'],'pdf');
 
