@@ -6,6 +6,9 @@ index_Leg         = 4;
 index_Side        = 5;
 index_Rob         = 6; %Rob?
 
+numberOfDataTrials = 5;
+offsetTrialIndex = 1;
+
 index_FeetForcePlate = 1;
 index_ChairForcePlate = 2;
 

@@ -2,32 +2,25 @@ clc;
 close all;
 clear all;
 
-flag_fpeTimeSeriesPlotsSubject   = 1;
-flag_fpeTimeSeriesPlotsEnsemble  = 1;
+flag_fpeTimeSeriesPlotsSubject   = 0;
+flag_fpeTimeSeriesPlotsEnsemble  = 0;
 flag_fpeSeatOffEnsemble          = 1;
 
-flag_capTimeSeriesPlotsSubject   = 1;
-flag_capTimeSeriesPlotsEnsemble  = 1;
-%flag_capSeatOffEnsemble
+flag_capTimeSeriesPlotsSubject   = 0;
+flag_capTimeSeriesPlotsEnsemble  = 0;
 
 %flag_comVelTimeSeriesPlotsSubject   = 0;
 %flag_comVelTimeSeriesPlotsEnsemble  = 0;
-%flag_comVelSeatOffEnsemble
-
-%flag_comVelTimeSeriesPlotsSubject   = 0;
-%flag_comVelTimeSeriesPlotsEnsemble  = 0;
-%flag_comVelSeatOffEnsemble
-
-flag_fpeCapErrorTimeSeriesPlotsSubject   = 1;
-flag_fpeCapErrorTimeSeriesPlotsEnsemble  = 1;
-%flag_fpeCapErrorSeatOffEnsemble
-
-flag_GrfzTimeSeriesPlotsSubject  = 1;
-flag_GrfzTimeSeriesPlotsEnsemble = 1;
-%flag_GrfzSeatOffEnsemble
 
 
-plotConfig;
+flag_fpeCapErrorTimeSeriesPlotsSubject   = 0;
+flag_fpeCapErrorTimeSeriesPlotsEnsemble  = 0;
+
+flag_GrfzTimeSeriesPlotsSubject  = 0;
+flag_GrfzTimeSeriesPlotsEnsemble = 0;
+
+
+
 
 subjectsToProcess =  ...
   {'configH01','configH02','configH03','configH04','configH05',...
@@ -275,9 +268,6 @@ for indexSubject = 1:1:length(subjectsToProcess)
           figFpeCapTitle = [];
           figGrfZTitle = [];
           
-          [row,col] = find(subPlotPanelIndex == (indexTrial-offsetTrialIndex));          
-          subplotPosition = reshape(subPlotPanel(row,col,:),1,4);
-          
           flag_zeroAtSeatOff = 1;
           
           if(figType==1)
@@ -337,7 +327,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
           if( isempty(figFpeTitle)==0)              
               figFpeH = ...
                 plotFpeStepLengthTimeSeries(...
-                     figFpeH, subplotPosition,... %[2,3,indexTrial-offsetTrialIndex], ...
+                     figFpeH, [2,3,indexTrial-offsetTrialIndex], ...
                      c3dTime, sitToStandQuietSequence, fpeData,...
                      indexSittingDynamic, indexCrouchingStable, colorFpe,...
                      figFpeTitle,...
@@ -347,8 +337,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
           if(flag_fpeSeatOffEnsemble==1)
             flag_pointInTimeSelector = 1;
             figTrialSeatOffFpe = plotFpeStepLengthAtPointInTime(...
-                    figTrialSeatOffFpe, subplotPosition,... %[2,3,indexTrial-offsetTrialIndex], ...
-                   indexSubject, subjectId, sitToStandQuietSequence, fpeData,...
+                    figTrialSeatOffFpe, [2,3,indexTrial-offsetTrialIndex], ...
+                   indexSubject-1, subjectId, sitToStandQuietSequence, fpeData,...
                    indexSittingDynamic, indexCrouchingStable,...
                    colorFpe,...
                    ['FPE-Length At Seat-Off ',trialTypeNames{indexTrial}],...
@@ -356,7 +346,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
             axis tight;
             axisLim = axis;
             axisLim(1) = 0;
-            axisLim(2) = length(subjectsToProcess)+1;
+            axisLim(2) = length(subjectsToProcess);
             axisLim(3) = -1;
             axisLim(4) = 20;
             axis(axisLim);
@@ -366,7 +356,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
           if( isempty(figCapTitle)==0)              
               figCapH = ...
                 plotCapStepLengthTimeSeries(...
-                     figCapH, subplotPosition,... %[2,3,indexTrial-offsetTrialIndex], ...
+                     figCapH, [2,3,indexTrial-offsetTrialIndex], ...
                      c3dTime, sitToStandQuietSequence, capData,...
                      indexSittingDynamic, indexCrouchingStable, colorFpe,...
                      figFpeTitle,...
@@ -376,7 +366,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
           if(isempty(figFpeCapTitle)==0)
             figFpeCapH = ...
               plotFpeCapErrorTimeSeries(...
-                   figFpeCapH, subplotPosition,... %[2,3,indexTrial-offsetTrialIndex],  ...
+                   figFpeCapH, [2,3,indexTrial-offsetTrialIndex],  ...
                    c3dTime, sitToStandQuietSequence, fpeData, capData,...
                    indexSittingDynamic, indexCrouchingStable, colorFpeCap,...
                    figFpeCapTitle,...
@@ -386,7 +376,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
           if(isempty(figGrfZH)==0)
             figGrfZH = ...
                 plotGrfZTimeSeries(...
-                     figGrfZH, subplotPosition,... %[2,3,indexTrial-offsetTrialIndex], ...
+                     figGrfZH, [2,3,indexTrial-offsetTrialIndex], ...
                      c3dTime, sitToStandQuietSequence, c3dGrf(index_ChairForcePlate),...
                      indexSittingDynamic, indexCrouchingStable, colorFpe,...
                      figGrfZTitle,...
@@ -402,58 +392,41 @@ for indexSubject = 1:1:length(subjectsToProcess)
     
   end
   
-
-  
   if(flag_fpeTimeSeriesPlotsSubject==1)
     figure(figSubjectFpe(indexSubject).h);
-    configPlotExporter;
-    print('-dpdf',['../../plots/fpe/fig_FpeS2SQuietTimeSeries_',subjectId,'.pdf']);
+    saveas(gcf,['../../plots/fpe/fig_FpeLengthTimeSeries_',subjectId],'pdf');
   end
   if(flag_capTimeSeriesPlotsSubject==1)
     figure(figSubjectCap(indexSubject).h);
-    configPlotExporter;    
-    print('-dpdf',['../../plots/cap/fig_CapS2SQuietTimeSeries_',subjectId,'.pdf']);
+    saveas(gcf,['../../plots/cap/fig_CapLengthAtSeatOff_',subjectId],'pdf');
   end
   
   if(flag_fpeCapErrorTimeSeriesPlotsSubject==1)
     figure(figSubjectFpeCapErr(indexSubject).h);
-    configPlotExporter;    
-    print('-dpdf',['../../plots/fpeCap/fig_FpeCapErrS2SQuietTimeSeries_',subjectId,'.pdf']);
+    saveas(gcf,['../../plots/fpeCap/fig_FpeCapErrAtSeatOff_',subjectId],'pdf');
   end
   
   if(flag_GrfzTimeSeriesPlotsSubject==1)
     figure(figSubjectGrfZ(indexSubject).h);
-    configPlotExporter;
-    print('-dpdf',['../../plots/grfz/fig_GrfZS2SQuietTimeSeries_',subjectId,'.pdf']);
+    saveas(gcf,['../../plots/grfz/fig_GrfZAtSeatOff_',subjectId],'pdf');
   end
 end
 
 if(flag_fpeTimeSeriesPlotsEnsemble==1)
   figure(figAllFpe);
-  configPlotExporter;
-  print('-dpdf',['../../plots/fig_FpeS2SQuietTimeSeries','.pdf']);
+  saveas(gcf,['../../plots/fig_FpeLengthAtSeatOff'],'pdf');
 end
-if(flag_fpeSeatOffEnsemble)
-  figure(figTrialSeatOffFpe);
-  configPlotExporter;
-  print('-dpdf',['../../plots/fig_FpeS2SQuietSeatOff','.pdf']);
-  
-end
-
 if(flag_capTimeSeriesPlotsEnsemble==1)
   figure(figAllCap);
-  configPlotExporter;
-  print('-dpdf',['../../plots/fig_capS2SQuietTimeSeries','.pdf']);
+  saveas(gcf,['../../plots/fig_capLengthAtSeatOff'],'pdf');
 end
 
 if(flag_fpeCapErrorTimeSeriesPlotsEnsemble==1)
   figure(figAllFpeCapErr);
-  configPlotExporter;
-  print('-dpdf',['../../plots/fig_FpeCapErrS2SQuietTimeSeries','.pdf']);
+  saveas(gcf,['../../plots/fig_FpeCapErrAtSeatOff'],'pdf');
 end  
 if(flag_GrfzTimeSeriesPlotsEnsemble==1)
   figure(figAllGrfZ);
-  configPlotExporter;
-  print('-dpdf',['../../plots/fig_GrfZS2SQuietTimeSeries','.pdf']);
+  saveas(gcf,['../../plots/fig_GrfZAtSeatOff'],'pdf');
 end
 
