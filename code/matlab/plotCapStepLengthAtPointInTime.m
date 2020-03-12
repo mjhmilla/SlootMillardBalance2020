@@ -1,6 +1,6 @@
-function figH = plotFpeStepLengthAtPointInTime(figH, subPlotVec, ...
+function figH = plotCapStepLengthAtPointInTime(figH, subPlotVec, ...
                    subjectNumber, subjectLabel, movementSequence, ...
-                   c3dGrfChair,c3dGrfFeet,fpeData, gravityVec,...
+                   c3dGrfChair,c3dGrfFeet,capData,...
                    idSittingDynamic, idCrouchingStable,...
                    lineColor,...
                    figureTitle,...
@@ -23,8 +23,8 @@ if(length(subPlotVec) == 4)
 end
   
 
+
 data = zeros(length(movementSequence),2);
-eV = -gravityVec./norm(gravityVec);  
 
 for z=1:1:length(movementSequence)
   if( sum(isnan(movementSequence(z).phaseTransitions))==0)
@@ -43,37 +43,42 @@ for z=1:1:length(movementSequence)
     end
 
 
+
     distance =[];
-    width = [];    
+    width = [];
+
+    
     switch flag_BalancePointsVsCom0VsCop1
       case 0 
-        distance = zeros( 1, 1);
-        width    = zeros( 1, 1);
+        distance = zeros( 1,1);
+        width    = zeros( 1,1);
         %for k = idx0:1:idx2
-          eN = fpeData.n(idxSample,:)';
-          eU = getCrossProductMatrix(eN)*eV;
-          rCF0  = fpeData.r0F0(idxSample,:)-fpeData.r0G0(idxSample,:);
+          eU = capData.u(idxSample,:)';
+          eK = capData.k(idxSample,:)';
+          eN = getCrossProductMatrix(eK)*eU;
+          rCF0  = capData.r0F0(idxSample,:)-capData.r0G0(idxSample,:);
+          lCF0  = rCF0*eU;          
           wCF0  = rCF0*eN;
-          lCF0  = rCF0*eU;
-          distance = lCF0;
-          width    =  wCF0;
+          distance(1,1) = lCF0;
+          width(1,1)    =  wCF0;
         %end         
         
       case 1
-        distance = zeros(1,1);
-        width    = zeros(1,1);
+        distance = zeros( 1,1);
+        width    = zeros( 1,1);
         %for k = idx0:1:idx2
-          eN = fpeData.n(idxSample,:)';
-          eU = getCrossProductMatrix(eN)*eV;
-          rCF0  = fpeData.r0F0(idxSample,:)-c3dGrfFeet.cop(idxSample,:);
+          eU = capData.u(idxSample,:)';
+          eK = capData.k(idxSample,:)';
+          eN = getCrossProductMatrix(eK)*eU;
+          rCF0  = capData.r0F0(idxSample,:)-c3dGrfFeet.cop(idxSample,:);
           wCF0  = rCF0*eN;
           lCF0  = rCF0*eU;
-          distance = lCF0;
-          width    =  wCF0;
+          distance(1,1) = lCF0;
+          width(1,1)    =  wCF0;
         %end 
       otherwise
         assert(0);
-    end
+    end    
     
     data(z,1) = subjectNumber;
     switch flag_AnalyzeBalanceAlong0Across1
@@ -83,7 +88,7 @@ for z=1:1:length(movementSequence)
         data(z,2) = width;        
       otherwise
         assert(0)        
-    end
+    end  
 
   end
 
@@ -114,8 +119,6 @@ switch flag_AnalyzeBalanceAlong0Across1
   otherwise
     assert(0)        
 end
-
-%xlabel('Subject No');
 
 box off;
 title(figureTitle);

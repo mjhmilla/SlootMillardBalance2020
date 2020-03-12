@@ -1,0 +1,26 @@
+clc; 
+close all;
+clear all;
+
+flag_outerLoopMode = 1;
+
+flag_BalancePointsVsCom0VsCop1   = 0;
+flag_AnalyzeBalanceAlong0Across1 = 0;
+
+flag_fpeTimeSeriesPlotsSubject   = 0;
+flag_fpeTimeSeriesPlotsEnsemble  = 0;
+flag_fpeSeatOffEnsemble          = 0;
+
+flag_capTimeSeriesPlotsSubject   = 0;
+flag_capTimeSeriesPlotsEnsemble  = 0;
+flag_capSeatOffEnsemble          = 0;
+
+flag_fpeCapErrorTimeSeriesPlotsSubject   = 0;
+flag_fpeCapErrorTimeSeriesPlotsEnsemble  = 0;
+
+flag_GrfzTimeSeriesPlotsSubject  = 0;
+flag_GrfzTimeSeriesPlotsEnsemble = 1;
+
+main_plots;
+close all;
+

@@ -1,9 +1,12 @@
 function figH = plotFpeStepLengthTimeSeries(figH, subPlotVec, ...
-                   c3dTime, movementSequence, fpeData,...
+                   c3dTime, movementSequence,...
+                   c3dGrfChair, c3dGrfFeet,fpeData, gravityVec,...
                    idSittingDynamic, idCrouchingStable,...
                    lineColor,...
                    figureTitle,...
-                   flag_zeroAtSeatOff)
+                   flag_zeroAtSeatOff,...
+                   flag_BalancePointsVsCom0VsCop1,...
+                   flag_AnalyzeBalanceAlong0Across1)
 
 if(flag_zeroAtSeatOff==1)
   assert(idSittingDynamic==1);
@@ -18,7 +21,8 @@ if(length(subPlotVec) == 4)
   subplot('Position',subPlotVec);
 end
   
-                 
+eV = -gravityVec./norm(gravityVec);  
+
 for z=1:1:length(movementSequence)
   if( sum(isnan(movementSequence(z).phaseTransitions))==0)
 
@@ -30,7 +34,7 @@ for z=1:1:length(movementSequence)
       idx1 = getLastSeatOffIndex( movementSequence(z).phaseTransitions,...
                           movementSequence(z).phaseTransitionIndices,...
                           idSittingDynamic,idCrouchingStable,...
-                          flag_alertMultipleSeatOffs);
+                          flag_alertMultipleSeatOffs,c3dGrfChair);
         
       timeBias = c3dTime(idx1);
     end
@@ -38,17 +42,63 @@ for z=1:1:length(movementSequence)
 
     idx2 = movementSequence(z).phaseTransitionIndices(end);
 
+    distance =[];
+    width = [];
+    
+    switch flag_BalancePointsVsCom0VsCop1
+      case 0
+        %rGF0 = fpeData.r0F0(idx0:1:idx2,:) ...
+        %      -fpeData.r0G0(idx0:1:idx2,:);
+        %distance = sum(rGF0.^2,2).^0.5;  
+        distance = zeros( (idx2-idx0+1),1);
+        width    = zeros( (idx2-idx0+1),1);
+        for k = idx0:1:idx2
+          eN = fpeData.n(k,:)';
+          eU = getCrossProductMatrix(eN)*eV;
+          rCF0  = fpeData.r0F0(k,:)-fpeData.r0G0(k,:);
+          wCF0  = rCF0*eN;
+          lCF0  = rCF0*eU;
+          distance(k-idx0+1,1) = lCF0;
+          width(k-idx0+1,1)    =  wCF0;
+        end         
+        
+      case 1
+        distance = zeros( (idx2-idx0+1),1);
+        width    = zeros( (idx2-idx0+1),1);
+        for k = idx0:1:idx2
+          eN = fpeData.n(k,:)';
+          eU = getCrossProductMatrix(eN)*eV;
+          rCF0  = fpeData.r0F0(k,:)-c3dGrfFeet.cop(k,:);
+          wCF0  = rCF0*eN;
+          lCF0  = rCF0*eU;
+          distance(k-idx0+1,1) = lCF0;
+          width(k-idx0+1,1)    =  wCF0;
+        end 
+      otherwise
+        assert(0);
+    end
+    
+      
+    switch flag_AnalyzeBalanceAlong0Across1
+      
+      case 0
+        plot( c3dTime(idx0:1:idx2,1)-timeBias, distance.*100,...
+              'Color',lineColor);
+        hold on;
+        xlabel('Time (s)');
+        ylabel('Length (cm)');        
+      case 1
+        plot( c3dTime(idx0:1:idx2,1)-timeBias, width.*100,...
+              'Color',lineColor);
+        hold on;
+        xlabel('Time (s)');
+        ylabel('Width (cm)');            
+      otherwise
+        assert(0)
+        
+    end
     
 
-    rGF0 = fpeData.r0F0(idx0:1:idx2,:) ...
-          -fpeData.r0G0(idx0:1:idx2,:);
-    distanceFromStability = sum(rGF0.^2,2).^0.5;
-
-    plot( c3dTime(idx0:1:idx2,1)-timeBias, distanceFromStability.*100,...
-          'Color',lineColor);
-    hold on;
-    xlabel('Time (s)');
-    ylabel('Distance from Stability (cm)');
     box off;
     title(figureTitle);       
 

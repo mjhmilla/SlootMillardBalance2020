@@ -1,11 +1,12 @@
-function figH = plotGrfZTimeSeries(figH, subPlotVec, ...
+function figH = plotGrfZAtPointInTime(figH, subPlotVec, ...
+                   subjectNumber, subjectLabel,...
                    c3dTime, movementSequence, c3dGrfChair,...
                    idSittingDynamic, idCrouchingStable,...
                    lineColor,...
                    figureTitle,...
-                   flag_zeroAtSeatOff)
+                   flag_pointInTimeSelector)
 
-if(flag_zeroAtSeatOff==1)
+if(flag_pointInTimeSelector==1)
   assert(idSittingDynamic==1);
   assert(idCrouchingStable==2);
 end
@@ -17,39 +18,49 @@ end
 if(length(subPlotVec) == 4)
   subplot('Position',subPlotVec);
 end
-  
-                 
+
+data = zeros(length(movementSequence),2);
+
+
 for z=1:1:length(movementSequence)
   if( sum(isnan(movementSequence(z).phaseTransitions))==0)
 
     idx0 = movementSequence(z).phaseTransitionIndices(1);
-    timeBias = c3dTime(idx0);
     
-    if(flag_zeroAtSeatOff==1)
+    idxSample = 0;
+    
+    if(flag_pointInTimeSelector==1)
       flag_alertMultipleSeatOffs=1;
-      idx1 = getLastSeatOffIndex( movementSequence(z).phaseTransitions,...
+      idxSample = getLastSeatOffIndex( movementSequence(z).phaseTransitions,...
                           movementSequence(z).phaseTransitionIndices,...
                           idSittingDynamic,idCrouchingStable,...
                           flag_alertMultipleSeatOffs, c3dGrfChair);
         
-      timeBias = c3dTime(idx1);
     end
 
 
     idx2 = movementSequence(z).phaseTransitionIndices(end);
 
     
-
-
-    plot( c3dTime(idx0:1:idx2,1)-timeBias,...
-          c3dGrfChair.force(idx0:1:idx2,3),...
-          'Color',lineColor);
-    hold on;
-    xlabel('Time (s)');
-    ylabel('Force (N)');
-    box off;
-    title(figureTitle);     
-
+    data(z,1)=subjectNumber;
+    data(z,2) = c3dGrfChair.force(idxSample,3);
+   
+  
   end
 
 end
+
+plot( data(:,1),...
+      data(:,2),...
+      '-','Color',lineColor);    
+hold on;
+plot( data(:,1), data(:,2),...
+      'o','Color',lineColor,'MarkerSize',3,'MarkerFaceColor',lineColor);
+hold on;
+
+text( data(1,1), (max(data(:,2))+2.5), subjectLabel,...
+  'FontSize',6,'Interpreter','latex','HorizontalAlignment','center');
+
+ylabel('Force (N)');
+box off;
+title(figureTitle);  
