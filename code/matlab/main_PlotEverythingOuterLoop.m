@@ -33,7 +33,7 @@ flag_GrfzTimeSeriesPlotsSubject  = 0;
 flag_GrfzTimeSeriesPlotsEnsemble = 0;
 flag_GrfzSeatOffEnsemble         = 0;
 % 
-% main_plots;
+% main_PlotEverything;
 % close all;
 % 
 % flag_fpeCapErrorTimeSeriesPlotsSubject   = 0;
@@ -51,7 +51,7 @@ flag_GrfzSeatOffEnsemble         = 0;
 % flag_comKinematicsSeatOffEnsemble    = 1;
 % flag_comVel0ComGpVsCop1              = 1;
 % 
-% main_plots;
+% main_PlotEverything;
 % close all;
 % 
 % flag_comKinematicsTimeSeriesSubject  = 0;
@@ -74,7 +74,7 @@ flag_capTimeSeriesPlotsEnsemble  = 1;
 flag_capSeatOffEnsemble          = 1;
 
 
-main_plots;
+main_PlotEverything;
 close all;
 
 
@@ -90,7 +90,7 @@ flag_capTimeSeriesPlotsEnsemble  = 1;
 flag_capSeatOffEnsemble          = 1;
 
 
-main_plots;
+main_PlotEverything;
 close all;
 
 flag_BalancePointsVsCom0VsCop1   = 1;
@@ -104,7 +104,7 @@ flag_capTimeSeriesPlotsSubject   = 1;
 flag_capTimeSeriesPlotsEnsemble  = 1;
 flag_capSeatOffEnsemble          = 1;
 
-main_plots;
+main_PlotEverything;
 close all;
 
 flag_BalancePointsVsCom0VsCop1   = 1;
@@ -118,5 +118,5 @@ flag_capTimeSeriesPlotsSubject   = 1;
 flag_capTimeSeriesPlotsEnsemble  = 1;
 flag_capSeatOffEnsemble          = 1;
 
-main_plots;
+main_PlotEverything;
 close all;

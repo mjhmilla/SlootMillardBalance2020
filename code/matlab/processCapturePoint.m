@@ -17,6 +17,7 @@ if(flag_loadFromFile==0)
                     'vu', zeros(npts,1),...
                     'vk', zeros(npts,1),...
                      'u', zeros(npts,3),...
+                     'n', zeros(npts,3),... 
                      'k', zeros(npts,3),...
                      'h', zeros(npts,1),...
                   'eorb', zeros(npts,1));
@@ -38,10 +39,10 @@ if(flag_loadFromFile==0)
       capData(j).vu(i,1)   = capInfo.vu   ;  
       capData(j).vk(i,1)   = capInfo.vk   ;  
       capData(j).u(i,:)    = capInfo.u'   ; 
+      capData(j).n(i,:)    = capInfo.n'   ;    
       capData(j).k(i,:)    = capInfo.k'   ; 
       capData(j).h(i,1)    = capInfo.h    ; 
-      capData(j).eorb(i,1) = capInfo.eorb ;    
-                                    
+      capData(j).eorb(i,1) = capInfo.eorb ;                                        
     end
   end
   

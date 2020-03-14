@@ -130,13 +130,15 @@ if(flag_loadTimingDataFromFile == 0)
     
     %Check to see if r0F0 is within the convex hull of the foot markers.
     indexCH = convhull(footMarkers(:,1:2));
-    convexHullCenter = [mean(footMarkers(indexCH,1:2))];
-    rCF0 = r0F0(1,1:2) - convexHullCenter;
+    %convexHullCenter = [mean(footMarkers(indexCH,1:2))];
+    %rCF0 = r0F0(1,1:2) - convexHullCenter;
     
-    footMarkersCentered = footMarkers(indexCH,1:2) - convexHullCenter;
+    %footMarkersCentered = footMarkers(indexCH,1:2) - convexHullCenter;
     
-    distanceToConvexHull = calcDistanceToConvexHull(rCF0, ...
-                            footMarkersCentered);
+    
+    
+    distanceToConvexHull = calcDistanceToConvexHull(r0F0(1,1:2), ...
+                            footMarkers(indexCH,1:2));
     
     
     if(i==832)

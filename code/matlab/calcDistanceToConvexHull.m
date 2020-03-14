@@ -1,84 +1,105 @@
-function distanceToConvexHull = calcDistanceToConvexHull(r0P0, convexHull)
+function [distanceToConvexHull, normalConvexHull, closestPointOnConvexHull]...
+        = calcDistanceToConvexHull(r0P0, r0Q0V)
+%%
+% 
+% @param r0P0 : 1 x 3 vector of the point of interest
+% @param r0Q0V: n x 3 matrix of the points that define the closed convex
+%               hull (beginning and end points must be the same, and the
+%               points must be ordered so that the line between the
+%               indices (i+1) and i form a line segment that is a boundary
+%               of the convex hull.
+% @return distanceToConvexHul
+%         the distance between r0P0 and the nearest edge. Positive numbers
+%         indicates that r0P0 is outside of the convex hull while
+%         negative numbers mean r0P0 is inside the convex hull.
+%
+%         normalConvexHull 
+%         the direction of the convex hull line segment normal that
+%         intersects the point r0P0
+%
+%         closestPointOnConvexHull
+%         the point on the convex hull that is closest to the point
+%         given
+%%
+distanceToConvexHull      = NaN;
+normalConvexHull          = zeros(size(r0P0)).*NaN; 
+closestPointOnConvexHull  = zeros(size(r0P0)).*NaN;
 
-distanceToConvexHull = NaN;
-
-if(sum(isnan(r0P0))==0)
-  convexHullCenter = mean(convexHull);
-  assert( abs(convexHullCenter(1,1)) < 1e-6 ...
-       && abs(convexHullCenter(1,2)) < 1e-6);
-     
-  eP0   = r0P0 ./ norm(r0P0);
+if((sum(isnan(r0P0))==0) && (sum(sum(isnan(r0Q0V)))==0) )
+  assert(length(r0P0) ==2);
+  assert(size(r0Q0V,2)==2);
   
-  i = 2;
-  flag_found = 0;
-
-  r010 = zeros(size(r0P0));
-  r020 = zeros(size(r0P0));
-  e10 = zeros(size(r0P0));
-  e20 = zeros(size(r0P0));
-  d1P = 0;
-  d2P = 0;
-  d12 = 0;
+  %Center the points
+  r0C0   = [mean(r0Q0V(:,1)),mean(r0Q0V(:,2))];
+  rCP0   = r0P0  - r0C0;  
+  distanceToConvexHull = Inf;
+ 
+  rC10 = zeros(size(rCP0));
+  rC20 = zeros(size(rCP0));
+  r120 = zeros(size(rCP0));
+  e12  = zeros(size(rCP0));
+  n12  = zeros(size(rCP0));
+  rCX0 = zeros(size(rCP0));
+  rXP0 = zeros(size(rCP0));
   
-  while i <= size(convexHull,1) && flag_found == 0
+  for i=2:1:size(r0Q0V,1)
+  
+    rC10 = r0Q0V(i-1,:) - r0C0;
+    rC20 = r0Q0V(i,:)   - r0C0;
+    r1P0 = rCP0-rC10;
+    
+    %Direction vector along the line segment
+    r120 = rC20-rC10;
+    e12 = r120 ./ norm(r120);
+   
+    %Direction vector pointing outside of the convex hull
+    n12  = rC10 - (rC10*e12').*e12;
+    n12  = n12 ./ norm(n12);
+   
+    A = [e12(1,1), n12(1,1);...
+         e12(1,2), n12(1,2)];
 
-    r010 =   convexHull(i,:);
-    e10 = r010./norm(r010);
+    b = [r1P0(1,1);...
+         r1P0(1,2)];
+       
+    x = A\b;
     
-    r020 = convexHull(i-1,:);
-    e20 = r020./norm(r020);
-    
-    d1P = eP0*e10';
-    d2P = eP0*e20';
-    d12 = e20*e10';
-    
-    if(d1P >= d12 && d2P >= d12 && ( (d1P > 0) || (d2P > 0)))
-        flag_found = 1;
+    %Check if the point of closest approach is within the line segment
+    if( x(1) <= norm(r120) && x(1) >= 0)
+      if( abs(x(2)) < abs(distanceToConvexHull))
+        distanceToConvexHull      = x(2,1);
+        normalConvexHull          = n12;        
+        closestPointOnConvexHull  = r0C0 + rC10 + e12.*x(1,1);
+        here=1;
+      end
     end
-      
-    i=i+1;
-  end
-  if(flag_found ==0)
-    here=1;
+    
   end
   
-  assert(flag_found ~= 0);
 
-  %w1 = d1P./(d1P + d2P);
-  %w2 = d2P./(d1P + d2P);
-  %r0Q0 = w1.*r010 + w2.*r020;
-
-  r120 = r020-r010;
-  e120 = r120./norm(r120);
-  
-  A = [eP0(1,1), -e120(1,1);...
-       eP0(1,2), -e120(1,2)];
-  
-  b = [r010(1,1);...
-       r010(1,2)];
-     
-  x = A\b;
-  r0Q0 = eP0.*x(1);
-     
-  distanceToConvexHull = (r0P0-r0Q0)*eP0';
   
   flag_debug = 0;
   if(flag_debug ==1)
-    fig = figure;
-    plot(convexHull(:,1), convexHull(:,2),'r');
-    hold on;
-    plot([0;r0P0(1,1)], [0;r0P0(1,2)],'k','LineWidth',2);
+%     if(exist('figDebugClosestDistanceConvexHull')==0)
+%       figDebugClosestDistanceConvexHull = figure;
+%     else
+%       clf(figDebugClosestDistanceConvexHull);
+%     end
+    plot(r0Q0V(:,1), r0Q0V(:,2),'r');
     hold on;
     plot(r0P0(1,1), r0P0(1,2),'x','LineWidth',2,'MarkerSize',10);
     hold on;
-    plot([0;r0Q0(1,1)], [0;r0Q0(1,2)],'g');
+    plot(closestPointOnConvexHull(1,1), closestPointOnConvexHull(1,2),...
+          'ob','MarkerSize',10);
     hold on;
-    plot(r0Q0(1,1), r0Q0(1,2),'go','MarkerSize',10);
+    
+    plot([closestPointOnConvexHull(1,1); ...
+            closestPointOnConvexHull(1,1)+normalConvexHull(1,1).*0.1],...
+         [closestPointOnConvexHull(1,2); ...
+            closestPointOnConvexHull(1,2)+normalConvexHull(1,2).*0.1],'--b')
     hold on;
     axis equal;
-    
-    
-    
+    here=1;    
   end
   
 end

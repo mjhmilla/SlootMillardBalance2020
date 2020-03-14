@@ -17,7 +17,7 @@ trialTypeNames = {'Static','Chest','Conv','Leg','Side','Rob'};
 
 %Keywords that distinguish C3D data from each trial
 %  and the folder that contains the corresponding data from Visual 3D
-c3DFileKeyWords = {  'static', 'Che','Con', 'Leg','Sid','Rob'};
+c3dFileKeyWords = {  'static', 'Che','Con', 'Leg','Sid','Rob'};
 folderKeyWords  = {        '', 'Che','Conv','Leg','Sid','Rob'};
 
 %Get the list of files and directories in the data folder
@@ -59,6 +59,11 @@ outputCapFileNames = cell(numberOfC3DFiles,1);
 outputSegmentationFileNames = cell(numberOfC3DFiles,1);
 outputMovementSequenceFileNames = cell(numberOfC3DFiles,1);
 
+outputFpeToFootHullDistanceFileNames   = cell(numberOfC3DFiles,1);
+outputCapToFootHullDistanceFileNames   = cell(numberOfC3DFiles,1);
+outputComGPToFootHullDistanceFileNames = cell(numberOfC3DFiles,1);
+outputCopToFootHullDistanceFileNames   = cell(numberOfC3DFiles,1);
+
 %Model factory output file settings
 outputModelFactoryAnthropometryFile = ['modelFactoryAnthropometry'];
 outputModelFactoryEnvironmentFile = ['modelFactoryEnvironment.env'];
@@ -79,8 +84,8 @@ modelFactoryScalingAlgorithm = 'deLeva1996_segmentedTrunk';
 for i=1:1:length(list)
   
   if(list(i).isdir ==0)
-    for j=1:1:length(c3DFileKeyWords)
-      if(    isempty( strfind(list(i).name,c3DFileKeyWords{j}))==0 ...
+    for j=1:1:length(c3dFileKeyWords)
+      if(    isempty( strfind(list(i).name,c3dFileKeyWords{j}))==0 ...
           && isempty( strfind(list(i).name,'.c3d'            ))==0 )
         
         k=0;
@@ -140,6 +145,12 @@ for j=1:1:numberOfC3DFiles
     outputCapFileNames{j} = 'cap.mat';
     outputSegmentationFileNames{j} = 'motionSegmentation.mat';
     outputMovementSequenceFileNames{j} = 'motionSequence.mat';
+    
+    outputFpeToFootHullDistanceFileNames{j} = 'fpe2FootConvexHullDist.mat';
+    outputCapToFootHullDistanceFileNames{j} = 'cap2FootConvexHullDist.mat';
+    outputComGPToFootHullDistanceFileNames{j} = 'comgp2FootConvexHullDist.mat';
+    outputCopToFootHullDistanceFileNames{j} = 'cop2FootConvexHullDist.mat';
+
     
     idxInputFolder = 0;
     bestNumberOfMatchingCharacters = 0;

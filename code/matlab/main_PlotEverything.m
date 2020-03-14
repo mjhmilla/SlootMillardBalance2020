@@ -3,27 +3,36 @@ if(exist('flag_outerLoopMode','var') ==0)
     clc;
     close all;
     clear all;
+
+    flag_ModeBalancePortrait = 0;
+    % 0: fpe
+    % 1: cap
+    %
     
-    flag_BalancePointsVsCom0VsCop1   = 1;
-    flag_AnalyzeBalanceAlong0Across1 = 0;
+    flag_balancePortraitSubject         = 1;    
+    flag_balancePortraitEnsemble        = 0;
+    flag_balancePortraitSeatOffEnsemble = 0;
+    
+    flag_ModeBalancePointsVsCom0VsCop1   = 1;
+    flag_ModeAnalyzeBalanceAlong0Across1 = 0;
 
-    flag_fpeTimeSeriesPlotsSubject   = 0;
-    flag_fpeTimeSeriesPlotsEnsemble  = 0;
-    flag_fpeSeatOffEnsemble          = 0;
+      flag_fpeTimeSeriesPlotsSubject   = 0;
+      flag_fpeTimeSeriesPlotsEnsemble  = 0;
+      flag_fpeSeatOffEnsemble          = 0;
 
-    flag_capTimeSeriesPlotsSubject   = 0;
-    flag_capTimeSeriesPlotsEnsemble  = 0;
-    flag_capSeatOffEnsemble          = 0;
-
-
-    flag_comKinematicsTimeSeriesSubject  = 0;
-    flag_comKinematicsTimeSeriesEnsemble = 0;
-    flag_comKinematicsSeatOffEnsemble    = 0;
-    flag_comVel0ComGpVsCop1              = 0;
+      flag_capTimeSeriesPlotsSubject   = 0;
+      flag_capTimeSeriesPlotsEnsemble  = 0;
+      flag_capSeatOffEnsemble          = 0;
 
     flag_fpeCapErrorTimeSeriesPlotsSubject   = 0;
-    flag_fpeCapErrorTimeSeriesPlotsEnsemble  = 1;
-    %flag_fpeCapErrorSeatOffEnsemble
+    flag_fpeCapErrorTimeSeriesPlotsEnsemble  = 0;
+    %flag_fpeCapErrorSeatOffEnsemble      
+      
+    flag_ModeComVel0ComGpVsCop1              = 0;
+            
+      flag_comKinematicsTimeSeriesSubject  = 0;
+      flag_comKinematicsTimeSeriesEnsemble = 0;
+      flag_comKinematicsSeatOffEnsemble    = 0;
 
     flag_GrfzTimeSeriesPlotsSubject  = 0;
     flag_GrfzTimeSeriesPlotsEnsemble = 0;
@@ -60,8 +69,18 @@ codeDir = pwd;
 cd(codeDir);
 
 
-figSubjectCom(length(subjectsToProcess)) = struct('h',[]);
+figSubjectBalancePortrait(length(subjectsToProcess)) = struct('h',[]);
+figAllBalancePortrait = [];
+if(flag_balancePortraitEnsemble==1)
+  figAllBalancePortrait = figure;
+end
 
+figTrialSeatOffBalancePortrait = [];
+if(flag_balancePortraitSeatOffEnsemble==1)
+  figTrialSeatOffBalancePortrait = figure;
+end
+
+figSubjectCom(length(subjectsToProcess)) = struct('h',[]);
 figAllCom = [];
 if(flag_comKinematicsTimeSeriesEnsemble==1)
   figAllCom = figure;
@@ -73,7 +92,6 @@ if(flag_comKinematicsSeatOffEnsemble==1)
 end
 
 figSubjectFpe(length(subjectsToProcess)) = struct('h',[]);
-
 figAllFpe = [];
 if(flag_fpeTimeSeriesPlotsEnsemble == 1)
   figAllFpe = figure;
@@ -88,7 +106,6 @@ end
 
 
 figSubjectCap(length(subjectsToProcess)) = struct('h',[]);
-
 figAllCap = [];
 if(flag_capTimeSeriesPlotsEnsemble == 1)
   figAllCap = figure;
@@ -106,7 +123,6 @@ if(flag_fpeCapErrorTimeSeriesPlotsEnsemble == 1)
 end
 
 figSubjectGrfZ(length(subjectsToProcess)) = struct('h',[]);
-
 figAllGrfZ = [];
 if(flag_GrfzTimeSeriesPlotsEnsemble == 1)
   figAllGrfZ = figure;
@@ -128,6 +144,8 @@ colorYoung = [0.5,0.5,0.5;...
 
 
 for indexSubject = 1:1:length(subjectsToProcess)
+
+
   if(flag_comKinematicsTimeSeriesSubject == 1)
     figSubjectCom(      indexSubject).h = figure;
   end
@@ -143,17 +161,15 @@ for indexSubject = 1:1:length(subjectsToProcess)
   if(flag_fpeCapErrorTimeSeriesPlotsSubject==1)
     figSubjectFpeCapErr(      indexSubject).h = figure;
   end
-  %figSubjectFpeCapErr(indexSubject).h = figure;
-  %figSubjectComVel(   indexSubject).h = figure;
-  %figSubjectComCop(   indexSubject).h = figure;
+  if(flag_balancePortraitSubject == 1)
+    figSubjectBalancePortrait(indexSubject).h = figure;
+  end
   
   colorFpe    = [0,0,0];
   colorFpeCap = [0,0,0];
   colorCap    = [0,0,0];
   colorCom    = [0,0,0];
   colorGrfz   = [0,0,0];
-  
-  
   
   if( isempty(strfind(subjectsToProcess{indexSubject},'E'))==0)
     colorFpe    = colorElderly(1,:);
@@ -299,24 +315,39 @@ for indexSubject = 1:1:length(subjectsToProcess)
           figCapH = [];
           figFpeCapH = [];
           figGrfZH = [];
-          
+          figBPH = [];
+
           figComTitle = [];
           figFpeTitle = [];
           figCapTitle = [];
           figFpeCapTitle = [];
           figGrfZTitle = [];
-          
+          figBPTitle = [];
+
           [row,col] = find(subPlotPanelIndex == (indexTrial-offsetTrialIndex));          
           subplotPosition = reshape(subPlotPanel(row,col,:),1,4);
           
           flag_zeroAtSeatOff = 1;
           
           if(figType==1)
-            
+            if(flag_balancePortraitSubject == 1)
+              figBPH = figSubjectBalancePortrait(indexSubject).h;
+              analysisType = '';
+              switch flag_ModeBalancePortrait
+                case 0
+                  analysisType = 'Fpe BP ';
+                case 1
+                  analysisType = 'Cap BP ';
+              end
+              figBPTitle = [analysisType,'(',subjectId,'): ', ...
+                             trialTypeNames{indexTrial}];
+
+            end
+
             if(flag_comKinematicsTimeSeriesSubject==1)
               figComH = figSubjectCom(indexSubject).h;
               analysisType = '';
-              switch flag_comVel0ComGpVsCop1
+              switch flag_ModeComVel0ComGpVsCop1
                 case 0
                   analysisType = 'Com-Vel';
                 case 1
@@ -330,7 +361,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
               figFpeH = figSubjectFpe(indexSubject).h;
               
               figTitle = '';
-              switch flag_BalancePointsVsCom0VsCop1
+              switch flag_ModeBalancePointsVsCom0VsCop1
                 case 0
                   figTitle = 'Fpe-Com ';
                 case 1
@@ -344,7 +375,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
             if(flag_capTimeSeriesPlotsSubject==1)              
               figCapH = figSubjectCap(indexSubject).h;
               figTitle = '';
-              switch flag_BalancePointsVsCom0VsCop1
+              switch flag_ModeBalancePointsVsCom0VsCop1
                 case 0
                   figTitle = 'Cap-Com ';
                 case 1
@@ -357,7 +388,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
             
             if(flag_fpeCapErrorTimeSeriesPlotsSubject==1)
               figFpeCapH = figSubjectFpeCapErr(indexSubject).h;
-              figFpeCapTitle = ['FPE-Cap Err. ','(',subjectId,'): ', ...
+              figFpeCapTitle = ['Fpe-Cap Err. ','(',subjectId,'): ', ...
                              trialTypeNames{indexTrial}];
             end 
             
@@ -368,10 +399,23 @@ for indexSubject = 1:1:length(subjectsToProcess)
             end
             
           else
-            if(flag_comKinematicsTimeSeriesSubject==1)
+            if(flag_balancePortraitEnsemble == 1)
+              figBPH = figAllBalancePortrait;
+              analysisType = '';
+              switch flag_ModeBalancePortrait
+                case 0
+                  analysisType = 'Fpe BP: ';
+                case 1
+                  analysisType = 'Cap BP: ';
+              end
+              figBPTitle = [analysisType, ...
+                             trialTypeNames{indexTrial}];
+            end
+
+            if(flag_comKinematicsTimeSeriesEnsemble==1)
               figComH = figAllCom;
               analysisType = '';
-              switch flag_comVel0ComGpVsCop1
+              switch flag_ModeComVel0ComGpVsCop1
                 case 0
                   analysisType = 'Com-Vel';
                 case 1
@@ -381,7 +425,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
             end            
             if(flag_fpeTimeSeriesPlotsEnsemble==1)
               figFpeH = figAllFpe;
-              switch flag_BalancePointsVsCom0VsCop1
+              switch flag_ModeBalancePointsVsCom0VsCop1
                 case 0
                   figTitle = 'Fpe-Com: ';
                 case 1
@@ -394,7 +438,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
             if(flag_capTimeSeriesPlotsEnsemble==1)
               figCapH = figAllCap;
               figTitle = '';
-              switch flag_BalancePointsVsCom0VsCop1
+              switch flag_ModeBalancePointsVsCom0VsCop1
                 case 0
                   figTitle = 'Cap-Com: ';
                 case 1
@@ -406,7 +450,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
             
             if(flag_fpeCapErrorTimeSeriesPlotsEnsemble==1)
               figFpeCapH = figAllFpeCapErr;
-              figFpeCapTitle = ['FPE-Cap Err.: ', ...
+              figFpeCapTitle = ['Fpe-Cap Err.: ', ...
                              trialTypeNames{indexTrial}];
             end 
             
@@ -418,6 +462,56 @@ for indexSubject = 1:1:length(subjectsToProcess)
             
           end
           
+          if(isempty(figBPTitle)==0)
+            balancePoint = [];
+            balanceStepDir = [];
+            lineColor = [];
+            switch flag_ModeBalancePortrait
+              case 0
+                balancePoint = fpeData.r0F0;
+                balanceStepDir = zeros(size(balancePoint));
+                eK = -gravityVec./norm(gravityVec);
+                for k=1:1:size(balancePoint,1)
+                  eN = fpeData.n(k,:)';
+                  balanceStepDir(k,:) = (getCrossProductMatrix(eN)*eK)';
+                end
+                lineColor = colorFpe;
+              case 1
+                balancePoint = capData.r0F0;
+                balanceStepDir = capData.u;
+                lineColor = colorCap;
+            end
+            c3dFootMarkersLeftNames = {'L_FAL','L_FM1','L_FM2','L_FM5','L_TAM','L_FCC'};
+            c3dFootMarkersRightNames = {'R_FAL','R_FM1','R_FM2','R_FM5','R_TAM','R_FCC'};
+
+            allowedFootMarkerMovement = 0.02;
+            
+            lineColorBalancePoint = [1,1,1/0.25].*0.25;
+            lineColorBalanceDir =[1,1,1/0.75].*0.75;
+            lineColorCop     = [1,0,0];
+            lineColorCom     = [0.5,0.5,0.5];
+            footPatchColor   = [1,1,1].*0.75;
+            
+
+            figBPH = plotBalancePortrait(figBPH, subplotPosition,...
+                      indexSubject, subjectId,...
+                      c3dTime, c3dMarkers, ...
+                      c3dFootMarkersRightNames, c3dFootMarkersLeftNames, ...
+                      sitToStandQuietSequence, segmentedData,...
+                      c3dGrf(index_ChairForcePlate), ...
+                      c3dGrf(index_FeetForcePlate),...
+                      wholeBodyData(:,colComPos), ...
+                      balanceStepDir, balancePoint,...
+                      indexSittingDynamic, indexCrouchingStable,...
+                      lineColorBalanceDir,lineColorBalancePoint,...
+                      lineColorCop,lineColorCom, ...
+                      footPatchColor,figBPTitle, ...
+                      flag_zeroAtSeatOff,...
+                      allowedFootMarkerMovement);
+                  
+            here=1;
+          end
+
           if(isempty(figComTitle)==0)
             figComH = plotComKinematicsTimeSeries(...
                    figComH, subplotPosition, ...
@@ -431,13 +525,13 @@ for indexSubject = 1:1:length(subjectsToProcess)
                    colorCom,...
                    figComTitle,...
                    flag_zeroAtSeatOff,...
-                   flag_comVel0ComGpVsCop1);
+                   flag_ModeComVel0ComGpVsCop1);
           end
           
           if(flag_comKinematicsSeatOffEnsemble==1)
             flag_pointInTimeSelector = 1;
             figTitle = '';
-            switch flag_comVel0ComGpVsCop1
+            switch flag_ModeComVel0ComGpVsCop1
               case 0
                 figTitle = ['Com Vel At Seat-Off: ',...
                               trialTypeNames{indexTrial}];
@@ -459,7 +553,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
                    colorCom,...
                    figTitle,...
                    flag_pointInTimeSelector,...
-                   flag_comVel0ComGpVsCop1);
+                   flag_ModeComVel0ComGpVsCop1);
 
           end
           
@@ -474,21 +568,21 @@ for indexSubject = 1:1:length(subjectsToProcess)
                      indexSittingDynamic, indexCrouchingStable, colorFpe,...
                      figFpeTitle,...
                      flag_zeroAtSeatOff,...
-                     flag_BalancePointsVsCom0VsCop1,...
-                     flag_AnalyzeBalanceAlong0Across1);
+                     flag_ModeBalancePointsVsCom0VsCop1,...
+                     flag_ModeAnalyzeBalanceAlong0Across1);
           end
           
           
           
           if(flag_fpeSeatOffEnsemble==1)
             figTitle = '';
-            switch flag_BalancePointsVsCom0VsCop1
+            switch flag_ModeBalancePointsVsCom0VsCop1
               case 0
                 figTitle = 'Fpe-Com ';
               case 1
                 figTitle = 'Fpe-Cop ';
             end
-            switch flag_AnalyzeBalanceAlong0Across1
+            switch flag_ModeAnalyzeBalanceAlong0Across1
               case 0
                 figTitle = [figTitle,'at Seat-Off: '];
               case 1
@@ -504,17 +598,17 @@ for indexSubject = 1:1:length(subjectsToProcess)
                    colorFpe,...
                    [figTitle,trialTypeNames{indexTrial}],...
                    flag_pointInTimeSelector,...
-                   flag_BalancePointsVsCom0VsCop1,...
-                     flag_AnalyzeBalanceAlong0Across1);
+                   flag_ModeBalancePointsVsCom0VsCop1,...
+                     flag_ModeAnalyzeBalanceAlong0Across1);
             axis tight;
             axisLim = axis;            
             axisLim(1) = 0;
             axisLim(2) = length(subjectsToProcess)+1;
-            if(flag_BalancePointsVsCom0VsCop1 == 0)
+            if(flag_ModeBalancePointsVsCom0VsCop1 == 0)
               axisLim(3) = -1;
               axisLim(4) = 20;
             else
-              if(flag_AnalyzeBalanceAlong0Across1==0)
+              if(flag_ModeAnalyzeBalanceAlong0Across1==0)
                 axisLim(3) = -14;
                 axisLim(4) = 8;
               else
@@ -528,13 +622,13 @@ for indexSubject = 1:1:length(subjectsToProcess)
           
           if(flag_capSeatOffEnsemble==1)
             figTitle = '';
-            switch flag_BalancePointsVsCom0VsCop1
+            switch flag_ModeBalancePointsVsCom0VsCop1
               case 0
                 figTitle = 'Cap-Com ';
               case 1
                 figTitle = 'Cap-Cop ';
             end
-            switch flag_AnalyzeBalanceAlong0Across1
+            switch flag_ModeAnalyzeBalanceAlong0Across1
               case 0
                 figTitle = [figTitle,'at Seat-Off: '];
               case 1
@@ -550,17 +644,17 @@ for indexSubject = 1:1:length(subjectsToProcess)
                    colorCap,...
                    [figTitle,trialTypeNames{indexTrial}],...
                    flag_pointInTimeSelector,...
-                   flag_BalancePointsVsCom0VsCop1,...
-                   flag_AnalyzeBalanceAlong0Across1);
+                   flag_ModeBalancePointsVsCom0VsCop1,...
+                   flag_ModeAnalyzeBalanceAlong0Across1);
             axis tight;
             axisLim = axis;
             axisLim(1) = 0;
             axisLim(2) = length(subjectsToProcess)+1;
-            if(flag_BalancePointsVsCom0VsCop1 == 0)
+            if(flag_ModeBalancePointsVsCom0VsCop1 == 0)
               axisLim(3) = -1;
               axisLim(4) = 20;
             else
-              if(flag_AnalyzeBalanceAlong0Across1==0)
+              if(flag_ModeAnalyzeBalanceAlong0Across1==0)
                 axisLim(3) = -14;
                 axisLim(4) = 8;
               else
@@ -582,8 +676,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
                      indexSittingDynamic, indexCrouchingStable, colorCap,...
                      figCapTitle,...
                      flag_zeroAtSeatOff,...
-                     flag_BalancePointsVsCom0VsCop1,...
-                   flag_AnalyzeBalanceAlong0Across1);
+                     flag_ModeBalancePointsVsCom0VsCop1,...
+                   flag_ModeAnalyzeBalanceAlong0Across1);
           end
           
           if(isempty(figFpeCapTitle)==0)
@@ -629,13 +723,26 @@ for indexSubject = 1:1:length(subjectsToProcess)
     
   end
   
+  if(flag_balancePortraitSubject==1)
+    figure(figSubjectBalancePortrait(indexSubject).h);
+    configPlotExporter;
+    analysisType='';
+    switch flag_ModeBalancePortrait      
+      case 0
+        analysisType = ['FpeBalancePortrait'];
+      case 1
+        analysisType = ['CapBalancePortrait'];        
+    end
+    print('-dpdf',['../../plots/balancePortrait/fig_',analysisType,'_S2SQuietTimeSeries_',subjectId,'.pdf']);  
+    
+  end
 
 
   if(flag_comKinematicsTimeSeriesSubject==1)
     figure(figSubjectCom(indexSubject).h);
     configPlotExporter;    
     analysisType = '';
-    switch flag_comVel0ComGpVsCop1
+    switch flag_ModeComVel0ComGpVsCop1
       case 0
         analysisType = ['ComVel'];
       case 1
@@ -648,13 +755,13 @@ for indexSubject = 1:1:length(subjectsToProcess)
     figure(figSubjectFpe(indexSubject).h);
     configPlotExporter;    
     analysisType = 'FpeVs';
-    switch flag_BalancePointsVsCom0VsCop1
+    switch flag_ModeBalancePointsVsCom0VsCop1
       case 0
         analysisType = [analysisType,'Com'];
       case 1
         analysisType = [analysisType,'Cop'];
     end    
-    switch flag_AnalyzeBalanceAlong0Across1
+    switch flag_ModeAnalyzeBalanceAlong0Across1
       case 0
         analysisType = [analysisType,'Length'];
       case 1
@@ -666,13 +773,13 @@ for indexSubject = 1:1:length(subjectsToProcess)
     figure(figSubjectCap(indexSubject).h);
     configPlotExporter;  
     analysisType = 'CapVs';
-    switch flag_BalancePointsVsCom0VsCop1
+    switch flag_ModeBalancePointsVsCom0VsCop1
       case 0
         analysisType = [analysisType,'Com'];
       case 1
         analysisType = [analysisType,'Cop'];
     end    
-    switch flag_AnalyzeBalanceAlong0Across1
+    switch flag_ModeAnalyzeBalanceAlong0Across1
       case 0
         analysisType = [analysisType,'Length'];
       case 1
@@ -699,7 +806,7 @@ if(flag_comKinematicsTimeSeriesEnsemble==1)
   figure(figAllCom);
   configPlotExporter;    
   analysisType = '';
-  switch flag_comVel0ComGpVsCop1
+  switch flag_ModeComVel0ComGpVsCop1
     case 0
       analysisType = ['ComVel'];
     case 1
@@ -712,7 +819,7 @@ if(flag_comKinematicsSeatOffEnsemble==1)
   figure(figTrialSeatOffCom)
   configPlotExporter;    
   analysisType = '';
-  switch flag_comVel0ComGpVsCop1
+  switch flag_ModeComVel0ComGpVsCop1
     case 0
       analysisType = ['ComVel'];
     case 1
@@ -725,13 +832,13 @@ if(flag_fpeTimeSeriesPlotsEnsemble==1)
   figure(figAllFpe);
   configPlotExporter;
   analysisType = 'FpeVs';
-  switch flag_BalancePointsVsCom0VsCop1
+  switch flag_ModeBalancePointsVsCom0VsCop1
     case 0
       analysisType = [analysisType,'Com'];
     case 1
       analysisType = [analysisType,'Cop'];
   end    
-  switch flag_AnalyzeBalanceAlong0Across1
+  switch flag_ModeAnalyzeBalanceAlong0Across1
     case 0
       analysisType = [analysisType,'Length'];
     case 1
@@ -744,13 +851,13 @@ if(flag_fpeSeatOffEnsemble)
   figure(figTrialSeatOffFpe);    
   configPlotExporter;
   analysisType = 'FpeVs';
-  switch flag_BalancePointsVsCom0VsCop1
+  switch flag_ModeBalancePointsVsCom0VsCop1
     case 0
       analysisType = [analysisType,'Com'];
     case 1
       analysisType = [analysisType,'Cop'];
   end    
-  switch flag_AnalyzeBalanceAlong0Across1
+  switch flag_ModeAnalyzeBalanceAlong0Across1
     case 0
       analysisType = [analysisType,'Length'];
     case 1
@@ -763,13 +870,13 @@ if(flag_capSeatOffEnsemble)
   figure(figTrialSeatOffCap);
   configPlotExporter;
   analysisType = 'CapVs';
-  switch flag_BalancePointsVsCom0VsCop1
+  switch flag_ModeBalancePointsVsCom0VsCop1
     case 0
       analysisType = [analysisType,'Com'];
     case 1
       analysisType = [analysisType,'Cop'];
   end    
-  switch flag_AnalyzeBalanceAlong0Across1
+  switch flag_ModeAnalyzeBalanceAlong0Across1
     case 0
       analysisType = [analysisType,'Length'];
     case 1
@@ -782,13 +889,13 @@ if(flag_capTimeSeriesPlotsEnsemble==1)
   figure(figAllCap);
   configPlotExporter;
   analysisType = 'CapVs';
-  switch flag_BalancePointsVsCom0VsCop1
+  switch flag_ModeBalancePointsVsCom0VsCop1
     case 0
       analysisType = [analysisType,'Com'];
     case 1
       analysisType = [analysisType,'Cop'];
   end    
-  switch flag_AnalyzeBalanceAlong0Across1
+  switch flag_ModeAnalyzeBalanceAlong0Across1
     case 0
       analysisType = [analysisType,'Length'];
     case 1
