@@ -3,9 +3,9 @@ close all;
 clear all;
 
 %List of the subjects to process
-subjectsToProcess = ...
+subjectsToProcess = {...  
  {'configE01','configE02','configE03','configE05', 'configE06',...
-  'configE07','configE08',...
+ 'configE07','configE08',...
   'configH01','configH02','configH03','configH04','configH05',...
   'configH06','configH07','configH08','configH09','configH10'};
 
@@ -68,7 +68,7 @@ thresholdNormDistanceBelowStanding     = 0.25;
 
 %Foot
 footContactZMovementTolerance  = 0.01; %m
-
+numberOfLowFootMarkersForStance = 3;
 %%
 %Motion sequence constants
 %
@@ -95,16 +95,16 @@ flag_writeC3DDataForMeshup      = 0;
 flag_verbose                    = 0;
 
 %FPE processing
-flag_loadFpeDataFromFile   = 0;
+flag_loadFpeDataFromFile   = 1;
 flag_writeFpeDataForMeshup = 0;
 
 %Capture point processing
-flag_loadCapDataFromFile   = 0;
+flag_loadCapDataFromFile   = 1;
 flag_writeCapDataForMeshup = 0;
 
 %Calc distance between key ground points and the convex hull of the feet.
 %Here the key ground points are: CoM ground projection, CoP, Fpe, Cap
-flag_loadKeyPointDistanceToFootConvexHull = 0;
+flag_loadKeyPointDistanceToFootConvexHull = 1;
 
 %Motion segmentation
 flag_loadSegmentedMotionDataFromFile = 0;
@@ -494,7 +494,9 @@ for indexSubject = 1:1:length(subjectsToProcess)
                       c3dGrf(index_ChairForcePlate), ...
                       c3dGrf(index_FeetForcePlate), ...
                       fpeData(1),...
-                      thresholdStanding,footContactZMovementTolerance,...
+                      thresholdStanding,...
+                      footContactZMovementTolerance,...
+                      numberOfLowFootMarkersForStance,...
                       [outputTrialFolder,outputSegmentationFileName],...
                       flag_loadSegmentedMotionDataFromFile);
                       

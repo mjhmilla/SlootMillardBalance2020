@@ -9,6 +9,7 @@ function [segmentedData, segmentInfo] = segmentDataKMeans(...
                       fpeDataGroundPlane,...                      
                       standingHeightLowerBound, ...
                       footContactZMovementTolerance,...
+                      numberOfLowFootMarkersForStance,...
                       segmentedDataFileName,...
                       flag_loadTimingDataFromFile)
 %highNormalForce,...                  
@@ -52,14 +53,14 @@ if(flag_loadTimingDataFromFile == 0)
   segmentInfo(5).phaseName = 'standingStable';
   segmentInfo(6).phaseId    = indexStandingUnstable;
   segmentInfo(6).phaseName = 'standingUnstable';
-  segmentInfo(7).phaseId    = indexFootGroundContactBroken;
-  segmentInfo(8).phaseName = 'footGroundContactBroken';
 
   
   segmentedData = struct('phase', zeros(size(c3DGrfChair.force,1),1),...                      
                       'phaseTransitions', zeros(1,2).*NaN,... 
                       'phaseTransitionTimes', zeros(1,1).*NaN,...
-                      'phaseTransitionIndices',zeros(1,1).*NaN);                    
+                      'phaseTransitionIndices',zeros(1,1).*NaN,...
+                      'footContactLeft',zeros(size(c3DGrfChair.force,1),1),...
+                      'footContactRight',zeros(size(c3DGrfChair.force,1),1));                    
 
   phasePrev = indexUnclassified;
   
@@ -144,7 +145,8 @@ if(flag_loadTimingDataFromFile == 0)
   footMarkerRightZHeight = zeros(length(c3DFootMarkerRightNames),1);
   footMarkerLeftZHeight  = zeros(length(c3DFootMarkerLeftNames),1);
 
-  
+  nLeftFootBrokeContact = 0;
+  nRightFootBrokeContact = 0;
   for i=1:1:size(c3DGrfChair.force,1)
     
     comHeight = comPosition(i,3);
@@ -157,7 +159,7 @@ if(flag_loadTimingDataFromFile == 0)
     
     %If all of the foot markers break the height threshold the foot
     %is off the ground then flag_bothFeetOnGround will remain zero. 
-    flag_bothFeetOnGround   = 0; 
+    %flag_bothFeetOnGround   = 0; 
     flag_leftFootOnGround   = 0;
     flag_rightFootOnGround  = 0;
 
@@ -172,16 +174,16 @@ if(flag_loadTimingDataFromFile == 0)
         -c3DFootMarkerLeftMinimumHeight(j,1);
     end
 
-    if( sum( footMarkerRightZHeight < 0 ) >= 4)
+    if( sum( footMarkerRightZHeight < 0 ) >= numberOfLowFootMarkersForStance)
       flag_rightFootOnGround=1;
     end       
-    if( sum( footMarkerLeftZHeight < 0 ) >= 4)
+    if( sum( footMarkerLeftZHeight < 0 ) >= numberOfLowFootMarkersForStance)
       flag_leftFootOnGround=1;
     end
     
-    if(flag_leftFootOnGround == 1 && flag_rightFootOnGround == 1)
-      flag_bothFeetOnGround=1;
-    end
+    %if(flag_leftFootOnGround == 1 && flag_rightFootOnGround == 1)
+    %  flag_bothFeetOnGround=1;
+    %end
     
     
     
@@ -223,14 +225,11 @@ if(flag_loadTimingDataFromFile == 0)
             || (clusterFpeStepLength(i,1) == idFpeTransition))
         %Static sitting
           phase = indexSittingStatic;
-        elseif( flag_bothFeetOnGround == 1)
+        else
         %Dynamic sitting
           phase = indexSittingDynamic;
-        else
-          phase = indexFootGroundContactBroken;
         end
-      elseif( comHeight <= standingHeightLowerBound &&  ...
-            flag_bothFeetOnGround == 1)     
+      elseif( comHeight <= standingHeightLowerBound)     
 
           %(clusterComHeight(i,1) == idComZCrouching) ...
           %|| (clusterComHeight(i,1) == idComZSitting))
@@ -242,8 +241,7 @@ if(flag_loadTimingDataFromFile == 0)
           %Stable
             phase = indexCrouchingStable;
           end
-      elseif(comHeight > standingHeightLowerBound &&  ...
-            flag_bothFeetOnGround == 1)
+      elseif(comHeight > standingHeightLowerBound)
         %Standing
           if(distanceToConvexHull > 0)
           %Unstable
@@ -252,30 +250,34 @@ if(flag_loadTimingDataFromFile == 0)
           %Stable
             phase = indexStandingStable;
           end
-      elseif(flag_bothFeetOnGround == 0)
-        phase = indexFootGroundContactBroken;
-      else
-        phase = indexUnclassified;
       end
 
       assert(isnan(phase)==0);
 
     end
     
-    if(phase == indexFootGroundContactBroken)
-      fprintf('    : %i. %s %f > %f \n',i, ...
-        c3DFootMarkerNames{indexFootMarkerIsTooHigh},...
-        footMarkers(indexFootMarkerIsTooHigh,3), ...
-        c3DFootMarkerMinimumHeight(indexFootMarkerIsTooHigh,1));
-    end
+    
+    
+%     if(phase == indexFootGroundContactBroken)
+%       if(flag_leftFootOnGround == 0)
+%         fprintf('    : %i. %s markers low enough %i < %i \n',i, ...
+%           'left-foot',...
+%            sum( footMarkerLeftZHeight < 0 ),...
+%            numberOfLowFootMarkersForStance);        
+%       end
+%       if(flag_rightFootOnGround ==0)
+%         fprintf('    : %i. %s markers low enough %i < %i \n',i, ...
+%           'right-foot',...
+%            sum( footMarkerRightZHeight < 0 ),...
+%            numberOfLowFootMarkersForStance);         
+%       end
+%     end
     
     %Check if there has been a phase transition
     if(   isnan(phasePrev) == 0  && isnan(phase) == 0 ...
        && phasePrev ~= phase)
      
-     if(phasePrev == indexSittingStatic && phase == indexStandingStable)
-       here=1;
-     end
+
      
       if(sum(isnan(segmentedData.phaseTransitions))>0)
         segmentedData.phaseTransitions = [phasePrev,phase];
@@ -297,8 +299,25 @@ if(flag_loadTimingDataFromFile == 0)
     
     phasePrev = phase;
     segmentedData.phase(i,1) = phase;
-        
+    segmentedData.footContactLeft(i,1) = flag_leftFootOnGround;
+    segmentedData.footContactRight(i,1)= flag_rightFootOnGround;
+    
+    nLeftFootBrokeContact = nLeftFootBrokeContact+(1-flag_leftFootOnGround);
+    nRightFootBrokeContact = nRightFootBrokeContact+(1-flag_rightFootOnGround);
+
+    
   end
+  
+  if( nLeftFootBrokeContact > 0)
+    fprintf('      %i Number samples left foot broke contact\n',...
+      nLeftFootBrokeContact);    
+  end
+  if( nRightFootBrokeContact > 0)
+    fprintf('      %i Number samples right foot broke contact\n',...
+      nRightFootBrokeContact);    
+  end
+  
+  
   save(segmentedDataFileName,'segmentedData','segmentInfo');
 else
 %  if(flag_verbose)
