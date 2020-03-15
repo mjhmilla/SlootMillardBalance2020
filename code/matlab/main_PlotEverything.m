@@ -44,6 +44,11 @@ end
 
 gravityVec = [0;0;-9.81];
 
+staticSittingVelocityTolerance = 0.01; %m/s
+seatOffFzTolerance             = 1;    %N
+standingTolerance              = 0.01; %m
+
+
 plotConfig;
 
 subjectsToProcess =  ...

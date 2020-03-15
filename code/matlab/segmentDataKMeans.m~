@@ -1,8 +1,7 @@
 function [segmentedData, segmentInfo] = segmentDataKMeans(...
                       c3DTime,...
                       c3DMarkers,...
-                      c3DFootMarkerRightNames,...
-                      c3DFootMarkerLeftNames,...                      
+                      c3DFootMarkerNames,...
                       comPosition,...                      
                       c3DGrfChair,...
                       c3DGrfFeet,...
@@ -16,8 +15,6 @@ function [segmentedData, segmentInfo] = segmentDataKMeans(...
 %segmentInfo = [];
 if(flag_loadTimingDataFromFile == 0)
 
-  c3DFootMarkerNames = {c3DFootMarkerRightNames{:},...
-                        c3DFootMarkerLeftNames{:}};
   
   assert(size(c3DMarkers.(c3DFootMarkerNames{1}),1)==size(c3DTime,1));
   assert(size(c3DTime,1) == size(c3DGrfChair.force,1));
@@ -124,65 +121,34 @@ if(flag_loadTimingDataFromFile == 0)
   idFpeTransition= idx(2);
   idFpeDynamic  = idx(3);
   
-  c3DFootMarkerRightMinimumHeight =...
-    zeros(length(c3DFootMarkerRightNames),1);
-  c3DFootMarkerLeftMinimumHeight =...
-    zeros(length(c3DFootMarkerLeftNames),1);
+  c3DFootMarkerMinimumHeight = zeros(length(c3DFootMarkerNames),1);
   
-  for j=1:1:length(c3DFootMarkerRightNames)
-    c3DFootMarkerRightMinimumHeight(j,1) = ... 
-      min(c3DMarkers.(c3DFootMarkerRightNames{j})(:,3)) ...
+  for j=1:1:length(c3DFootMarkerNames)
+    c3DFootMarkerMinimumHeight(j,1) = ... 
+      min(c3DMarkers.(c3DFootMarkerNames{j})(:,3)) ...
       + footContactZMovementTolerance;
   end
   
-  for j=1:1:length(c3DFootMarkerLeftNames)
-    c3DFootMarkerLeftMinimumHeight(j,1) = ... 
-      min(c3DMarkers.(c3DFootMarkerLeftNames{j})(:,3)) ...
-      + footContactZMovementTolerance;
-  end
-  
-  footMarkerRightZHeight = zeros(length(c3DFootMarkerRightNames),1);
-  footMarkerLeftZHeight  = zeros(length(c3DFootMarkerLeftNames),1);
-
   
   for i=1:1:size(c3DGrfChair.force,1)
     
     comHeight = comPosition(i,3);
 
+    flag_bothFeetOnGround = 1;
+    indexFootMarkerIsTooHigh = 0;
     
     
     for j=1:1:size(footMarkers,1)
       footMarkers(j,:) = c3DMarkers.(c3DFootMarkerNames{j})(i,:);
-    end
-    
-    %If all of the foot markers break the height threshold the foot
-    %is off the ground then flag_bothFeetOnGround will remain zero. 
-    flag_bothFeetOnGround   = 0; 
-    flag_leftFootOnGround   = 0;
-    flag_rightFootOnGround  = 0;
+      if(footMarkers(j,3) > c3DFootMarkerMinimumHeight(j,1))
+        flag_bothFeetOnGround = 0;
+        if(flag_bothFeetOnGround == 0)
+          fprintf('    : %i. %s %f > %f \n',i, c3DFootMarkerNames{j},...
+                  footMarkers(j,3), c3DFootMarkerMinimumHeight(j,1));
+        end
 
-    for j=1:1:length(c3DFootMarkerRightNames)
-      footMarkerRightZHeight(j,1) = ...
-        c3DMarkers.(c3DFootMarkerRightNames{j})(i,3) ...
-        -c3DFootMarkerRightMinimumHeight(j,1);
+      end
     end
-    for j=1:1:length(c3DFootMarkerLeftNames)
-      footMarkerLeftZHeight(j,1) = ...
-        c3DMarkers.(c3DFootMarkerLeftNames{j})(i,3) ...
-        -c3DFootMarkerLeftMinimumHeight(j,1);
-    end
-
-    if( sum( footMarkerRightZHeight < 0 ) >= 4)
-      flag_rightFootOnGround=1;
-    end       
-    if( sum( footMarkerLeftZHeight < 0 ) >= 4)
-      flag_leftFootOnGround=1;
-    end
-    
-    if(flag_leftFootOnGround == 1 && flag_rightFootOnGround == 1)
-      flag_bothFeetOnGround=1;
-    end
-    
     
     
     r0F0 = fpeDataGroundPlane.r0F0(i,:);
@@ -227,10 +193,10 @@ if(flag_loadTimingDataFromFile == 0)
         %Dynamic sitting
           phase = indexSittingDynamic;
         else
-          phase = indexFootGroundContactBroken;
+          phase = indexFootGroundContactBroken;  
         end
       elseif( comHeight <= standingHeightLowerBound &&  ...
-            flag_bothFeetOnGround == 1)     
+            flag_bothFeetOnGround ==0)     
 
           %(clusterComHeight(i,1) == idComZCrouching) ...
           %|| (clusterComHeight(i,1) == idComZSitting))
@@ -243,7 +209,7 @@ if(flag_loadTimingDataFromFile == 0)
             phase = indexCrouchingStable;
           end
       elseif(comHeight > standingHeightLowerBound &&  ...
-            flag_bothFeetOnGround == 1)
+            flag_bothFeetOnGround ==0)
         %Standing
           if(distanceToConvexHull > 0)
           %Unstable
@@ -252,25 +218,17 @@ if(flag_loadTimingDataFromFile == 0)
           %Stable
             phase = indexStandingStable;
           end
-      elseif(flag_bothFeetOnGround == 0)
-        phase = indexFootGroundContactBroken;
       else
-        phase = indexUnclassified;
+        phase = indexFootGroundContactBroken;
       end
 
       assert(isnan(phase)==0);
 
     end
     
-    if(phase == indexFootGroundContactBroken)
-      fprintf('    : %i. %s %f > %f \n',i, ...
-        c3DFootMarkerNames{indexFootMarkerIsTooHigh},...
-        footMarkers(indexFootMarkerIsTooHigh,3), ...
-        c3DFootMarkerMinimumHeight(indexFootMarkerIsTooHigh,1));
-    end
-    
     %Check if there has been a phase transition
-    if(   isnan(phasePrev) == 0  && isnan(phase) == 0 ...
+    if(   isnan(phasePrev) == 0 ...
+       && isnan(phase) == 0 ...
        && phasePrev ~= phase)
      
      if(phasePrev == indexSittingStatic && phase == indexStandingStable)
@@ -293,7 +251,6 @@ if(flag_loadTimingDataFromFile == 0)
         here=1;
       end     
     end
-    
     
     phasePrev = phase;
     segmentedData.phase(i,1) = phase;

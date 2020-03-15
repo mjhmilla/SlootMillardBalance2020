@@ -72,7 +72,7 @@ if(flag_isValid == 1)
 
   capInfo.u  = v0C0u./(max(v0C0uMag, 1e-9));
 
-  capInfo.n  = getCrossProduceMatrix(capInfo.k)*capInfo.u); 
+  capInfo.n  = getCrossProductMatrix(capInfo.k)*capInfo.u; 
   
   capInfo.vu = v0C0u'*capInfo.u;
   capInfo.vk = v0C0k'*capInfo.k;
