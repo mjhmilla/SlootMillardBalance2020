@@ -2,22 +2,14 @@ function figH = plotBalancePortrait(figH, subPlotVec,...
                       subjectNumber, subjectId,...
                       c3dTime, c3dMarkers, ...
                       c3dFootMarkerRightNames,c3dFootMarkerLeftNames,...
-                      movementSequence, segmentedData, ...
-                      c3dGrfChair, c3dGrfFeet,...
+                      movementSequence,...
+                      c3dGrfFeet,...
                       comPosition, balanceStepDir, balancePoint,...
-                      idSittingDynamic, idCrouchingStable,...
                       lineColorBalanceDir,lineColorBalancePoint,...
                       lineColorCop, lineColorCom,...
                       footPatchColor,...
-                      figTitle,...
-                      flag_zeroAtSeatOff,...
-                      allowedFootMarkerMovement)
+                      figTitle)
 
-assert(flag_zeroAtSeatOff==1); %For now: this is the only option                 
-if(flag_zeroAtSeatOff==1)
-  assert(idSittingDynamic==1);
-  assert(idCrouchingStable==2);
-end                      
 
 figure(figH);
 if(length(subPlotVec) == 3)
@@ -26,8 +18,6 @@ end
 if(length(subPlotVec) == 4)
   subplot('Position',subPlotVec);
 end
-
-
 
 
 patchColor = footPatchColor;
@@ -43,37 +33,12 @@ xExtents = [Inf,-Inf];
 yExtents = [Inf,-Inf];
 
 for z=1:1:length(movementSequence)
-  if( sum(isnan(movementSequence(z).phaseTransitions))==0)
+  if( sum(isnan(movementSequence(z).indexStart))==0)
 
-    idx0 = movementSequence(z).phaseTransitionIndices(1);
-    idx1 = movementSequence(z).phaseTransitionIndices(2);
 
-    if(flag_zeroAtSeatOff==1)
-      flag_alertMultipleSeatOffs=1;
-      idx1 = getLastSeatOffIndex( movementSequence(z).phaseTransitions,...
-                          movementSequence(z).phaseTransitionIndices,...
-                          idSittingDynamic,idCrouchingStable,...
-                          flag_alertMultipleSeatOffs,c3dGrfChair);        
-    end
-
-    %Refine the standing position
-    idx2 = movementSequence(z).phaseTransitionIndices(end);
-    idx3 = idx2;
-    phase2 = movementSequence(z).phaseTransitions(end,2);
-    phase3 = phase2;
-    while    idx3 < size(segmentedData.phase,1) ...
-          && segmentedData.phase(idx3,1) == phase2
-      idx3 = idx3+1;
-    end
-    
-    maxComHeight = max(comPosition(idx2:idx3,3));
-    idx2ComHeight = comPosition(idx2,3);
-    targetComHeight = idx2ComHeight + (maxComHeight-idx2ComHeight)*0.95;
-    
-    while idx2 < idx3 && comPosition(idx2,3) < targetComHeight
-      idx2 = idx2+1;
-    end
-    
+    idx0 = movementSequence(z).indexStart;
+    idx2 = movementSequence(z).indexEnd;
+    idx1 = movementSequence(z).indexReference;
     
    
     %Plot the foot outline, and the convex hull outline
@@ -84,12 +49,6 @@ for z=1:1:length(movementSequence)
         footMarkers(j,:) = NaN;
       end
       
-      maxMarkerMovement = ...
-        max(norm(diff(c3dMarkers.(c3dFootMarkerNames{j})(idx1:idx2,:))));
-      if(maxMarkerMovement > allowedFootMarkerMovement)
-        disp(['    :',c3dFootMarkerNames{j},' moved by ', ...
-          num2str(maxMarkerMovement), ' > ', num2str(allowedFootMarkerMovement) ]);
-      end
     end
     for j=1:1:size(footMarkersLeft,1)
       footMarkersLeft(j,:) = c3dMarkers.(c3dFootMarkerLeftNames{j})(idx1,:);
@@ -133,18 +92,7 @@ for z=1:1:length(movementSequence)
       end
     end
 
-%     fill(footMarkers(idxFeetCH,1)-xyOffset(1,1),...
-%          footMarkers(idxFeetCH,2)-xyOffset(1,2),...
-%          patchColor, 'EdgeColor','none');
-%     hold on;
-%     fill(footMarkersLeft(:,1)-xyOffset(1,1),...
-%          footMarkersLeft(:,2)-xyOffset(1,2),...
-%          footColor, 'EdgeColor','none');
-%     hold on;
-%     fill(footMarkersRight(:,1)-xyOffset(1,1),...
-%          footMarkersRight(:,2)-xyOffset(1,2),...
-%          footColor, 'EdgeColor','none');
-%     hold on;
+
 
     plot((footMarkers(idxFeetCH,1)-xyOffset(1,1)).*100,...
          (footMarkers(idxFeetCH,2)-xyOffset(1,2)).*100,...

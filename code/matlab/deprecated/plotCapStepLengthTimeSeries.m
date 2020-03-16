@@ -1,16 +1,13 @@
 function figH = plotCapStepLengthTimeSeries(figH, subPlotVec, ...
-                   c3dTime, movementSequence, c3dGrfChair,c3dGrfFeet,capData,...                   
-                   idSittingDynamic, idCrouchingStable,...
-                   lineColor,...
-                   figureTitle,...
-                   flag_zeroAtSeatOff,...
-                   flag_BalancePointsVsCom0VsCop1,...
-                   flag_AnalyzeBalanceAlong0Across1)
+                  c3dTime, movementSequence,...
+                  c3dGrfFeet,...
+                  capData,...                   
+                  lineColor,...
+                  figureTitle,...
+                  flag_BalancePointsVsCom0VsCop1,...
+                  flag_AnalyzeBalanceAlong0Across1)
 
-if(flag_zeroAtSeatOff==1)
-  assert(idSittingDynamic==1);
-  assert(idCrouchingStable==2);
-end
+
                  
 figure(figH);
 if(length(subPlotVec) == 3)
@@ -23,23 +20,12 @@ end
            
 
 for z=1:1:length(movementSequence)
-  if( sum(isnan(movementSequence(z).phaseTransitions))==0)
+  if( sum(isnan(movementSequence(z).indexStart))==0)
 
-    idx0 = movementSequence(z).phaseTransitionIndices(1);
-    timeBias = c3dTime(idx0);
-    
-    if(flag_zeroAtSeatOff==1)
-      flag_alertMultipleSeatOffs=1;
-      idx1 = getLastSeatOffIndex( movementSequence(z).phaseTransitions,...
-                          movementSequence(z).phaseTransitionIndices,...
-                          idSittingDynamic,idCrouchingStable,...
-                          flag_alertMultipleSeatOffs,c3dGrfChair);
-        
-      timeBias = c3dTime(idx1);
-    end
-
-
-    idx2 = movementSequence(z).phaseTransitionIndices(end);
+    idx0 = movementSequence(z).indexStart;
+    idx1 = movementSequence(z).indexReference;
+    timeBias = c3dTime(idx1);
+    idx2 = movementSequence(z).indexEnd;
 
     distance =[];
     width = [];

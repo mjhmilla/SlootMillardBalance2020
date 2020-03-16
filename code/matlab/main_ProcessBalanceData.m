@@ -4,13 +4,13 @@ clear all;
 
 %List of the subjects to process
 subjectsToProcess = {...  
- {'configE01','configE02','configE03','configE05', 'configE06',...
+ 'configE01','configE02','configE03','configE05', 'configE06',...
  'configE07','configE08',...
   'configH01','configH02','configH03','configH04','configH05',...
   'configH06','configH07','configH08','configH09','configH10'};
 
 
-pathToBTK  = '/home/mjhmilla/dev/BTKRoot/BTKCore-install/share/btk-0.3dev/Wrapping/Matlab/btk/';
+pathToBTK='/home/mjhmilla/dev/BTKRoot/BTKCore-install/share/btk-0.3dev/Wrapping/Matlab/btk/';
 addpath(pathToBTK);
 
 %The model building tool in the RBDL tool chain
@@ -38,6 +38,12 @@ cd(codeDir);
 
 gravityVector = [0;0;-9.81];
 contactPlanes = [0,0,0];  
+
+
+
+startS2SComVelocityTolerance = 0.01; %m/s
+seatOffChairForceZTolerance  = 1;    %N
+endS2SComHeightTolerance     = 0.01; %m
 
 %Motion segmentation constants
 %
@@ -67,7 +73,8 @@ thresholdNormDistanceBelowStanding     = 0.25;
 
 
 %Foot
-footContactZMovementTolerance  = 0.01; %m
+flag_rejectMovementSequencesFootGroundContactBroken = 1;
+footContactZMovementTolerance  = 0.015; %m
 numberOfLowFootMarkersForStance = 3;
 %%
 %Motion sequence constants
@@ -76,12 +83,12 @@ numberOfLowFootMarkersForStance = 3;
 % sequences:
 %
 % quiet-sit-to-quiet-stand: subject progresses from
-%   -sitting-static for thresholdQuietTime
+%   -sitting-static for quietDwellTime
 %   -standing-stable for thresholdQuietTim
 %   -s.t. once seat-off occurs the subject does not contact the seat
 %         again until (eventually) a standing-stable pose is reached.
 %%
-thresholdQuietTime = 0.5;
+quietDwellTime = 0.5;
 
 %%
 % Processing Flags
@@ -520,10 +527,18 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
 
       flag_verboseMotionSequence = 1;
-      [sitToStandQuietSequence, sitToStandDynamicSequence] = ...
-        extractMovementSequence(c3dTime, segmentedData, segmentInfo,...
-            thresholdQuietTime, ...
+      [sitToStandQuietSequence, sitToStandSequenceInfo] = ...
+        extractSitToStandSequence(c3dTime, ...
+            segmentedData, segmentInfo,...
+            wholeBodyData(:,colComPos),...
+            wholeBodyData(:,colComVel),...
+            c3dGrf(index_ChairForcePlate), ...
+            quietDwellTime, ...
+            startS2SComVelocityTolerance, ...
+            seatOffChairForceZTolerance,...
+            endS2SComHeightTolerance,...
             [outputTrialFolder,outputSequenceFileName],...
+            flag_rejectMovementSequencesFootGroundContactBroken,...
             flag_loadMovementSequenceFromFile, ...
             flag_verboseMotionSequence);    
 
