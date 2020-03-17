@@ -10,15 +10,13 @@ if(exist('flag_outerLoopMode','var') ==0)
     %
     
     flag_balancePortraitSubject             = 0;    
-    flag_balancePortraitEnsemble            = 0;
-    flag_balancePortraitSeatOffEnsemble     = 0;
     
     flag_ModeBalancePointsVsCom0VsCop1      = 1;
     flag_ModeAnalyzeBalanceAlong0Across1    = 0;
 
       flag_fpeTimeSeriesPlotsSubject        = 0;
       flag_fpeTimeSeriesPlotsEnsemble       = 0;
-      flag_fpeSeatOffEnsemble               = 0;
+      flag_fpeSeatOffEnsemble               = 1;
 
       flag_capTimeSeriesPlotsSubject        = 0;
       flag_capTimeSeriesPlotsEnsemble       = 0;
@@ -33,7 +31,7 @@ if(exist('flag_outerLoopMode','var') ==0)
             
       flag_comKinematicsTimeSeriesSubject   = 0;
       flag_comKinematicsTimeSeriesEnsemble  = 0;
-      flag_comKinematicsSeatOffEnsemble     = 1;
+      flag_comKinematicsSeatOffEnsemble     = 0;
 
     flag_GrfzTimeSeriesPlotsSubject         = 0;
     flag_GrfzTimeSeriesPlotsEnsemble        = 0;
@@ -72,15 +70,7 @@ cd(codeDir);
 
 
 figSubjectBalancePortrait(length(subjectsToProcess)) = struct('h',[]);
-figAllBalancePortrait = [];
-if(flag_balancePortraitEnsemble==1)
-  figAllBalancePortrait = figure;
-end
 
-figTrialSeatOffBalancePortrait = [];
-if(flag_balancePortraitSeatOffEnsemble==1)
-  figTrialSeatOffBalancePortrait = figure;
-end
 
 figSubjectCom(length(subjectsToProcess)) = struct('h',[]);
 figAllCom = [];
@@ -241,6 +231,24 @@ for indexSubject = 1:1:length(subjectsToProcess)
       capFileName       = outputCapFileNames{indexTrial};  
       load([trialFolder,capFileName]);
 
+      outputFpeToFootHullDistanceFileName ...
+        = outputFpeToFootHullDistanceFileNames{indexTrial}   ;
+      outputCapToFootHullDistanceFileName ...
+        = outputCapToFootHullDistanceFileNames{indexTrial}   ;
+      outputComGPToFootHullDistanceFileName ...
+        = outputComGPToFootHullDistanceFileNames{indexTrial} ;
+      outputCopToFootHullDistanceFileName ...
+        = outputCopToFootHullDistanceFileNames{indexTrial}   ;    
+      
+      load([trialFolder, outputFpeToFootHullDistanceFileName]);
+      %fpe2FootConvexHullDist
+      load([trialFolder, outputCapToFootHullDistanceFileName]);
+      %cap2FootConvexHullDist
+      load([trialFolder, outputComGPToFootHullDistanceFileName]);
+      %comgp2FootConvexHullDist
+      load([trialFolder, outputCopToFootHullDistanceFileName]);       
+      %cop2FootConvexHullDist
+      
       segmentFileName    = outputSegmentationFileNames{indexTrial};
       load([trialFolder,segmentFileName]);
       
@@ -317,7 +325,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
       if(indexTrial <= 6)
-        for figType = 1:1:2
+
           figComH = [];
           figFpeH = [];
           figCapH = [];
@@ -347,163 +355,17 @@ for indexSubject = 1:1:length(subjectsToProcess)
           [row,col] = find(subPlotPanelIndex == (indexTrial-offsetTrialIndex));          
           subplotPosition = reshape(subPlotPanel(row,col,:),1,4);
           
-          flag_zeroAtSeatOff = 1;
           
-          if(figType==1)
-            if(flag_balancePortraitSubject == 1)
-              figBPH = figSubjectBalancePortrait(indexSubject).h;
-              analysisType = '';
-              switch flag_ModeBalancePortrait
-                case 0
-                  analysisType = 'Fpe BP ';
-                case 1
-                  analysisType = 'Cap BP ';
-              end
-              figBPTitle = [analysisType,'(',subjectId,'): ', ...
-                             trialTypeNames{indexTrial}];
 
-            end
-
-            if(flag_comKinematicsTimeSeriesSubject==1)
-              figComH = figSubjectCom(indexSubject).h;
-              analysisType = '';
-              switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
-                case 0
-                  analysisType = 'Com Vel-X ';
-                case 1
-                  analysisType = 'Com Vel-Y ';
-                case 2
-                  analysisType = 'Com Vel-Z ';
-                case 3
-                  analysisType = 'Com Vel ';
-                case 4
-                  analysisType = 'Cop-Com ';
-                otherwise assert(0);
-              end
-              figComTitle = [analysisType,'(',subjectId,'): ', ...
-                             trialTypeNames{indexTrial}];
-            end
-            
-            if(flag_fpeTimeSeriesPlotsSubject==1)
-              figFpeH = figSubjectFpe(indexSubject).h;
-              
-              figTitle = '';
-              switch flag_ModeBalancePointsVsCom0VsCop1
-                case 0
-                  figTitle = 'Fpe-Com ';
-                case 1
-                  figTitle = 'Fpe-Cop ';
-              end
-              
-              figFpeTitle = [figTitle,'(',subjectId,'): ', ...
-                             trialTypeNames{indexTrial}];
-            end 
-            
-            if(flag_capTimeSeriesPlotsSubject==1)              
-              figCapH = figSubjectCap(indexSubject).h;
-              figTitle = '';
-              switch flag_ModeBalancePointsVsCom0VsCop1
-                case 0
-                  figTitle = 'Cap-Com ';
-                case 1
-                  figTitle = 'Cap-Cop ';
-              end
-
-              figCapTitle = [figTitle,'(',subjectId,'): ', ...
-                             trialTypeNames{indexTrial}];
-            end  
-            
-            if(flag_fpeCapErrorTimeSeriesPlotsSubject==1)
-              figFpeCapH = figSubjectFpeCapErr(indexSubject).h;
-              figFpeCapTitle = ['Fpe-Cap Err. ','(',subjectId,'): ', ...
-                             trialTypeNames{indexTrial}];
-            end 
-            
-            if(flag_GrfzTimeSeriesPlotsSubject==1 )
-              figGrfZH = figSubjectGrfZ(indexSubject).h;
-              figGrfZTitle = ['GRFz ','(',subjectId,'): ',...
-                               trialTypeNames{indexTrial}];
-            end
-            
-          else
-            if(flag_balancePortraitEnsemble == 1)
-              figBPH = figAllBalancePortrait;
-              analysisType = '';
-              switch flag_ModeBalancePortrait
-                case 0
-                  analysisType = 'Fpe BP: ';
-                case 1
-                  analysisType = 'Cap BP: ';
-              end
-              figBPTitle = [analysisType, ...
-                             trialTypeNames{indexTrial}];
-            end
-
-            if(flag_comKinematicsTimeSeriesEnsemble==1)
-              figComH = figAllCom;
-              analysisType = '';
-              switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
-                case 0
-                  analysisType = 'Com Vel-X ';
-                case 1
-                  analysisType = 'Com Vel-Y ';
-                case 2
-                  analysisType = 'Com Vel-Z ';
-                case 3
-                  analysisType = 'Com Vel ';
-                case 4
-                  analysisType = 'Cop-Com ';
-                otherwise assert(0);
-              end
-              figComTitle = [analysisType,':', trialTypeNames{indexTrial}];
-            end            
-            if(flag_fpeTimeSeriesPlotsEnsemble==1)
-              figFpeH = figAllFpe;
-              switch flag_ModeBalancePointsVsCom0VsCop1
-                case 0
-                  figTitle = 'Fpe-Com: ';
-                case 1
-                  figTitle = 'Fpe-Cop: ';
-              end
-              figFpeTitle = [figTitle,...
-                             trialTypeNames{indexTrial}];
-            end  
-            
-            if(flag_capTimeSeriesPlotsEnsemble==1)
-              figCapH = figAllCap;
-              figTitle = '';
-              switch flag_ModeBalancePointsVsCom0VsCop1
-                case 0
-                  figTitle = 'Cap-Com: ';
-                case 1
-                  figTitle = 'Cap-Cop: ';
-              end
-              figCapTitle = [figTitle,...
-                             trialTypeNames{indexTrial}];
-            end 
-            
-            if(flag_fpeCapErrorTimeSeriesPlotsEnsemble==1)
-              figFpeCapH = figAllFpeCapErr;
-              figFpeCapTitle = ['Fpe-Cap Err.: ', ...
-                             trialTypeNames{indexTrial}];
-            end 
-            
-            if(flag_GrfzTimeSeriesPlotsEnsemble==1 )
-              figGrfZH = figAllGrfZ;
-              figGrfZTitle = ['GRFz: ',...
-                               trialTypeNames{indexTrial}];
-            end
-            
-          end
-          
-          
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Balance Portrait
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-          if(isempty(figBPTitle)==0)
+          if(     flag_balancePortraitSubject          == 1)
+
             balancePoint = [];
             balanceStepDir = [];
             lineColor = [];
+            figTitle = '';
             switch flag_ModeBalancePortrait
               case 0
                 balancePoint = fpeData.r0F0;
@@ -514,10 +376,12 @@ for indexSubject = 1:1:length(subjectsToProcess)
                   balanceStepDir(k,:) = (getCrossProductMatrix(eN)*eK)';
                 end
                 lineColor = colorFpe;
+                figTitle = 'Fpe BP ';
               case 1
                 balancePoint = capData.r0F0;
                 balanceStepDir = capData.u;
                 lineColor = colorCap;
+                figTitle = 'Cap BP ';
             end
             c3dFootMarkersLeftNames = {'L_FAL','L_FM1','L_FM2','L_FM5','L_TAM','L_FCC'};
             c3dFootMarkersRightNames = {'R_FAL','R_FM1','R_FM2','R_FM5','R_TAM','R_FCC'};
@@ -530,184 +394,145 @@ for indexSubject = 1:1:length(subjectsToProcess)
             lineColorCom     = [0.5,0.5,0.5];
             footPatchColor   = [1,1,1].*0.75;
             
-
-            figBPH = plotBalancePortrait(figBPH, subplotPosition,...
-                      indexSubject, subjectId,...
-                      c3dTime, c3dMarkers, ...
-                      c3dFootMarkersRightNames, c3dFootMarkersLeftNames, ...
-                      movementSequence, ...
-                      c3dGrf(index_FeetForcePlate),...
-                      wholeBodyData(:,colComPos), ...
-                      balanceStepDir, balancePoint,...
-                      lineColorBalanceDir,lineColorBalancePoint,...
-                      lineColorCop,lineColorCom, ...
-                      footPatchColor,figBPTitle);
-                  
-            here=1;
+            if(flag_balancePortraitSubject == 1)
+              figSubjectBalancePortrait(indexSubject).h ...
+              = plotBalancePortrait(...
+                  figSubjectBalancePortrait(indexSubject).h,...
+                  subplotPosition,...
+                  indexSubject, subjectId,...
+                  c3dTime, c3dMarkers, ...
+                  c3dFootMarkersRightNames, c3dFootMarkersLeftNames, ...
+                  movementSequence, ...
+                  c3dGrf(index_FeetForcePlate),...
+                  wholeBodyData(:,colComPos), ...
+                  balanceStepDir, balancePoint, 0,...
+                  lineColorBalanceDir,lineColorBalancePoint,...
+                  lineColorCop,lineColorCom, ...
+                  footPatchColor,...
+                  [figTitle, '(',subjectId,'): ', trialTypeNames{indexTrial}]);
+            end
+           
           end
 
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Whole Body Kinematic Portrait
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
-          if(isempty(figComTitle)==0)
+          if(    flag_comKinematicsTimeSeriesSubject   == 1 ...
+              || flag_comKinematicsTimeSeriesEnsemble  == 1 ...
+              || flag_comKinematicsSeatOffEnsemble     == 1)
 
             errorVec = [];
             errorLabel = [];
             errorScale = [];
             errorName = [];
+            figTitle = '';
             switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
               case 0
                 errorVec = wholeBodyData(:,colComVel(1,1));
                 errorLabel= velocityLabel;
                 errorScale= scaleVelocity;
+                figTitle = 'Com Vel-X ';
               case 1
                 errorVec = wholeBodyData(:,colComVel(1,2));
                 errorLabel= velocityLabel;
                 errorScale= scaleVelocity;
+                figTitle = 'Com Vel-Y ';                
               case 2
                 errorVec = wholeBodyData(:,colComVel(1,3));
                 errorLabel= velocityLabel;
                 errorScale= scaleVelocity;
+                figTitle = 'Com Vel-Z ';
               case 3
                 errorVec = sum( wholeBodyData(:,colComVel).^2, 2).^0.5;
                 errorLabel= velocityLabel;
                 errorScale= scaleVelocity;
+                figTitle = 'Com Vel ';                
               case 4
                 errorVec = sum( (c3dGrf(index_FeetForcePlate).cop(:,1:2) ...
-                           - wholeBodyData(:,colComPos(1,1:2))).^2 ,2).^0.5;
+                                     - wholeBodyData(:,colComPos(1,1:2))).^2 ,2).^0.5;
                 errorLabel= distanceLabel;
                 errorScale= scaleDistance;
+                figTitle = 'Cop-Com ';                
               otherwise assert(0);
             end
             
-            figComH = ...
-              plotTimeSeriesData(  figComH, subplotPosition,...
-                              movementSequence,...
-                              c3dTime, scaleTime,...
-                              errorVec, errorScale,...
-                              colorCom,...
-                              timeLabel,errorLabel,...
-                              figComTitle,...
-                              flag_EventStart0Reference1End2);
-            axis tight;
+            if(flag_comKinematicsTimeSeriesSubject==1)
+              figSubjectCom(indexSubject).h =...
+                plotTimeSeriesData(...
+                  figSubjectCom(indexSubject).h, ...
+                  subplotPosition,...
+                  movementSequence,...
+                  c3dTime, scaleTime,...
+                  errorVec, errorScale,...
+                  colorCom,...
+                  timeLabel,errorLabel,...
+                  [figTitle,'(',subjectId,'): ',trialTypeNames{indexTrial}]);
+              axis tight;              
+            end
+            if(flag_comKinematicsTimeSeriesEnsemble==1)
+              figAllCom = plotTimeSeriesData(...
+                  figAllCom, ...
+                  subplotPosition,...
+                  movementSequence,...
+                  c3dTime, scaleTime,...
+                  errorVec, errorScale,...
+                  colorCom,...
+                  timeLabel,errorLabel,...
+                  [figTitle,trialTypeNames{indexTrial}]);
+              axis tight              
+            end
+            if(flag_comKinematicsSeatOffEnsemble==1)
+              figTrialSeatOffCom = plotEventData( ...
+                figTrialSeatOffCom, subplotPosition,...
+                movementSequence,...
+                indexSubject, 1,...
+                errorVec, errorScale,...
+                colorCom,...
+                subjectId, 1,...
+                '',errorLabel,...
+                [figTitle,' At Seat Off',trialTypeNames{indexTrial}],...
+                flag_EventStart0Reference1End2);
 
-               
+              axis tight;
+              axisLim = axis;            
+              axisLim(1) = 0;
+              axisLim(2) = length(subjectsToProcess)+1;
+              switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
+                case 0
+                  axisLim(3)=0;
+                  axisLim(4)=60;
+                case 1
+                  axisLim(3)=-10;
+                  axisLim(4)=10;                
+                case 2
+                  axisLim(3)=-5;
+                  axisLim(4)=40;                
+                case 3
+                  axisLim(3)=0;
+                  axisLim(4)=70;                
+                case 4
+                  axisLim(3)=0;
+                  axisLim(4)=15;                
+                otherwise assert(0);                
+              end
+              axis(axisLim);
+              set(gca,'XTickLabel',[]);    
+            end
+    
           end
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Whole Body Kinematic Portrait : Seat off
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                    
-          if(flag_comKinematicsSeatOffEnsemble==1)
-            errorVec = [];
-            errorLabel = [];
-            errorScale = [];
-            errorName = [];
-            switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
-              case 0
-                errorName = ['Com Vel-X At Seat-Off: ',...
-                              trialTypeNames{indexTrial}];
-                errorVec = wholeBodyData(:,colComVel(1,1));
-                errorLabel= velocityLabel;
-                errorScale= scaleVelocity;
-              case 1
-                errorName = ['Com Vel-Y At Seat-Off: ',...
-                              trialTypeNames{indexTrial}];
-                errorVec = wholeBodyData(:,colComVel(1,2));
-                errorLabel= velocityLabel;
-                errorScale= scaleVelocity;
-              case 2
-                errorName = ['Com Vel-Z At Seat-Off: ',...
-                              trialTypeNames{indexTrial}];
-                errorVec = wholeBodyData(:,colComVel(1,3));
-                errorLabel= velocityLabel;
-                errorScale= scaleVelocity;
-              case 3
-                errorName = ['Com Vel At Seat-Off: ',...
-                              trialTypeNames{indexTrial}];
-                errorVec = sum( wholeBodyData(:,colComVel).^2, 2).^0.5;
-                errorLabel= velocityLabel;
-                errorScale= scaleVelocity;
-              case 4
-                errorName = ['Cop-Com Dist. At Seat-Off: ',...
-                              trialTypeNames{indexTrial}];
-                errorVec = sum( (c3dGrf(index_FeetForcePlate).cop(:,1:2) ...
-                           - wholeBodyData(:,colComPos(1,1:2))).^2 ,2).^0.5;
-                errorLabel= distanceLabel;
-                errorScale= scaleDistance;
-              otherwise assert(0);
-            end
-            
-            figTrialSeatOffCom = ...
-              plotEventData(  figTrialSeatOffCom, subplotPosition,...
-                              movementSequence,...
-                              indexSubject, 1,...
-                              errorVec, errorScale,...
-                              colorCom,...
-                              subjectId, 1,...
-                              '',errorLabel,...
-                              errorName,...
-                              flag_EventStart0Reference1End2);
-            axis tight;
-            axisLim = axis;            
-            axisLim(1) = 0;
-            axisLim(2) = length(subjectsToProcess)+1;
-            switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
-              case 0
-                axisLim(3)=0;
-                axisLim(4)=60;
-              case 1
-                axisLim(3)=-10;
-                axisLim(4)=10;                
-              case 2
-                axisLim(3)=-5;
-                axisLim(4)=40;                
-              case 3
-                axisLim(3)=0;
-                axisLim(4)=70;                
-              case 4
-                axisLim(3)=0;
-                axisLim(4)=15;                
-              otherwise assert(0);                
-            end
-                
-            axis(axisLim);
-            set(gca,'XTickLabel',[]);            
 
-          end
           
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Fpe Time Series
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
           
-          if( isempty(figFpeTitle)==0)     
-            [errorVec,errorName] = calcBalancePointDistance(fpeData.r0F0, ...
-              fpeData.u,fpeData.n,...
-              wholeBodyData(:,colComPos),...
-              c3dGrf(index_FeetForcePlate).cop,...
-              flag_ModeBalancePointsVsCom0VsCop1,...
-              flag_ModeAnalyzeBalanceAlong0Across1,...
-              'Fpe');
-                   
-            %flag_ModeBalancePointsVsCom0VsCop1: scale/label is the same
-            errorScale= scaleDistance;
-            errorLabel=distanceLabel;
+          if(    flag_fpeTimeSeriesPlotsSubject        == 1 ...
+              || flag_fpeTimeSeriesPlotsEnsemble       == 1 ...
+              || flag_fpeSeatOffEnsemble               == 1 )     
 
-            figFpeH = plotTimeSeriesData(figFpeH, subplotPosition,...
-                        movementSequence,...
-                        c3dTime,scaleTime,...
-                        errorVec,errorScale,...
-                        colorFpe,...
-                        timeLabel,...
-                        errorLabel,...
-                        errorName);
-
-          end
-          
-          
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-          % Fpe - Seat-Off
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
-          
-          if(flag_fpeSeatOffEnsemble==1)
             [errorVec,errorName] = calcBalancePointDistance(fpeData.r0F0, ...
                           fpeData.u,fpeData.n,...
                           wholeBodyData(:,colComPos),...
@@ -720,40 +545,85 @@ for indexSubject = 1:1:length(subjectsToProcess)
             errorScale= scaleDistance;
             errorLabel=distanceLabel;
 
-            figTrialSeatOffFpe = plotEventData(...
-                        figTrialSeatOffFpe,subplotPosition,...
-                        movementSequence,...
-                        indexSubject, 1,...
-                        errorVec, errorScale,...
-                        colorFpe, subjectId, 1,...
-                        '',errorLabel,errorName,...
-                        flag_EventStart0Reference1End2);                
-            
-            axis tight;
-            axisLim = axis;            
-            axisLim(1) = 0;
-            axisLim(2) = length(subjectsToProcess)+1;
-            if(flag_ModeBalancePointsVsCom0VsCop1 == 0)
-              axisLim(3) = -0.5;
-              axisLim(4) = 16.5;
-            else
-              if(flag_ModeAnalyzeBalanceAlong0Across1==0)
-                axisLim(3) = -10;
-                axisLim(4) = 10;
-              else
-                axisLim(3) = -5;
-                axisLim(4) = 5;
+            if(flag_fpeTimeSeriesPlotsSubject==1)
+              figSubjectFpe(indexSubject).h = ...
+                plotTimeSeriesData(...
+                          figSubjectFpe(indexSubject).h,...
+                          subplotPosition,...
+                          movementSequence,...
+                          c3dTime, scaleTime,...
+                          errorVec, errorScale,...
+                          colorFpe, ...
+                          timeLabel, errorLabel,...
+                          [errorName,': (',subjectId,'): ',trialTypeNames{indexTrial}]);              
+            end 
+
+            if(flag_fpeTimeSeriesPlotsEnsemble==1)
+              figAllFpe = plotTimeSeriesData(...
+                          figAllFpe,subplotPosition,...
+                          movementSequence,...
+                          c3dTime, scaleTime,...
+                          errorVec, errorScale,...
+                          colorFpe, ...
+                          timeLabel, errorLabel,...
+                          [errorName,': ',trialTypeNames{indexTrial}]);   
+            end 
+
+            if(flag_fpeSeatOffEnsemble ==1 )
+              figTrialSeatOffFpe = plotEventData(...
+                          figTrialSeatOffFpe,subplotPosition,...
+                          movementSequence,...
+                          indexSubject, 1,...
+                          errorVec, errorScale,...
+                          colorFpe, subjectId, 1,...
+                          '',errorLabel,...
+                          [errorName,' Seat-Off: ',trialTypeNames{indexTrial}],...
+                          flag_EventStart0Reference1End2);             
+              set(gca,'XTickLabel',[]);                
+              axis tight;
+              axisLim = axis;
+              axisLim(1) = 0;
+              axisLim(2) = length(subjectsToProcess)+1;
+              switch(flag_ModeBalancePointsVsCom0VsCop1)
+                case 0
+                  switch(flag_ModeAnalyzeBalanceAlong0Across1)
+                    case 0
+                      axisLim(3) =-0.5;
+                      axisLim(4) = 20.;
+                    case 1
+                      axisLim(3) =-5;
+                      axisLim(4) = 5;                      
+                    otherwise assert(0)                      
+                  end
+                case 1
+                  switch(flag_ModeAnalyzeBalanceAlong0Across1)
+                    case 0
+                      axisLim(3) =-12;
+                      axisLim(4) = 12;
+                    case 1
+                      axisLim(3) =-5;
+                      axisLim(4) = 5;                      
+                    otherwise assert(0)                      
+                  end                  
+                otherwise assert(0)                  
               end
+
+              axis(axisLim);
+              set(gca,'XTickLabel',[]);
             end
-            axis(axisLim);
-            set(gca,'XTickLabel',[]);
+
           end
+          
+          
+ 
           
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Cap - Seat-Off
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
           
-          if(flag_capSeatOffEnsemble==1)
+          if(    flag_capTimeSeriesPlotsSubject   == 1 ...
+              || flag_capTimeSeriesPlotsEnsemble  == 1 ...
+              || flag_capSeatOffEnsemble          == 1)
              
             [errorVec,errorName] = calcBalancePointDistance(capData.r0F0, ...
                           capData.u,capData.n,...
@@ -767,76 +637,82 @@ for indexSubject = 1:1:length(subjectsToProcess)
             errorScale= scaleDistance;
             errorLabel=distanceLabel;
 
-            figTrialSeatOffCap = plotEventData(...
-                        figTrialSeatOffCap,subplotPosition,...
-                        movementSequence,...
-                        indexSubject, 1,...
-                        errorVec, errorScale,...
-                        colorCap, subjectId, 1,...
-                        '',errorLabel,errorName,...
-                        flag_EventStart0Reference1End2);             
-            set(gca,'XTickLabel',[]);                
-            axis tight;
-            axisLim = axis;
-            axisLim(1) = 0;
-            axisLim(2) = length(subjectsToProcess)+1;
-            if(flag_ModeBalancePointsVsCom0VsCop1 == 0)
-              axisLim(3) = -0.5;
-              axisLim(4) = 16.5;
-            else
-              if(flag_ModeAnalyzeBalanceAlong0Across1==0)
-                axisLim(3) = -10;
-                axisLim(4) = 10;
-              else
-                axisLim(3) = -5;
-                axisLim(4) = 5;
-              end
-            end
-            axis(axisLim);
-            set(gca,'XTickLabel',[]);
-          end          
-          
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-          % Cap Time Series 
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
-          
-          if( isempty(figCapTitle)==0)              
-              errorVec = [];
-              errorScale = [];
-              errorLabel = [];
-              switch flag_ModeBalancePointsVsCom0VsCop1
-                case 0
-                  errorVec = capData.r0F0 - wholeBodyData(:,colComPos);
-                  errorScale= scaleDistance;
-                  errorLabel=distanceLabel;
-                case 1
-                  errorVec = capData.r0F0 - c3dGrf(index_FeetForcePlate).cop;
-                  errorScale= scaleDistance;
-                  errorLabel=distanceLabel;                  
-                otherwise assert(0)
-              end              
-              switch(flag_ModeAnalyzeBalanceAlong0Across1)
-                case 0
-                  errorVec = sum(errorVec.*capData.u,2);
-                case 1
-                  errorVec = sum(errorVec.*capData.n,2);                  
-                otherwise assert(0);
-              end
-              figCapH = plotTimeSeriesData(figCapH,subplotPosition,...
+            if(flag_capTimeSeriesPlotsSubject==1)
+              figSubjectCap(indexSubject).h = ...
+                plotTimeSeriesData(...
+                          figSubjectCap(indexSubject).h,...
+                          subplotPosition,...
                           movementSequence,...
                           c3dTime, scaleTime,...
                           errorVec, errorScale,...
-                          colorCap,timeLabel,errorLabel,figCapTitle);
-                          
-               
-                 
-          end
+                          colorCap, ...
+                          timeLabel, errorLabel,...
+                          [errorName,': (',subjectId,'): ',trialTypeNames{indexTrial}]);              
+            end 
+
+            if(flag_capTimeSeriesPlotsEnsemble==1)
+              figAllCap = plotTimeSeriesData(...
+                          figAllCap,subplotPosition,...
+                          movementSequence,...
+                          c3dTime, scaleTime,...
+                          errorVec, errorScale,...
+                          colorCap, ...
+                          timeLabel, errorLabel,...
+                          [errorName,': ',trialTypeNames{indexTrial}]);   
+            end 
+
+            if(flag_capSeatOffEnsemble ==1 )
+              figTrialSeatOffCap = plotEventData(...
+                          figTrialSeatOffCap,subplotPosition,...
+                          movementSequence,...
+                          indexSubject, 1,...
+                          errorVec, errorScale,...
+                          colorCap, subjectId, 1,...
+                          '',errorLabel,...
+                          [errorName,' Seat-Off: ',trialTypeNames{indexTrial}],...
+                          flag_EventStart0Reference1End2);             
+              set(gca,'XTickLabel',[]);                
+              axis tight;
+              axisLim = axis;
+              axisLim(1) = 0;
+              axisLim(2) = length(subjectsToProcess)+1;
+              switch(flag_ModeBalancePointsVsCom0VsCop1)
+                case 0
+                  switch(flag_ModeAnalyzeBalanceAlong0Across1)
+                    case 0
+                      axisLim(3) =-0.5;
+                      axisLim(4) = 16.5;
+                    case 1
+                      axisLim(3) =-11;
+                      axisLim(4) = 11;                      
+                    otherwise assert(0)                      
+                  end
+                case 1
+                  switch(flag_ModeAnalyzeBalanceAlong0Across1)
+                    case 0
+                      axisLim(3) =-11;
+                      axisLim(4) = 11;
+                    case 1
+                      axisLim(3) =-5;
+                      axisLim(4) = 5;                      
+                    otherwise assert(0)                      
+                  end                  
+                otherwise assert(0)                  
+              end
+
+              axis(axisLim);
+              set(gca,'XTickLabel',[]);
+            end
+          end          
+          
+
           
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Fpe-Cap Time Series
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
           
-          if(isempty(figFpeCapTitle)==0)
+          if(     flag_fpeCapErrorTimeSeriesPlotsSubject == 1 ...
+              ||  flag_fpeCapErrorTimeSeriesPlotsEnsemble == 1)
             errorVec = [];
             errorScale = [];
             errorLabel = '';
@@ -851,22 +727,40 @@ for indexSubject = 1:1:length(subjectsToProcess)
                 errorLabel=angleLabel;
               otherwise assert(0); 
             end
-
-            figFpeCapH = plotTimeSeriesData(figFpeCapH, subplotPosition,...
-                          movementSequence,...
-                          c3dTime, scaleTime,...
-                          errorVec,errorScale,...
-                          colorFpeCap,...
-                          timeLabel, errorLabel, figFpeCapTitle);
-                 
+            if(flag_fpeCapErrorTimeSeriesPlotsSubject == 1)
+              figSubjectFpeCapErr(indexSubject).h = ...
+                plotTimeSeriesData(...
+                  figSubjectFpeCapErr(indexSubject).h, ...
+                  subplotPosition,...
+                  movementSequence,...
+                  c3dTime, scaleTime,...
+                  errorVec,errorScale,...
+                  colorFpeCap,...
+                  timeLabel, errorLabel, ...
+                  ['Fpe-Cap Err. ','(',subjectId,'): ',trialTypeNames{indexTrial}]);
+            end
+            if(flag_fpeCapErrorTimeSeriesPlotsEnsemble == 1)
+               figAllFpeCapErr = ...
+                plotTimeSeriesData( ...
+                  figAllFpeCapErr, ...
+                  subplotPosition,...
+                  movementSequence,...
+                  c3dTime, scaleTime,...
+                  errorVec,errorScale,...
+                  colorFpeCap,...
+                  timeLabel, errorLabel, ...
+                  ['Fpe-Cap Err.: ', trialTypeNames{indexTrial}]);  
+            end
           end 
           
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Ground Forces Time Series
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
-          
-          if(isempty(figGrfZH)==0)
-            figGrfZH = plotTimeSeriesData(figGrfZH, subplotPosition,... 
+
+          if(flag_GrfzTimeSeriesPlotsSubject == 1)
+            figSubjectGrfZ(indexSubject).h = plotTimeSeriesData(...
+                        figSubjectGrfZ(indexSubject).h, ...
+                        subplotPosition,... 
                         movementSequence, ...
                         c3dTime, scaleTime, ...
                         c3dGrf(index_ChairForcePlate).force(:,3), scaleForce,...
@@ -874,11 +768,18 @@ for indexSubject = 1:1:length(subjectsToProcess)
                         timeLabel, forceLabel,figGrfZTitle);  
           end
 
-          
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-          % Ground Forces Time - Seat Off
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
-          
+          if(flag_GrfzTimeSeriesPlotsEnsemble == 1)
+            figAllGrfZ = plotTimeSeriesData(figAllGrfZ,...
+                        subplotPosition,... 
+                        movementSequence, ...
+                        c3dTime, scaleTime, ...
+                        c3dGrf(index_ChairForcePlate).force(:,3), scaleForce,...
+                        colorGrfz, ...
+                        timeLabel, forceLabel,...
+                        ['GRFz: ', trialTypeNames{indexTrial}]);  
+          end
+
+                    
           if(flag_GrfzSeatOffEnsemble==1)
             figTrialGrfZSeatOff = plotEventData(...
                     figTrialGrfZSeatOff, subplotPosition,... 
@@ -887,12 +788,12 @@ for indexSubject = 1:1:length(subjectsToProcess)
                     c3dGrf(index_ChairForcePlate).force(:,3),scaleForce,...
                     colorGrfz, subjectId, 2.5,...
                     '',forceLabel, ...
-                    figGrfZTitle,...
+                    ['GRFz Seat-Off:', trialTypeNames{indexTrial}],...
                     flag_EventStart0Reference1End2); 
             set(gca,'XTickLabel',[]);
           end
 
-        end
+
       end
       
       
@@ -915,16 +816,24 @@ for indexSubject = 1:1:length(subjectsToProcess)
   end
 
 
+
   if(flag_comKinematicsTimeSeriesSubject==1)
     figure(figSubjectCom(indexSubject).h);
     configPlotExporter;    
     analysisType = '';
-    switch flag_ModeComVel0ComGpVsCop1
+    switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
       case 0
-        analysisType = ['ComVel'];
+        analysisType = 'ComVelX';
       case 1
-        analysisType = ['ComVsCop'];
-    end               
+        analysisType = 'ComVelY';
+      case 2
+        analysisType = 'ComVelZ';
+      case 3
+        analysisType = 'ComVel';
+      case 4
+        analysisType = 'ComGPCop';
+      otherwise assert(0);
+    end                
     print('-dpdf',['../../plots/com/fig_',analysisType,'_S2SQuietTimeSeries_',subjectId,'.pdf']);
   end  
   
@@ -988,22 +897,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
 end
 
 
-if(flag_comKinematicsTimeSeriesEnsemble==1)  
-  figure(figAllCom);
-  configPlotExporter;    
-  analysisType = '';
-  switch flag_ModeComVel0ComGpVsCop1
-    case 0
-      analysisType = ['ComVel'];
-    case 1
-      analysisType = ['ComVsCop'];
-  end               
-  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);
-end 
-
-if(flag_comKinematicsSeatOffEnsemble==1)
-  figure(figTrialSeatOffCom)
-  configPlotExporter;    
+if(flag_comKinematicsTimeSeriesEnsemble==1 ...
+    || flag_comKinematicsSeatOffEnsemble==1)  
   analysisType = '';
   switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
     case 0
@@ -1018,13 +913,21 @@ if(flag_comKinematicsSeatOffEnsemble==1)
       analysisType = 'ComGPCop';
     otherwise assert(0);
   end  
-          
-  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietSeatOff.pdf']);
-end
+  if(flag_comKinematicsTimeSeriesEnsemble==1)
+    figure(figAllCom);
+    configPlotExporter;      
+    print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);
+  end
+  if(flag_comKinematicsSeatOffEnsemble==1)
+    figure(figTrialSeatOffCom)
+    configPlotExporter;        
+    print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietSeatOff.pdf']);  
+  end
+end 
 
-if(flag_fpeTimeSeriesPlotsEnsemble==1)
-  figure(figAllFpe);
-  configPlotExporter;
+
+if(flag_fpeTimeSeriesPlotsEnsemble==1 || flag_fpeSeatOffEnsemble ==1)
+
   analysisType = 'FpeVs';
   switch flag_ModeBalancePointsVsCom0VsCop1
     case 0
@@ -1037,32 +940,20 @@ if(flag_fpeTimeSeriesPlotsEnsemble==1)
       analysisType = [analysisType,'Length'];
     case 1
       analysisType = [analysisType,'Width'];
-  end            
-  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);  
+  end        
+  if(flag_fpeTimeSeriesPlotsEnsemble ==1)
+    figure(figAllFpe);
+    configPlotExporter;  
+    print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);  
+  end
+  if(flag_fpeSeatOffEnsemble ==1)
+    figure(figTrialSeatOffFpe);    
+    configPlotExporter;  
+    print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietSeatOff.pdf']);        
+  end
 end
 
-if(flag_fpeSeatOffEnsemble)
-  figure(figTrialSeatOffFpe);    
-  configPlotExporter;
-  analysisType = 'FpeVs';
-  switch flag_ModeBalancePointsVsCom0VsCop1
-    case 0
-      analysisType = [analysisType,'Com'];
-    case 1
-      analysisType = [analysisType,'Cop'];
-  end    
-  switch flag_ModeAnalyzeBalanceAlong0Across1
-    case 0
-      analysisType = [analysisType,'Length'];
-    case 1
-      analysisType = [analysisType,'Width'];
-  end            
-  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietSeatOff.pdf']);    
-  
-end
-if(flag_capSeatOffEnsemble)
-  figure(figTrialSeatOffCap);
-  configPlotExporter;
+if(flag_capSeatOffEnsemble == 1 || flag_capTimeSeriesPlotsEnsemble==1)
   analysisType = 'CapVs';
   switch flag_ModeBalancePointsVsCom0VsCop1
     case 0
@@ -1076,26 +967,17 @@ if(flag_capSeatOffEnsemble)
     case 1
       analysisType = [analysisType,'Width'];
   end   
-  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietSeatOff.pdf']);  
-end
-
-if(flag_capTimeSeriesPlotsEnsemble==1)
-  figure(figAllCap);
-  configPlotExporter;
-  analysisType = 'CapVs';
-  switch flag_ModeBalancePointsVsCom0VsCop1
-    case 0
-      analysisType = [analysisType,'Com'];
-    case 1
-      analysisType = [analysisType,'Cop'];
-  end    
-  switch flag_ModeAnalyzeBalanceAlong0Across1
-    case 0
-      analysisType = [analysisType,'Length'];
-    case 1
-      analysisType = [analysisType,'Width'];
-  end            
-  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);  
+  
+  if(flag_capSeatOffEnsemble == 1)
+    figure(figTrialSeatOffCap);
+    configPlotExporter;  
+    print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietSeatOff.pdf']);  
+  end
+  if(flag_capTimeSeriesPlotsEnsemble==1)
+    figure(figAllCap);
+    configPlotExporter;  
+    print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);  
+  end
 end
 
 if(flag_fpeCapErrorTimeSeriesPlotsEnsemble==1)
@@ -1109,7 +991,7 @@ if(flag_fpeCapErrorTimeSeriesPlotsEnsemble==1)
         errorType = 'AngleError';
       otherwise assert(0); 
     end    
-    print('-dpdf',['../../plots/fpeCap/fig_FpeCap',errorType,'S2SQuietTimeSeries.pdf'])    
+    print('-dpdf',['../../plots/fig_FpeCap',errorType,'S2SQuietTimeSeries.pdf'])    
 end  
 if(flag_GrfzTimeSeriesPlotsEnsemble==1)
   figure(figAllGrfZ);
