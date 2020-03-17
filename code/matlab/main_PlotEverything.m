@@ -4,40 +4,40 @@ if(exist('flag_outerLoopMode','var') ==0)
     close all;
     clear all;
 
-    flag_ConvexHullWithToes0Without1         = 1;
-    flag_ModePoint                           = 3;
+    flag_ConvexHullWithToes0Without1          = 0;
+    flag_ModePoint                            = 0;
     %0 fpe
     %1 cap
     %2 cop
     %3 com
-      flag_pointToNearestFootEdge            = 1;
-      flag_pointToNearestFootEdgeSubject     = 0;
+      flag_pointToNearestFootEdge             = 0;
+      flag_pointToNearestFootEdgeSubject      = 0;
 
 
-    flag_ModeBalancePortrait                 = 0;
+    flag_ModeBalancePortrait                  = 0;
     % 0: fpe
     % 1: cap
     %      
-      flag_balancePortraitSubject            = 0;        
+      flag_balancePortraitSubject             = 1;        
+      flag_balancePortraitSeatOff             = 0;
 
+    flag_ModeBalancePointsVsCom0VsCop1        = 1;
+    flag_ModeAnalyzeBalanceAlong0Across1      = 0;
 
-    flag_ModeBalancePointsVsCom0VsCop1      = 1;
-    flag_ModeAnalyzeBalanceAlong0Across1    = 0;
+      flag_fpeTimeSeriesPlotsSubject          = 0;
+      flag_fpeTimeSeriesPlotsEnsemble         = 0;
+      flag_fpeSeatOffEnsemble                 = 0;
 
-      flag_fpeTimeSeriesPlotsSubject        = 0;
-      flag_fpeTimeSeriesPlotsEnsemble       = 0;
-      flag_fpeSeatOffEnsemble               = 0;
-
-      flag_capTimeSeriesPlotsSubject        = 0;
-      flag_capTimeSeriesPlotsEnsemble       = 0;
-      flag_capSeatOffEnsemble               = 0;
+      flag_capTimeSeriesPlotsSubject          = 0;
+      flag_capTimeSeriesPlotsEnsemble         = 0;
+      flag_capSeatOffEnsemble                 = 0;
 
     flag_ModeErrorDistance0Angle1             = 0;
       flag_fpeCapErrorTimeSeriesPlotsSubject  = 0;
       flag_fpeCapErrorTimeSeriesPlotsEnsemble = 0;
     %flag_fpeCapErrorSeatOffEnsemble      
       
-    flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4 = 4;
+    flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4 = 3;
             
       flag_comKinematicsTimeSeriesSubject   = 0;
       flag_comKinematicsTimeSeriesEnsemble  = 0;
@@ -86,6 +86,10 @@ end
 
 figSubjectBalancePortrait(length(subjectsToProcess)) = struct('h',[]);
 
+figBalancePortraitSeatOff = [];
+if(flag_balancePortraitSeatOff == 1)
+  figBalancePortraitSeatOff = figure;
+end
 
 figSubjectCom(length(subjectsToProcess)) = struct('h',[]);
 figAllCom = [];
@@ -461,9 +465,9 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
             %figSubjectPointToFootEdge
             if(flag_pointToNearestFootEdgeSubject ==  1)
-              figSubjectPointToFootEdge = ...
+              figSubjectPointToFootEdge(indexSubject).h = ...
                 plotTimeSeriesData(...
-                  figSubjectPointToFootEdge, subplotPosition, ...
+                  figSubjectPointToFootEdge(indexSubject).h, subplotPosition, ...
                   movementSequence, ...
                   c3dTime, scaleTime, ...
                   data, scaleData, ...
@@ -480,36 +484,32 @@ for indexSubject = 1:1:length(subjectsToProcess)
           if(     flag_balancePortraitSubject          == 1)
 
             balancePoint = [];
-            balanceStepDir = [];
+            balanceTangentDir = [];
+            balanceNormalDir = [];
             lineColor = [];
             figTitle = '';
             switch flag_ModeBalancePortrait
               case 0
                 balancePoint = fpeData.r0F0;
-                balanceStepDir = zeros(size(balancePoint));
-                eK = -gravityVec./norm(gravityVec);
-                for k=1:1:size(balancePoint,1)
-                  eN = fpeData.n(k,:)';
-                  balanceStepDir(k,:) = (getCrossProductMatrix(eN)*eK)';
-                end
+                balanceTangentDir = fpeData.u;
+                balanceNormalDir  = fpeData.n;              
                 lineColor = colorFpe;
                 figTitle = 'Fpe BP ';
               case 1
                 balancePoint = capData.r0F0;
-                balanceStepDir = capData.u;
+                balanceTangentDir = capData.u;
+                balanceNormalDir  = capData.n;              
                 lineColor = colorCap;
                 figTitle = 'Cap BP ';
             end
             c3dFootMarkersLeftNames = {'L_FAL','L_FM1','L_FM2','L_FM5','L_TAM','L_FCC'};
             c3dFootMarkersRightNames = {'R_FAL','R_FM1','R_FM2','R_FM5','R_TAM','R_FCC'};
-
-            allowedFootMarkerMovement = 0.02;
             
             lineColorBalancePoint = [1,1,1/0.25].*0.25;
-            lineColorBalanceDir =[1,1,1/0.75].*0.75;
-            lineColorCop     = [1,0,0];
-            lineColorCom     = [0.5,0.5,0.5];
-            footPatchColor   = [1,1,1].*0.75;
+            lineColorBalanceDir   = [1,1,1/0.75].*0.75;
+            lineColorCop          = [1,0,0];
+            lineColorCom          = [0.5,0.5,0.5];
+            footPatchColor        = [1,1,1].*0.75;
             
             if(flag_balancePortraitSubject == 1)
               figSubjectBalancePortrait(indexSubject).h ...
@@ -517,16 +517,35 @@ for indexSubject = 1:1:length(subjectsToProcess)
                   figSubjectBalancePortrait(indexSubject).h,...
                   subplotPosition,...
                   indexSubject, subjectId,...
-                  c3dTime, c3dMarkers, ...
-                  c3dFootMarkersRightNames, c3dFootMarkersLeftNames, ...
+                  c3dFootMarkersRightNames, c3dFootMarkersLeftNames, ...                  
                   movementSequence, ...
-                  c3dGrf(index_FeetForcePlate),...
+                  c3dTime, c3dMarkers, ...
                   wholeBodyData(:,colComPos), ...
-                  balanceStepDir, balancePoint, 0,...
-                  lineColorBalanceDir,lineColorBalancePoint,...
-                  lineColorCop,lineColorCom, ...
+                  balancePoint, balanceTangentDir, ...
+                  c3dGrf(index_FeetForcePlate),...
+                  0,...
+                  lineColorCom,lineColorBalancePoint,lineColorBalanceDir,...
+                  lineColorCop,...
                   footPatchColor,...
                   [figTitle, '(',subjectId,'): ', trialTypeNames{indexTrial}]);
+            end
+            
+            if(flag_balancePortraitSeatOff == 1)
+              figBalancePortraitSeatOff ...
+                = plotBalancePortraitAtPointInTime(...
+                    figBalancePortraitSeatOff,...
+                    subplotPosition,...
+                    indexSubject, subjectId,...
+                    c3dFootMarkersRightNames, c3dFootMarkersLeftNames, ...                  
+                    movementSequence, ...
+                    c3dTime, c3dMarkers, ...
+                    wholeBodyData(:,colComPos), ...
+                    balancePoint, balanceTangentDir, balanceNormalDir,...
+                    c3dGrf(index_FeetForcePlate),...
+                    lineColorCom,lineColorBalancePoint,lineColorBalanceDir,...
+                    lineColorCop,...
+                    footPatchColor,...
+                    [figTitle,': ', trialTypeNames{indexTrial}]);
             end
            
           end
@@ -934,7 +953,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
     if flag_ConvexHullWithToes0Without1 == 1
       analysisType = [analysisType,'NoToes'];
     end    
-    figure(figTrialPointToFootEdge);
+    figure(figSubjectPointToFootEdge(indexSubject).h);
     configPlotExporter;
     print('-dpdf',['../../plots/footEdge/fig_',analysisType,'_S2SQuietTimeSeries_',subjectId,'.pdf']);
   end

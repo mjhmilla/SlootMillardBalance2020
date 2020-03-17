@@ -96,7 +96,7 @@ quietDwellTime = 0.5;
 
 
 %Preprocessing of C3D data
-flag_loadC3DMatFileData         = 1;
+flag_loadC3DMatFileData         = 0;
 flag_useMetersRadiansInC3DData  = 1;
 flag_writeC3DDataForMeshup      = 0;
 flag_verbose                    = 0;
@@ -114,10 +114,10 @@ flag_writeCapDataForMeshup = 0;
 flag_loadKeyPointDistanceToFootConvexHull = 1;
 
 %Motion segmentation
-flag_loadSegmentedMotionDataFromFile = 0;
+flag_loadSegmentedMotionDataFromFile = 1;
 
 %Motion sequence identification
-flag_loadMovementSequenceFromFile =0;
+flag_loadMovementSequenceFromFile =1;
 
 
 %Plotting
