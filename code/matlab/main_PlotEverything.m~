@@ -4,13 +4,23 @@ if(exist('flag_outerLoopMode','var') ==0)
     close all;
     clear all;
 
-    flag_ModeBalancePortrait = 0;
+    flag_ConvexHullWithToes0Without1
+    flag_ModePoint = 0;
+    %0 fpe
+    %1 cap
+    %2 cop
+    %3 com
+      flag_pointToNearestFootEdge            = 1;
+      flag_pointToNearestFootEdgeSubject     = 0;
+
+
+    flag_ModeBalancePortrait                 = 0;
     % 0: fpe
     % 1: cap
-    %
-    
-    flag_balancePortraitSubject             = 0;    
-    
+    %      
+      flag_balancePortraitSubject            = 0;        
+
+
     flag_ModeBalancePointsVsCom0VsCop1      = 1;
     flag_ModeAnalyzeBalanceAlong0Across1    = 0;
 
@@ -18,9 +28,9 @@ if(exist('flag_outerLoopMode','var') ==0)
       flag_fpeTimeSeriesPlotsEnsemble       = 0;
       flag_fpeSeatOffEnsemble               = 0;
 
-      flag_capTimeSeriesPlotsSubject        = 1;
-      flag_capTimeSeriesPlotsEnsemble       = 1;
-      flag_capSeatOffEnsemble               = 1;
+      flag_capTimeSeriesPlotsSubject        = 0;
+      flag_capTimeSeriesPlotsEnsemble       = 0;
+      flag_capSeatOffEnsemble               = 0;
 
     flag_ModeErrorDistance0Angle1             = 0;
       flag_fpeCapErrorTimeSeriesPlotsSubject  = 0;
@@ -68,6 +78,11 @@ codeDir = pwd;
   outputPath = pwd;  
 cd(codeDir);
 
+figSubjectPointToFootEdge(length(subjectsToProcess)) = struct('h',[]);
+figTrialPointToFootEdge = [];
+if(flag_pointToNearestFootEdge == 1)
+  figTrialPointToFootEdge = figure;
+end
 
 figSubjectBalancePortrait(length(subjectsToProcess)) = struct('h',[]);
 
@@ -156,11 +171,15 @@ for indexSubject = 1:1:length(subjectsToProcess)
   if(flag_balancePortraitSubject == 1)
     figSubjectBalancePortrait(indexSubject).h = figure;
   end
-  
+  if(flag_pointToNearestFootEdgeSubject==1)
+    figSubjectPointToFootEdge(indexSubject).h = figure;
+  end
+
   colorFpe    = [0,0,0];
   colorFpeCap = [0,0,0];
   colorCap    = [0,0,0];
   colorCom    = [0,0,0];
+  colorCop    = [0,0,0];  
   colorGrfz   = [0,0,0];
   
   if( isempty(strfind(subjectsToProcess{indexSubject},'E'))==0)
@@ -168,12 +187,14 @@ for indexSubject = 1:1:length(subjectsToProcess)
     colorFpeCap = colorElderly(1,:);  
     colorCap    = colorElderly(1,:);    
     colorCom    = colorElderly(1,:);
+    colorCop    = colorElderly(1,:);    
     colorGrfz   = colorElderly(1,:);
   else
     colorFpe    = colorYoung(1,:);    
     colorFpeCap = colorYoung(1,:);  
     colorCap    = colorYoung(1,:);    
     colorCom    = colorYoung(1,:);
+    colorCop    = colorYoung(1,:);    
     colorGrfz   = colorYoung(1,:);
     
   end
@@ -325,20 +346,19 @@ for indexSubject = 1:1:length(subjectsToProcess)
       %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
       if(indexTrial <= 6)
-        %for figType = 1:1:2
-          figComH = [];
-          figFpeH = [];
-          figCapH = [];
-          figFpeCapH = [];
-          figGrfZH = [];
-          figBPH = [];
 
-          figComTitle = [];
-          figFpeTitle = [];
-          figCapTitle = [];
-          figFpeCapTitle = [];
-          figGrfZTitle = [];
-          figBPTitle = [];
+          %figComH = [];
+          %figFpeH = [];
+          %figCapH = [];
+          %figFpeCapH = [];
+          %figGrfZH = [];
+          %figBPH = [];
+          %figComTitle = [];
+          %figFpeTitle = [];
+          %figCapTitle = [];
+          %figFpeCapTitle = [];
+          %figGrfZTitle = [];
+          %figBPTitle = [];
 
           timeLabel = 'Time (s)';
           forceLabel= 'Force (N)';
@@ -355,133 +375,93 @@ for indexSubject = 1:1:length(subjectsToProcess)
           [row,col] = find(subPlotPanelIndex == (indexTrial-offsetTrialIndex));          
           subplotPosition = reshape(subPlotPanel(row,col,:),1,4);
           
-          flag_zeroAtSeatOff = 1;
-          
-%           if(figType==1)
-% 
-% 
-%             if(flag_comKinematicsTimeSeriesSubject==1)
-%               figComH = figSubjectCom(indexSubject).h;
-%               analysisType = '';
-%               switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
-%                 case 0
-%                   analysisType = 'Com Vel-X ';
-%                 case 1
-%                   analysisType = 'Com Vel-Y ';
-%                 case 2
-%                   analysisType = 'Com Vel-Z ';
-%                 case 3
-%                   analysisType = 'Com Vel ';
-%                 case 4
-%                   analysisType = 'Cop-Com ';
-%                 otherwise assert(0);
-%               end
-%               figComTitle = [analysisType,'(',subjectId,'): ', ...
-%                              trialTypeNames{indexTrial}];
-%             end
-%             
-%             if(flag_fpeTimeSeriesPlotsSubject==1)
-%               figFpeH = figSubjectFpe(indexSubject).h;
-%               
-%               figTitle = '';
-%               switch flag_ModeBalancePointsVsCom0VsCop1
-%                 case 0
-%                   figTitle = 'Fpe-Com ';
-%                 case 1
-%                   figTitle = 'Fpe-Cop ';
-%               end
-%               
-%               figFpeTitle = [figTitle,'(',subjectId,'): ', ...
-%                              trialTypeNames{indexTrial}];
-%             end 
-%             
-%             if(flag_capTimeSeriesPlotsSubject==1)              
-%               figCapH = figSubjectCap(indexSubject).h;
-%               figTitle = '';
-%               switch flag_ModeBalancePointsVsCom0VsCop1
-%                 case 0
-%                   figTitle = 'Cap-Com ';
-%                 case 1
-%                   figTitle = 'Cap-Cop ';
-%               end
-% 
-%               figCapTitle = [figTitle,'(',subjectId,'): ', ...
-%                              trialTypeNames{indexTrial}];
-%             end  
-%             
-%             if(flag_fpeCapErrorTimeSeriesPlotsSubject==1)
-%               figFpeCapH = figSubjectFpeCapErr(indexSubject).h;
-%               figFpeCapTitle = ['Fpe-Cap Err. ','(',subjectId,'): ', ...
-%                              trialTypeNames{indexTrial}];
-%             end 
-%             
-%             if(flag_GrfzTimeSeriesPlotsSubject==1 )
-%               figGrfZH = figSubjectGrfZ(indexSubject).h;
-%               figGrfZTitle = ['GRFz ','(',subjectId,'): ',...
-%                                trialTypeNames{indexTrial}];
-%             end
-%             
-%           else
-% 
-% 
-%             if(flag_comKinematicsTimeSeriesEnsemble==1)
-%               figComH = figAllCom;
-%               analysisType = '';
-%               switch flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4
-%                 case 0
-%                   analysisType = 'Com Vel-X ';
-%                 case 1
-%                   analysisType = 'Com Vel-Y ';
-%                 case 2
-%                   analysisType = 'Com Vel-Z ';
-%                 case 3
-%                   analysisType = 'Com Vel ';
-%                 case 4
-%                   analysisType = 'Cop-Com ';
-%                 otherwise assert(0);
-%               end
-%               figComTitle = [analysisType,':', trialTypeNames{indexTrial}];
-%             end            
-%             if(flag_fpeTimeSeriesPlotsEnsemble==1)
-%               figFpeH = figAllFpe;
-%               switch flag_ModeBalancePointsVsCom0VsCop1
-%                 case 0
-%                   figTitle = 'Fpe-Com: ';
-%                 case 1
-%                   figTitle = 'Fpe-Cop: ';
-%               end
-%               figFpeTitle = [figTitle,...
-%                              trialTypeNames{indexTrial}];
-%             end  
-%             
-%             if(flag_capTimeSeriesPlotsEnsemble==1)
-%               figCapH = figAllCap;
-%               figTitle = '';
-%               switch flag_ModeBalancePointsVsCom0VsCop1
-%                 case 0
-%                   figTitle = 'Cap-Com: ';
-%                 case 1
-%                   figTitle = 'Cap-Cop: ';
-%               end
-%               figCapTitle = [figTitle,...
-%                              trialTypeNames{indexTrial}];
-%             end 
-%             
-%             if(flag_fpeCapErrorTimeSeriesPlotsEnsemble==1)
-%               figFpeCapH = figAllFpeCapErr;
-%               figFpeCapTitle = ['Fpe-Cap Err.: ', ...
-%                              trialTypeNames{indexTrial}];
-%             end 
-%             
-%             if(flag_GrfzTimeSeriesPlotsEnsemble==1 )
-%               figGrfZH = figAllGrfZ;
-%               figGrfZTitle = ['GRFz: ',...
-%                                trialTypeNames{indexTrial}];
-%             end
-%             
-%           end
-          
-          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Balance point to foot edge
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
+
+          if(   flag_pointToNearestFootEdge         == 1 ...
+             || flag_pointToNearestFootEdgeSubject  == 1)
+
+            data      = [];
+            scaleData = [];
+            colorData = [];
+            yLabelData =[];
+            figTitle = '';
+            axisYLim = [];
+            %0 fpe
+            %1 cap
+            %2 cop
+            %3 com
+            switch flag_ModePoint
+              case 0
+                data  = -fpe2FootConvexHullDist.distance;
+                scaleData = scaleDistance;
+                colorData = colorFpe;
+                yLabelData = distanceLabel;
+                figTitle = 'Fpe--Foot-Edge';
+                axisYLim = [-5, 16];
+              case 1
+                data  = -cap2FootConvexHullDist.distance;
+                scaleData = scaleDistance;                
+                colorData = colorCap;
+                yLabelData = distanceLabel;
+                figTitle = 'Cap--Foot-Edge';    
+                axisYLim = [-5,16];
+              case 2
+                data  = -cop2FootConvexHullDist.distance;
+                scaleData = scaleDistance;     
+                colorData = colorCop;
+                yLabelData = distanceLabel; 
+                figTitle = 'Cop--Foot-Edge';      
+                axisYLim = [0,16];                
+              case 3
+                data  = -comgp2FootConvexHullDist.distance;
+                scaleData = scaleDistance;                
+                colorData = colorCom;                
+                yLabelData = distanceLabel;
+                figTitle = 'Com--Foot-Edge'; 
+                axisYLim = [-7,17];
+              otherwise assert(0);
+            end
+
+            if(flag_pointToNearestFootEdge == 1)
+              flag_IntervalMode = 1;
+              figTrialPointToFootEdge = ...
+                plotBoxWhiskerData(...
+                   figTrialPointToFootEdge, subplotPosition, ...
+                   movementSequence, ...
+                   indexSubject, 1,...              
+                   data, scaleData, ...
+                   colorData,  ...
+                   0.5,...
+                   subjectId, 0.5,...
+                   '',...
+                   yLabelData, ...
+                   [figTitle,': ',trialTypeNames{indexTrial}], ...
+                   flag_IntervalMode);
+              axisLim = axis;
+              axisLim(1)=-0.5;
+              axisLim(2)=length(subjectsToProcess)+0.5;
+              axisLim(3)=axisYLim(1);
+              axisLim(4)=axisYLim(2);
+              axis(axisLim);
+            end
+
+            %figSubjectPointToFootEdge
+            if(flag_pointToNearestFootEdgeSubject ==  1)
+              figSubjectPointToFootEdge = ...
+                plotTimeSeriesData(...
+                  figSubjectPointToFootEdge, subplotPosition, ...
+                  movementSequence, ...
+                  c3dTime, scaleTime, ...
+                  data, scaleData, ...
+                  colorData,  ...
+                  timeLabel, ...
+                  yLabelData, ...
+                  [figTitle,'(',subjectId,'): ',trialTypeNames{indexTrial}]);
+            end
+          end
+
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Balance Portrait
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -654,36 +634,10 @@ for indexSubject = 1:1:length(subjectsToProcess)
           % Fpe Time Series
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
           
-          if( isempty(figFpeTitle)==0)     
-            [errorVec,errorName] = calcBalancePointDistance(fpeData.r0F0, ...
-              fpeData.u,fpeData.n,...
-              wholeBodyData(:,colComPos),...
-              c3dGrf(index_FeetForcePlate).cop,...
-              flag_ModeBalancePointsVsCom0VsCop1,...
-              flag_ModeAnalyzeBalanceAlong0Across1,...
-              'Fpe');
-                   
-            %flag_ModeBalancePointsVsCom0VsCop1: scale/label is the same
-            errorScale= scaleDistance;
-            errorLabel=distanceLabel;
+          if(    flag_fpeTimeSeriesPlotsSubject        == 1 ...
+              || flag_fpeTimeSeriesPlotsEnsemble       == 1 ...
+              || flag_fpeSeatOffEnsemble               == 1 )     
 
-            figFpeH = plotTimeSeriesData(figFpeH, subplotPosition,...
-                        movementSequence,...
-                        c3dTime,scaleTime,...
-                        errorVec,errorScale,...
-                        colorFpe,...
-                        timeLabel,...
-                        errorLabel,...
-                        errorName);
-
-          end
-          
-          
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-          % Fpe - Seat-Off
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
-          
-          if(flag_fpeSeatOffEnsemble==1)
             [errorVec,errorName] = calcBalancePointDistance(fpeData.r0F0, ...
                           fpeData.u,fpeData.n,...
                           wholeBodyData(:,colComPos),...
@@ -696,42 +650,85 @@ for indexSubject = 1:1:length(subjectsToProcess)
             errorScale= scaleDistance;
             errorLabel=distanceLabel;
 
-            figTrialSeatOffFpe = plotEventData(...
-                        figTrialSeatOffFpe,subplotPosition,...
-                        movementSequence,...
-                        indexSubject, 1,...
-                        errorVec, errorScale,...
-                        colorFpe, subjectId, 1,...
-                        '',errorLabel,errorName,...
-                        flag_EventStart0Reference1End2);                
-            
-            axis tight;
-            axisLim = axis;            
-            axisLim(1) = 0;
-            axisLim(2) = length(subjectsToProcess)+1;
-            if(flag_ModeBalancePointsVsCom0VsCop1 == 0)
-              axisLim(3) = -0.5;
-              axisLim(4) = 16.5;
-            else
-              if(flag_ModeAnalyzeBalanceAlong0Across1==0)
-                axisLim(3) = -10;
-                axisLim(4) = 10;
-              else
-                axisLim(3) = -5;
-                axisLim(4) = 5;
+            if(flag_fpeTimeSeriesPlotsSubject==1)
+              figSubjectFpe(indexSubject).h = ...
+                plotTimeSeriesData(...
+                          figSubjectFpe(indexSubject).h,...
+                          subplotPosition,...
+                          movementSequence,...
+                          c3dTime, scaleTime,...
+                          errorVec, errorScale,...
+                          colorFpe, ...
+                          timeLabel, errorLabel,...
+                          [errorName,': (',subjectId,'): ',trialTypeNames{indexTrial}]);              
+            end 
+
+            if(flag_fpeTimeSeriesPlotsEnsemble==1)
+              figAllFpe = plotTimeSeriesData(...
+                          figAllFpe,subplotPosition,...
+                          movementSequence,...
+                          c3dTime, scaleTime,...
+                          errorVec, errorScale,...
+                          colorFpe, ...
+                          timeLabel, errorLabel,...
+                          [errorName,': ',trialTypeNames{indexTrial}]);   
+            end 
+
+            if(flag_fpeSeatOffEnsemble ==1 )
+              figTrialSeatOffFpe = plotEventData(...
+                          figTrialSeatOffFpe,subplotPosition,...
+                          movementSequence,...
+                          indexSubject, 1,...
+                          errorVec, errorScale,...
+                          colorFpe, subjectId, 1,...
+                          '',errorLabel,...
+                          [errorName,' Seat-Off: ',trialTypeNames{indexTrial}],...
+                          flag_EventStart0Reference1End2);             
+              set(gca,'XTickLabel',[]);                
+              axis tight;
+              axisLim = axis;
+              axisLim(1) = 0;
+              axisLim(2) = length(subjectsToProcess)+1;
+              switch(flag_ModeBalancePointsVsCom0VsCop1)
+                case 0
+                  switch(flag_ModeAnalyzeBalanceAlong0Across1)
+                    case 0
+                      axisLim(3) =-0.5;
+                      axisLim(4) = 20.;
+                    case 1
+                      axisLim(3) =-5;
+                      axisLim(4) = 5;                      
+                    otherwise assert(0)                      
+                  end
+                case 1
+                  switch(flag_ModeAnalyzeBalanceAlong0Across1)
+                    case 0
+                      axisLim(3) =-12;
+                      axisLim(4) = 12;
+                    case 1
+                      axisLim(3) =-5;
+                      axisLim(4) = 5;                      
+                    otherwise assert(0)                      
+                  end                  
+                otherwise assert(0)                  
               end
+
+              axis(axisLim);
+              set(gca,'XTickLabel',[]);
             end
-            axis(axisLim);
-            set(gca,'XTickLabel',[]);
+
           end
+          
+          
+ 
           
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Cap - Seat-Off
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
           
           if(    flag_capTimeSeriesPlotsSubject   == 1 ...
-              && flag_capTimeSeriesPlotsEnsemble  == 1 ...
-              && flag_capSeatOffEnsemble          == 1)
+              || flag_capTimeSeriesPlotsEnsemble  == 1 ...
+              || flag_capSeatOffEnsemble          == 1)
              
             [errorVec,errorName] = calcBalancePointDistance(capData.r0F0, ...
                           capData.u,capData.n,...
@@ -786,61 +783,34 @@ for indexSubject = 1:1:length(subjectsToProcess)
               axisLim(2) = length(subjectsToProcess)+1;
               switch(flag_ModeBalancePointsVsCom0VsCop1)
                 case 0
+                  switch(flag_ModeAnalyzeBalanceAlong0Across1)
+                    case 0
+                      axisLim(3) =-0.5;
+                      axisLim(4) = 16.5;
+                    case 1
+                      axisLim(3) =-11;
+                      axisLim(4) = 11;                      
+                    otherwise assert(0)                      
+                  end
                 case 1
-                  oth
-              
-              if(flag_ModeBalancePointsVsCom0VsCop1 == 0)
-                axisLim(3) = -0.5;
-                axisLim(4) = 16.5;
-              else
-                if(flag_ModeAnalyzeBalanceAlong0Across1==0)
-                  axisLim(3) = -10;
-                  axisLim(4) = 10;
-                else
-                  axisLim(3) = -5;
-                  axisLim(4) = 5;
-                end
+                  switch(flag_ModeAnalyzeBalanceAlong0Across1)
+                    case 0
+                      axisLim(3) =-11;
+                      axisLim(4) = 11;
+                    case 1
+                      axisLim(3) =-5;
+                      axisLim(4) = 5;                      
+                    otherwise assert(0)                      
+                  end                  
+                otherwise assert(0)                  
               end
+
               axis(axisLim);
               set(gca,'XTickLabel',[]);
             end
           end          
           
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-          % Cap Time Series 
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
-          
-          if( isempty(figCapTitle)==0)              
-              errorVec = [];
-              errorScale = [];
-              errorLabel = [];
-              switch flag_ModeBalancePointsVsCom0VsCop1
-                case 0
-                  errorVec = capData.r0F0 - wholeBodyData(:,colComPos);
-                  errorScale= scaleDistance;
-                  errorLabel=distanceLabel;
-                case 1
-                  errorVec = capData.r0F0 - c3dGrf(index_FeetForcePlate).cop;
-                  errorScale= scaleDistance;
-                  errorLabel=distanceLabel;                  
-                otherwise assert(0)
-              end              
-              switch(flag_ModeAnalyzeBalanceAlong0Across1)
-                case 0
-                  errorVec = sum(errorVec.*capData.u,2);
-                case 1
-                  errorVec = sum(errorVec.*capData.n,2);                  
-                otherwise assert(0);
-              end
-              figCapH = plotTimeSeriesData(figCapH,subplotPosition,...
-                          movementSequence,...
-                          c3dTime, scaleTime,...
-                          errorVec, errorScale,...
-                          colorCap,timeLabel,errorLabel,figCapTitle);
-                          
-               
-                 
-          end
+
           
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Fpe-Cap Time Series
@@ -928,12 +898,30 @@ for indexSubject = 1:1:length(subjectsToProcess)
             set(gca,'XTickLabel',[]);
           end
 
-        %end
+
       end
       
       
     end
     
+  end
+  
+  if(flag_pointToNearestFootEdgeSubject == 1)
+    analysisType = '';
+    switch flag_ModePoint
+      case 0
+        analysisType = 'FpeFootEdge';
+      case 1
+        analysisType = 'CapFootEdge';
+      case 2
+        analysisType = 'CopFootEdge';      
+      case 3
+        analysisType = 'ComFootEdge';      
+      otherwise assert(0);
+    end  
+    figure(figTrialPointToFootEdge);
+    configPlotExporter;
+    print('-dpdf',['../../plots/footEdge/fig_',analysisType,'_S2SQuietTimeSeries_',subjectId,'.pdf']);
   end
   
   if(flag_balancePortraitSubject==1)
@@ -1031,6 +1019,24 @@ for indexSubject = 1:1:length(subjectsToProcess)
   end
 end
 
+
+if(flag_pointToNearestFootEdge == 1)
+  analysisType = '';
+  switch flag_ModePoint
+    case 0
+      analysisType = 'FpeFootEdge';
+    case 1
+      analysisType = 'CapFootEdge';
+    case 2
+      analysisType = 'CopFootEdge';      
+    case 3
+      analysisType = 'ComFootEdge';      
+    otherwise assert(0);
+  end  
+  figure(figTrialPointToFootEdge);
+  configPlotExporter;
+  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);
+end
 
 if(flag_comKinematicsTimeSeriesEnsemble==1 ...
     || flag_comKinematicsSeatOffEnsemble==1)  

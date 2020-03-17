@@ -4,19 +4,29 @@ if(exist('flag_outerLoopMode','var') ==0)
     close all;
     clear all;
 
-    flag_ModeBalancePortrait = 0;
+    flag_ConvexHullWithToes0Without1         = 1;
+    flag_ModePoint                           = 3;
+    %0 fpe
+    %1 cap
+    %2 cop
+    %3 com
+      flag_pointToNearestFootEdge            = 1;
+      flag_pointToNearestFootEdgeSubject     = 0;
+
+
+    flag_ModeBalancePortrait                 = 0;
     % 0: fpe
     % 1: cap
-    %
-    
-    flag_balancePortraitSubject             = 0;    
-    
+    %      
+      flag_balancePortraitSubject            = 0;        
+
+
     flag_ModeBalancePointsVsCom0VsCop1      = 1;
     flag_ModeAnalyzeBalanceAlong0Across1    = 0;
 
       flag_fpeTimeSeriesPlotsSubject        = 0;
       flag_fpeTimeSeriesPlotsEnsemble       = 0;
-      flag_fpeSeatOffEnsemble               = 1;
+      flag_fpeSeatOffEnsemble               = 0;
 
       flag_capTimeSeriesPlotsSubject        = 0;
       flag_capTimeSeriesPlotsEnsemble       = 0;
@@ -68,6 +78,11 @@ codeDir = pwd;
   outputPath = pwd;  
 cd(codeDir);
 
+figSubjectPointToFootEdge(length(subjectsToProcess)) = struct('h',[]);
+figTrialPointToFootEdge = [];
+if(flag_pointToNearestFootEdge == 1)
+  figTrialPointToFootEdge = figure;
+end
 
 figSubjectBalancePortrait(length(subjectsToProcess)) = struct('h',[]);
 
@@ -156,11 +171,15 @@ for indexSubject = 1:1:length(subjectsToProcess)
   if(flag_balancePortraitSubject == 1)
     figSubjectBalancePortrait(indexSubject).h = figure;
   end
-  
+  if(flag_pointToNearestFootEdgeSubject==1)
+    figSubjectPointToFootEdge(indexSubject).h = figure;
+  end
+
   colorFpe    = [0,0,0];
   colorFpeCap = [0,0,0];
   colorCap    = [0,0,0];
   colorCom    = [0,0,0];
+  colorCop    = [0,0,0];  
   colorGrfz   = [0,0,0];
   
   if( isempty(strfind(subjectsToProcess{indexSubject},'E'))==0)
@@ -168,12 +187,14 @@ for indexSubject = 1:1:length(subjectsToProcess)
     colorFpeCap = colorElderly(1,:);  
     colorCap    = colorElderly(1,:);    
     colorCom    = colorElderly(1,:);
+    colorCop    = colorElderly(1,:);    
     colorGrfz   = colorElderly(1,:);
   else
     colorFpe    = colorYoung(1,:);    
     colorFpeCap = colorYoung(1,:);  
     colorCap    = colorYoung(1,:);    
     colorCom    = colorYoung(1,:);
+    colorCop    = colorYoung(1,:);    
     colorGrfz   = colorYoung(1,:);
     
   end
@@ -240,14 +261,26 @@ for indexSubject = 1:1:length(subjectsToProcess)
       outputCopToFootHullDistanceFileName ...
         = outputCopToFootHullDistanceFileNames{indexTrial}   ;    
       
-      load([trialFolder, outputFpeToFootHullDistanceFileName]);
-      %fpe2FootConvexHullDist
-      load([trialFolder, outputCapToFootHullDistanceFileName]);
-      %cap2FootConvexHullDist
-      load([trialFolder, outputComGPToFootHullDistanceFileName]);
-      %comgp2FootConvexHullDist
-      load([trialFolder, outputCopToFootHullDistanceFileName]);       
-      %cop2FootConvexHullDist
+      
+      if( flag_ConvexHullWithToes0Without1==0)
+        load([trialFolder, outputFpeToFootHullDistanceFileName ]);
+        %fpe2FootConvexHullDist
+        load([trialFolder, outputCapToFootHullDistanceFileName]);
+        %cap2FootConvexHullDist
+        load([trialFolder, outputComGPToFootHullDistanceFileName]);
+        %comgp2FootConvexHullDist
+        load([trialFolder, outputCopToFootHullDistanceFileName]);       
+        %cop2FootConvexHullDist
+      else
+        load([trialFolder, outputFpeToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat' ]);
+        %fpe2FootConvexHullDist
+        load([trialFolder, outputCapToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat' ]);
+        %cap2FootConvexHullDist
+        load([trialFolder, outputComGPToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat' ]);
+        %comgp2FootConvexHullDist
+        load([trialFolder, outputCopToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat' ]);       
+        %cop2FootConvexHullDist        
+      end
       
       segmentFileName    = outputSegmentationFileNames{indexTrial};
       load([trialFolder,segmentFileName]);
@@ -326,19 +359,18 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
       if(indexTrial <= 6)
 
-          figComH = [];
-          figFpeH = [];
-          figCapH = [];
-          figFpeCapH = [];
-          figGrfZH = [];
-          figBPH = [];
-
-          figComTitle = [];
-          figFpeTitle = [];
-          figCapTitle = [];
-          figFpeCapTitle = [];
-          figGrfZTitle = [];
-          figBPTitle = [];
+          %figComH = [];
+          %figFpeH = [];
+          %figCapH = [];
+          %figFpeCapH = [];
+          %figGrfZH = [];
+          %figBPH = [];
+          %figComTitle = [];
+          %figFpeTitle = [];
+          %figCapTitle = [];
+          %figFpeCapTitle = [];
+          %figGrfZTitle = [];
+          %figBPTitle = [];
 
           timeLabel = 'Time (s)';
           forceLabel= 'Force (N)';
@@ -355,7 +387,92 @@ for indexSubject = 1:1:length(subjectsToProcess)
           [row,col] = find(subPlotPanelIndex == (indexTrial-offsetTrialIndex));          
           subplotPosition = reshape(subPlotPanel(row,col,:),1,4);
           
-          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Balance point to foot edge
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%          
+
+          if(   flag_pointToNearestFootEdge         == 1 ...
+             || flag_pointToNearestFootEdgeSubject  == 1)
+
+            data      = [];
+            scaleData = [];
+            colorData = [];
+            yLabelData =[];
+            figTitle = '';
+            axisYLim = [];
+            %0 fpe
+            %1 cap
+            %2 cop
+            %3 com
+            switch flag_ModePoint
+              case 0
+                data  = -fpe2FootConvexHullDist.distance;
+                scaleData = scaleDistance;
+                colorData = colorFpe;
+                yLabelData = distanceLabel;
+                figTitle = 'Fpe--Foot-Edge';
+                axisYLim = [-7, 16];
+              case 1
+                data  = -cap2FootConvexHullDist.distance;
+                scaleData = scaleDistance;                
+                colorData = colorCap;
+                yLabelData = distanceLabel;
+                figTitle = 'Cap--Foot-Edge';    
+                axisYLim = [-7,16];
+              case 2
+                data  = -cop2FootConvexHullDist.distance;
+                scaleData = scaleDistance;     
+                colorData = colorCop;
+                yLabelData = distanceLabel; 
+                figTitle = 'Cop--Foot-Edge';      
+                axisYLim = [0,16];                
+              case 3
+                data  = -comgp2FootConvexHullDist.distance;
+                scaleData = scaleDistance;                
+                colorData = colorCom;                
+                yLabelData = distanceLabel;
+                figTitle = 'Com--Foot-Edge'; 
+                axisYLim = [-7,17];
+              otherwise assert(0);
+            end
+
+            if(flag_pointToNearestFootEdge == 1)
+              flag_IntervalMode = 1;
+              figTrialPointToFootEdge = ...
+                plotBoxWhiskerData(...
+                   figTrialPointToFootEdge, subplotPosition, ...
+                   movementSequence, ...
+                   indexSubject, 1,...              
+                   data, scaleData, ...
+                   colorData,  ...
+                   0.5,...
+                   subjectId, 0.5,...
+                   '',...
+                   yLabelData, ...
+                   [figTitle,': ',trialTypeNames{indexTrial}], ...
+                   flag_IntervalMode);
+              axisLim = axis;
+              axisLim(1)=-0.5;
+              axisLim(2)=length(subjectsToProcess)+0.5;
+              axisLim(3)=axisYLim(1);
+              axisLim(4)=axisYLim(2);
+              axis(axisLim);
+            end
+
+            %figSubjectPointToFootEdge
+            if(flag_pointToNearestFootEdgeSubject ==  1)
+              figSubjectPointToFootEdge = ...
+                plotTimeSeriesData(...
+                  figSubjectPointToFootEdge, subplotPosition, ...
+                  movementSequence, ...
+                  c3dTime, scaleTime, ...
+                  data, scaleData, ...
+                  colorData,  ...
+                  timeLabel, ...
+                  yLabelData, ...
+                  [figTitle,'(',subjectId,'): ',trialTypeNames{indexTrial}]);
+            end
+          end
 
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Balance Portrait
@@ -801,6 +918,27 @@ for indexSubject = 1:1:length(subjectsToProcess)
     
   end
   
+  if(flag_pointToNearestFootEdgeSubject == 1)
+    analysisType = '';
+    switch flag_ModePoint
+      case 0
+        analysisType = 'FpeFootEdge';
+      case 1
+        analysisType = 'CapFootEdge';
+      case 2
+        analysisType = 'CopFootEdge';      
+      case 3
+        analysisType = 'ComFootEdge';      
+      otherwise assert(0);
+    end  
+    if flag_ConvexHullWithToes0Without1 == 1
+      analysisType = [analysisType,'NoToes'];
+    end    
+    figure(figTrialPointToFootEdge);
+    configPlotExporter;
+    print('-dpdf',['../../plots/footEdge/fig_',analysisType,'_S2SQuietTimeSeries_',subjectId,'.pdf']);
+  end
+  
   if(flag_balancePortraitSubject==1)
     figure(figSubjectBalancePortrait(indexSubject).h);
     configPlotExporter;
@@ -896,6 +1034,28 @@ for indexSubject = 1:1:length(subjectsToProcess)
   end
 end
 
+
+if(flag_pointToNearestFootEdge == 1)
+  analysisType = '';
+  switch flag_ModePoint
+    case 0
+      analysisType = 'FpeFootEdge';
+    case 1
+      analysisType = 'CapFootEdge';
+    case 2
+      analysisType = 'CopFootEdge';      
+    case 3
+      analysisType = 'ComFootEdge';      
+    otherwise assert(0);
+  end  
+  if flag_ConvexHullWithToes0Without1 == 1
+    analysisType = [analysisType,'NoToes'];
+  end
+  
+  figure(figTrialPointToFootEdge);
+  configPlotExporter;
+  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);
+end
 
 if(flag_comKinematicsTimeSeriesEnsemble==1 ...
     || flag_comKinematicsSeatOffEnsemble==1)  
