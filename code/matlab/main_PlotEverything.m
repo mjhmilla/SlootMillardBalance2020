@@ -10,7 +10,7 @@ if(exist('flag_outerLoopMode','var') ==0)
     %1 cap
     %2 cop
     %3 com
-      flag_pointToNearestFootEdge             = 0;
+      flag_pointToNearestFootEdge             = 1;
       flag_pointToNearestFootEdgeSubject      = 0;
 
 
@@ -18,7 +18,7 @@ if(exist('flag_outerLoopMode','var') ==0)
     % 0: fpe
     % 1: cap
     %      
-      flag_balancePortraitSubject             = 1;        
+      flag_balancePortraitSubject             = 0;        
       flag_balancePortraitSeatOff             = 0;
 
     flag_ModeBalancePointsVsCom0VsCop1        = 1;
@@ -37,7 +37,7 @@ if(exist('flag_outerLoopMode','var') ==0)
       flag_fpeCapErrorTimeSeriesPlotsEnsemble = 0;
     %flag_fpeCapErrorSeatOffEnsemble      
       
-    flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4 = 3;
+    flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4 = 4;
             
       flag_comKinematicsTimeSeriesSubject   = 0;
       flag_comKinematicsTimeSeriesEnsemble  = 0;
@@ -56,12 +56,31 @@ flag_EventStart0Reference1End2 = 1;
 
 plotConfig;
 
+
+
+
+
 subjectsToProcess =  ...
   {'configH01','configH02','configH03','configH04','configH05',...
    'configH06','configH07','configH08','configH09','configH10',...
-   'configE01','configE02','configE03','configE05', ...
-   'configE06','configE07','configE08'};
+   'configE01','configE02','configE03','configE05','configE06',...
+   'configE07','configE08'};
 
+ 
+groups(2) = struct('index',[],'name',[],'color',[]);
+groups(1).index = [1,2,3,4,5,6,7,8,9,10];
+groups(1).name = 'Y';
+groups(2).index = [11,12,13,14,15, 16,17];
+groups(2).name = 'E';
+
+%The rows store: min, 25%, mean, 75%, max
+subjectData(length(subjectsToProcess)) =...
+             struct('com2edge',zeros(5,6),...
+                    'com2cop' ,zeros(5,6),...
+                    'comvel'  ,zeros(5,6),...
+                    'fpe2edge',zeros(5,6),...
+                    'fpelen'  ,zeros(5,6),...
+                    'fpewidth',zeros(5,6)); 
 %'configE06',...
 
 %%
@@ -82,6 +101,7 @@ figSubjectPointToFootEdge(length(subjectsToProcess)) = struct('h',[]);
 figTrialPointToFootEdge = [];
 if(flag_pointToNearestFootEdge == 1)
   figTrialPointToFootEdge = figure;
+  flag_firstCall = 1;
 end
 
 figSubjectBalancePortrait(length(subjectsToProcess)) = struct('h',[]);
@@ -144,19 +164,22 @@ if(flag_GrfzSeatOffEnsemble==1)
   figTrialGrfZSeatOff = figure;
 end
 
-colorElderly = [0,0,0;...
-                1,0,0;...
-                1,0,1;...
-                0,0,1];
-colorYoung = [0.5,0.5,0.5;...
-              1.0,0.5,0.5;...
-              1.0,0.5,1.0;...
-              0.5,0.5,1.0];
+green  = [102 204 0]./255; 
+blue   = [51 153 255]./255; 
+orange = [255 128 0]./255;
 
+colorElderly = ones(4,3).*green;
+colorYoung   = ones(4,3).*[0,0,0];
+
+groups(1).color = colorYoung(1,:);
+groups(2).color = colorElderly(1,:);
 
 for indexSubject = 1:1:length(subjectsToProcess)
 
-
+  if(indexSubject > 1)
+    flag_firstCall=0;
+  end
+    
   if(flag_comKinematicsTimeSeriesSubject == 1)
     figSubjectCom(      indexSubject).h = figure;
   end
@@ -185,7 +208,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
   colorCom    = [0,0,0];
   colorCop    = [0,0,0];  
   colorGrfz   = [0,0,0];
-  
+  flag_young = 0;
   if( isempty(strfind(subjectsToProcess{indexSubject},'E'))==0)
     colorFpe    = colorElderly(1,:);
     colorFpeCap = colorElderly(1,:);  
@@ -200,6 +223,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
     colorCom    = colorYoung(1,:);
     colorCop    = colorYoung(1,:);    
     colorGrfz   = colorYoung(1,:);
+    flag_young = 1;
     
   end
   
@@ -212,9 +236,19 @@ for indexSubject = 1:1:length(subjectsToProcess)
      
   numberOfTrials = length(inputC3DFiles); 
   
+  subjectId = subjectId(2:3);
+  if(contains(subjectId,'0'))
+    idx = strfind(subjectId,'0');
+    if(idx == 1)
+      subjectId = subjectId(2);
+    end
+  end
+  
   disp(['Processing: ', subjectId]);  
   
   for indexTrial = 1:1:numberOfTrials
+    
+
     %Get the trial folder
     trialFolder = outputTrialFolders{indexTrial};    
         
@@ -363,18 +397,6 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
       if(indexTrial <= 6)
 
-          %figComH = [];
-          %figFpeH = [];
-          %figCapH = [];
-          %figFpeCapH = [];
-          %figGrfZH = [];
-          %figBPH = [];
-          %figComTitle = [];
-          %figFpeTitle = [];
-          %figCapTitle = [];
-          %figFpeCapTitle = [];
-          %figGrfZTitle = [];
-          %figBPTitle = [];
 
           timeLabel = 'Time (s)';
           forceLabel= 'Force (N)';
@@ -436,31 +458,57 @@ for indexSubject = 1:1:length(subjectsToProcess)
                 colorData = colorCom;                
                 yLabelData = distanceLabel;
                 figTitle = 'Com--Foot-Edge'; 
-                axisYLim = [-7,17];
+                axisYLim = [-10,17];
               otherwise assert(0);
             end
 
             if(flag_pointToNearestFootEdge == 1)
+              yLabelPos = axisYLim(1,1)+1.5;
+              %if(flag_young == 0)
+              %  yLabelPos = 14;
+              %end
+              
               flag_IntervalMode = 1;
-              figTrialPointToFootEdge = ...
-                plotBoxWhiskerData(...
+              [figTrialPointToFootEdge, dataSummary] = ...
+                plotBoxWhiskerEventData(...
                    figTrialPointToFootEdge, subplotPosition, ...
                    movementSequence, ...
                    indexSubject, 1,...              
                    data, scaleData, ...
                    colorData,  ...
-                   0.5,...
-                   subjectId, 0.5,...
-                   '',...
-                   yLabelData, ...
+                   0.33,...
+                   subjectId, yLabelPos,...
+                   '', yLabelData, ...
                    [figTitle,': ',trialTypeNames{indexTrial}], ...
-                   flag_IntervalMode);
+                   flag_IntervalMode, flag_firstCall);
               axisLim = axis;
               axisLim(1)=-0.5;
-              axisLim(2)=length(subjectsToProcess)+0.5;
+              axisLim(2)=length(subjectsToProcess)+2.5;
               axisLim(3)=axisYLim(1);
               axisLim(4)=axisYLim(2);
               axis(axisLim);
+              set(gca,'XTickLabel',[]); 
+              
+              dataSummaryVec = [ dataSummary.min;...
+                                 dataSummary.p25;...
+                                 dataSummary.mean;...
+                                 dataSummary.p75;...
+                                 dataSummary.max];
+              switch flag_ModePoint
+                case 0
+                  subjectData(indexSubject).fpe2edge(:,indexTrial) = ...
+                    dataSummaryVec;
+                case 1
+                  subjectData(indexSubject).cap2edge(:,indexTrial) = ...
+                    dataSummaryVec;
+                case 2
+                  subjectData(indexSubject).cop2edge(:,indexTrial) = ...
+                    dataSummaryVec;         
+                case 3
+                  subjectData(indexSubject).com2edge(:,indexTrial) = ...
+                    dataSummaryVec;
+                otherwise assert(0);              
+              end
             end
 
             %figSubjectPointToFootEdge
@@ -481,7 +529,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Balance Portrait
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-          if(     flag_balancePortraitSubject          == 1)
+          if(   flag_balancePortraitSubject == 1 ...
+             || flag_balancePortraitSeatOff == 1)
 
             balancePoint = [];
             balanceTangentDir = [];
@@ -509,7 +558,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
             lineColorBalanceDir   = [1,1,1/0.75].*0.75;
             lineColorCop          = [1,0,0];
             lineColorCom          = [0.5,0.5,0.5];
-            footPatchColor        = [1,1,1].*0.75;
+            footPatchColor        = [1,1,1].*0.9;
             
             if(flag_balancePortraitSubject == 1)
               figSubjectBalancePortrait(indexSubject).h ...
@@ -538,6 +587,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
                     indexSubject, subjectId,...
                     c3dFootMarkersRightNames, c3dFootMarkersLeftNames, ...                  
                     movementSequence, ...
+                    scaleTime,scaleDistance,scaleAngle,scaleForce,...
                     c3dTime, c3dMarkers, ...
                     wholeBodyData(:,colComPos), ...
                     balancePoint, balanceTangentDir, balanceNormalDir,...
@@ -545,7 +595,14 @@ for indexSubject = 1:1:length(subjectsToProcess)
                     lineColorCom,lineColorBalancePoint,lineColorBalanceDir,...
                     lineColorCop,...
                     footPatchColor,...
+                    '',distanceLabel,...
                     [figTitle,': ', trialTypeNames{indexTrial}]);
+              axisLim = axis;
+              axisLim(1) = 0;
+              axisLim(2) = (length(subjectsToProcess)*0.05 +0.025).*scaleDistance;
+              axisLim(3) = (-0.1)*scaleDistance;
+              axisLim(4) = (0.2)*scaleDistance;
+              axis(axisLim);
             end
            
           end
@@ -937,6 +994,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
     
   end
   
+  
   if(flag_pointToNearestFootEdgeSubject == 1)
     analysisType = '';
     switch flag_ModePoint
@@ -958,9 +1016,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
     print('-dpdf',['../../plots/footEdge/fig_',analysisType,'_S2SQuietTimeSeries_',subjectId,'.pdf']);
   end
   
-  if(flag_balancePortraitSubject==1)
-    figure(figSubjectBalancePortrait(indexSubject).h);
-    configPlotExporter;
+  if(flag_balancePortraitSubject==1 )
+
     analysisType='';
     switch flag_ModeBalancePortrait      
       case 0
@@ -968,6 +1025,10 @@ for indexSubject = 1:1:length(subjectsToProcess)
       case 1
         analysisType = ['CapBalancePortrait'];        
     end
+    
+    
+    figure(figSubjectBalancePortrait(indexSubject).h);
+    configPlotExporter;
     print('-dpdf',['../../plots/balancePortrait/fig_',analysisType,'_S2SQuietTimeSeries_',subjectId,'.pdf']);  
     
   end
@@ -1053,6 +1114,112 @@ for indexSubject = 1:1:length(subjectsToProcess)
   end
 end
 
+%%
+%
+% Add in the group statistics to each of the plots
+%
+%%
+% subjectData(length(subjectsToProcess)) =...
+%              struct('com2edge',zeros(5,6),...
+%                     'com2cop' ,zeros(5,6),...
+%                     'comvel'  ,zeros(5,6),...
+%                     'fpe2edge',zeros(5,6),...
+%                     'fpelen'  ,zeros(5,6),...
+%                     'fpewidth',zeros(5,6)); 
+
+
+if(flag_pointToNearestFootEdge == 1)
+  for indexTrial = 1:1:numberOfTrials
+
+    if(indexTrial > offsetTrialIndex && indexTrial <= 6) 
+
+
+    %0 fpe
+    %1 cap
+    %2 cop
+    %3 com
+    
+    
+      groupDataSummary(length(groups)) = struct('data',zeros(5,1),'n',0);
+      for indexGroup = 1:1:length(groups)
+        groupDataSummary(indexGroup).n = length(groups(indexGroup).index);
+        groupDataSummary(indexGroup).data = zeros(5,1);
+        for groupMembers = 1:1:length(groups(indexGroup).index)
+          
+          indexSubject = groups(indexGroup).index(1,groupMembers);
+          
+          switch flag_ModePoint
+            case 0
+              groupDataSummary(indexGroup).data=groupDataSummary(indexGroup).data...
+                                    + subjectData(indexSubject).fpe2edge(:,indexTrial); 
+            case 1
+              groupDataSummary(indexGroup).data=groupDataSummary(indexGroup).data...
+                                    + subjectData(indexSubject).cap2edge(:,indexTrial); 
+              
+            case 2
+              groupDataSummary(indexGroup).data=groupDataSummary(indexGroup).data...
+                                    + subjectData(indexSubject).cop2edge(:,indexTrial); 
+              
+            case 3
+              groupDataSummary(indexGroup).data=groupDataSummary(indexGroup).data...
+                                    + subjectData(indexSubject).com2edge(:,indexTrial); 
+              
+            otherwise assert(0);
+          end
+        end
+        groupDataSummary(indexGroup).data = ...
+          groupDataSummary(indexGroup).data./groupDataSummary(indexGroup).n;        
+
+        [row,col] = find(subPlotPanelIndex == (indexTrial-offsetTrialIndex));          
+        subplotPosition = reshape(subPlotPanel(row,col,:),1,4);
+
+        axisLim = axis;
+        figTrialPointToFootEdge = plotAntsOnALog(...
+          figTrialPointToFootEdge, subplotPosition,...
+            length(subjectsToProcess)+indexGroup, ...
+            groupDataSummary(indexGroup).data(1,1),...
+            groupDataSummary(indexGroup).data(3,1),...
+            groupDataSummary(indexGroup).data(5,1),...
+            groupDataSummary(indexGroup).data(2,1),...
+            groupDataSummary(indexGroup).data(4,1),...
+            [],[],[],0.33,groups(indexGroup).color);
+        
+          xDataMid = length(subjectsToProcess)+indexGroup;
+          axis(axisLim);
+          yLabelPos = axisLim(3)+1.5;
+          
+          text( xDataMid, yLabelPos, groups(indexGroup).name,...
+            'FontSize',6,'Interpreter','latex','HorizontalAlignment','center');  
+          hold on;
+      end   
+      axisLim = axis;
+      plot([1;1].*(length(subjectsToProcess)+0.5),...
+           [axisLim(3);axisLim(4)],'-','Color',[1,1,1],'LineWidth',1.5);
+      hold on;
+      plot([1;1].*(length(subjectsToProcess)+0.5),...
+           [axisLim(3);axisLim(4)],'-','Color',[1,1,1].*0,'LineWidth',0.5);
+      hold on;
+
+    end
+  end
+end
+
+
+if(flag_balancePortraitSeatOff==1 )
+
+  analysisType='';
+  switch flag_ModeBalancePortrait      
+    case 0
+      analysisType = ['FpeBalancePortraitSeatOff'];
+    case 1
+      analysisType = ['CapBalancePortraitSeatOff'];        
+  end
+  figure(figBalancePortraitSeatOff);
+  configPlotExporter;
+  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);  
+
+end
+
 
 if(flag_pointToNearestFootEdge == 1)
   analysisType = '';
@@ -1071,6 +1238,9 @@ if(flag_pointToNearestFootEdge == 1)
     analysisType = [analysisType,'NoToes'];
   end
   
+  figure(figTrialPointToFootEdge);
+  configPlotExporter;
+  print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);
   figure(figTrialPointToFootEdge);
   configPlotExporter;
   print('-dpdf',['../../plots/fig_',analysisType,'_S2SQuietTimeSeries.pdf']);

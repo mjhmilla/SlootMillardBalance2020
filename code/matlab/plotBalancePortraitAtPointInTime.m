@@ -2,7 +2,9 @@ function figH = plotBalancePortraitAtPointInTime(figH, subPlotVec,...
                       subjectNumber, subjectId,...
                       c3dFootMarkerRightNames,c3dFootMarkerLeftNames,...
                       movementSequence,...
-                      c3dTime, c3dMarkers, ...                      
+                      scaleTime,scaleDistance,scaleAngle,scaleForce,...
+                      c3dTime, ...
+                      c3dMarkers, ...                      
                       comPosition,...
                       balancePoint, balanceTangentDir, balanceNormalDir,...
                       c3dGrfFeet,...
@@ -10,7 +12,8 @@ function figH = plotBalancePortraitAtPointInTime(figH, subPlotVec,...
                       lineColorBalancePoint,lineColorBalanceDir,...
                       lineColorCop,...
                       footPatchColor,...
-                      figTitle)
+                      xLabelText,yLabelText,...
+                      titleText)
 
 
 figure(figH);
@@ -33,6 +36,12 @@ footMarkersRight = zeros(length(c3dFootMarkerRightNames),3);
 
 xExtents = [Inf,-Inf];
 yExtents = [Inf,-Inf];
+
+r1C1V = zeros(length(movementSequence),2).*NaN;
+r1P1V = zeros(length(movementSequence),2).*NaN;
+r1F1V = zeros(length(movementSequence),2).*NaN;
+r1H1V = zeros(length(movementSequence),2).*NaN;
+r1T1V = zeros(length(movementSequence),2).*NaN;
 
 for z=1:1:length(movementSequence)
   if( sum(isnan(movementSequence(z).indexStart))==0)
@@ -76,9 +85,55 @@ for z=1:1:length(movementSequence)
     idxLeftFootCH   = convhull(footMarkersLeft(:,1:2));
     idxRightFootCH  = convhull(footMarkersRight(:,1:2));
 
-    [distanceToCvxHull, normalAtCvxHull, pointOnCvxHull] = ...
+    [dHC, nH0, r0H0t] = ...
       calcDistanceToConvexHull(comPosition(idx1,1:2), ...
                                footMarkers(idxFeetCH,1:2));
+                             
+    %%
+    %
+    % Form the reference coordinate system
+    %
+    %%
+
+    eX10 = balanceTangentDir(idx1,1:2)';
+    eY10 = balanceNormalDir(idx1,1:2)';    
+    rm10 = [eX10,eY10];
+    
+    
+    
+    r0H0 = r0H0t';
+    r0H1 = rm10'*r0H0;    
+    r0C0 = comPosition(idx1,1:2)';
+    r0C1 = rm10'*r0C0;
+    
+    r010 = rm10*[r0H1(1,1);r0C1(2,1)];
+
+    
+    %Find the location of the far side of the foot
+    r020 = r010 + eX10.*0.325;
+    [dT2t,nT0t,r0T0t]=calcDistanceToConvexHull(r020',footMarkers(idxFeetCH,1:2));
+    
+    r0T0 = r0T0t';
+    
+    %Get the points related to balance
+    r0F0 = balancePoint(idx1,1:2)';    
+    r0P0 = c3dGrfFeet.cop(idx1,1:2)';
+    
+    r1H1 = rm10'*(r0H0-r010);
+    r1F1 = rm10'*(r0F0-r010);
+    r1C1 = rm10'*(r0C0-r010);
+    r1P1 = rm10'*(r0P0-r010);
+  
+    r1T1 = rm10'*(r0T0-r010);
+    
+    r1C1V(z,:) = r1C1';
+    r1P1V(z,:) = r1P1';
+    r1F1V(z,:) = r1F1';
+    r1H1V(z,:) = r1H1';
+    r1T1V(z,:) = r1T1';    
+    
+
+  
     
 %     
 %     xyOffset = 0.5.*c3dMarkers.(c3dFootMarkerRightNames{end})(idx1,:)...
@@ -272,9 +327,80 @@ for z=1:1:length(movementSequence)
 %           yExtents(1,1),yExtents(1,1)+delta].*100);
 %     axis square    
   end
-%   box off;
-% 
-%   xlabel('Distance (cm)');
-%   ylabel('Distance (cm)');
-%   title(figTitle);
+end
+
+%The XY coordinate system of the lab is X forward, Y left
+%Remap this to X right, Y Up
+r1T1V = [-r1T1V(:,2),r1T1V(:,1)];
+r1H1V = [-r1H1V(:,2),r1H1V(:,1)];
+r1C1V = [-r1C1V(:,2),r1C1V(:,1)];
+r1F1V = [-r1F1V(:,2),r1F1V(:,1)];
+r1P1V = [-r1P1V(:,2),r1P1V(:,1)];
+
+deltaDx = 0.025;
+dx = subjectNumber*2*deltaDx;
+
+behindHeel = [(dx-deltaDx*0.5),(-.075);...
+              (dx+deltaDx*0.5),(-.075);...
+              (dx+deltaDx*0.5),(0. );...
+              (dx-deltaDx*0.5),(0. );...
+              (dx-deltaDx*0.5),(-.075)].*scaleDistance;                
+fill(behindHeel(:,1),behindHeel(:,2),footPatchColor,'EdgeColor','none');
+hold on;
+
+for z=1:1:length(movementSequence)
+  if( sum(isnan(movementSequence(z).indexStart))==0)
+    
+
+    
+%     aheadToe   = [(dx-deltaDx),(r1T1V(z,2));...
+%                  (dx+deltaDx),(r1T1V(z,2));...
+%                  (dx+deltaDx),(r1T1V(z,2)+0.1);...
+%                  (dx-deltaDx),(r1T1V(z,2)+0.1);...
+%                  (dx-deltaDx),(r1T1V(z,2))].*scaleDistance;                
+%     fill(aheadToe(:,1),aheadToe(:,2),footPatchColor,'EdgeColor','none');
+%     hold on;
+    plot([dx-deltaDx*0.5;dx+deltaDx*0.5].*scaleDistance,...
+         [r1T1V(z,2),r1T1V(z,2)].*scaleDistance,...
+         '-','Color', footPatchColor);
+    hold on;
+    
+    plot( [r1C1V(z,1)+dx;r1F1V(z,1)+dx].*scaleDistance, ...
+          [   r1C1V(z,2);   r1F1V(z,2)].*scaleDistance,...
+         '-','Color',lineColorBalanceDir);
+    hold on;
+    plot([r1C1V(z,1)+dx].*scaleDistance,...
+         [r1C1V(z,2)   ].*scaleDistance,...
+         'o','Color',lineColorCom,...
+          'MarkerSize',3, 'MarkerFaceColor',[1,1,1]);
+    hold on;
+    plot([r1F1V(z,1)+dx].*scaleDistance,...
+         [r1F1V(z,2)   ].*scaleDistance,...
+         '+','Color',lineColorBalancePoint,...
+         'MarkerSize',3, 'MarkerFaceColor',lineColorBalancePoint);
+    hold on;
+    plot([r1P1V(z,1)+dx].*scaleDistance,...
+         [r1P1V(z,2)   ].*scaleDistance,...
+         '.','Color',lineColorCop,...
+         'MarkerSize',3, 'MarkerFaceColor',lineColorCop);
+    hold on;  
+  end
+end
+    
+  dy = -0.08;  
+  
+  text( [                dx].*scaleDistance, ...
+        [                dy].*scaleDistance, subjectId,...
+        'FontSize',6,'Interpreter','latex',...
+        'HorizontalAlignment','center');  
+  hold on;   
+    
+  if(isempty(xLabelText)==0)
+    xlabel(xLabelText);
+  end
+  if(isempty(yLabelText)==0)
+    ylabel(yLabelText);
+  end
+  box off;
+  title(titleText);  
 end
