@@ -1,15 +1,18 @@
-function [figH, dataSummary] = plotBoxWhiskerEventData(...
+function [figH, dataSummary, dataRawVec] = plotBoxWhiskerEventDataFrontiers(...
                                  figH, subPlotVec, ...
                                  movementSequence, ...
                                  xPoint, xPointScale,...                   
                                  dataSeries, dataScale, ...
+                                 dataIndex,...
                                  lineColor,  ...
                                  boxWidth,...
                                  dataLabel, dataLabelYLocation,...
                                  xLabelText, ...
                                  yLabelText, ...
                                  titleText,...
-                                 flag_IntervalEventMode, flag_firstCall)
+                                 axisLimits,...
+                                 flag_IntervalEventMode, flag_drawBox,...
+                                 flag_firstCall)
 
                  
 figure(figH);
@@ -20,7 +23,7 @@ if(length(subPlotVec) == 4)
   subplot('Position',subPlotVec);
 end
 
-if(flag_firstCall==1)
+if(flag_drawBox==1 && flag_firstCall)
    boxPts = [-10,-10; 2000,-10;2000,0;-10,0;-10,-10];
   fill(boxPts(:,1),boxPts(:,2),[1,1,1].*0.9,'EdgeColor','none');
   hold on;
@@ -30,6 +33,10 @@ end
 data = [];
 dataSummary =struct('min',NaN,'p25',NaN,'mean',NaN,'p75',NaN','max',NaN,...
                     'events',zeros(1,2).*NaN);
+                  
+dataRaw = struct('x',[],'y',[]);
+dataRawVec = [];
+
 eventData = [];
 for z=1:1:length(movementSequence)
   if( sum(isnan(movementSequence(z).indexReference))==0)
@@ -57,6 +64,11 @@ for z=1:1:length(movementSequence)
                   dataSeries(idxB,:).*dataScale];
                 
     data      = [data; yData];
+    
+    dataRaw.x = dataIndex(idxA:idxB,1);
+    dataRaw.y = dataSeries(idxA:idxB,1).*dataScale;
+    
+    dataRawVec = [dataRawVec;dataRaw];
   end
 
 end
@@ -157,15 +169,29 @@ if(isempty(data) == 0)
 %        '-','Color',[1,1,1],'LineWidth',1.5);
 %   hold on;  
 %   
-  text( xDataMid, dataLabelYLocation, dataLabel,...
-    'FontSize',6,'Interpreter','latex','HorizontalAlignment','center');  
-  hold on;
+box off;
+
+text( xDataMid, dataLabelYLocation, dataLabel,...
+  'FontSize',8,'Interpreter','latex','HorizontalAlignment','center');  
+hold on;
+
+if(flag_firstCall ==1)
+
   if(isempty(xLabelText)==0)
     xlabel(xLabelText);
   end
   if(isempty(yLabelText)==0)
     ylabel(yLabelText);
   end
-  box off;
-  title(titleText);     
+
+   
+  titleFontSize = get(groot,'defaultAxesFontSize')...
+                 *get(groot,'defaultAxesTitleFontSizeMultiplier');
+  xTitle = axisLimits(1);% - 0.1*(axisLimits(2)-axisLimits(1));
+  yTitle = axisLimits(4) + 0.1*(axisLimits(4)-axisLimits(3));
+  text(xTitle,yTitle,titleText,'FontSize',titleFontSize,...
+      'Interpreter','latex','HorizontalAlignment','left');
+  hold on;
+  %title(titleText);     
+end  
 end
