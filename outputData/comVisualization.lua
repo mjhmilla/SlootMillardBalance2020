@@ -20,11 +20,11 @@ model= {
   },
   frames = {    
     {
-      name    = "Ball",
+      name    = "BallCom",
       parent  = "ROOT",
       visuals = {{
-          dimensions = {.05,.05,.005},
-          color       = { 1, 0, 0 },
+          dimensions = {.05,.05,.05},
+          color       = { 0, 0, 1 },
           mesh_center = { 0, 0.0, 0 },
           src         = "unit_sphere_medres.obj",
       },},
@@ -47,13 +47,13 @@ model= {
       }
     },
     {
-      name    = "ProjectionPlane",
+      name    = "BallComGP",
       parent  = "ROOT",
       visuals = {{
-          dimensions = {0.3,.01,.1},
-          color       = { 1.0, 0.5, 0.5 },
-          mesh_center = { 0.15, 0.0, 0.05 },
-          src         = "unit_cube.obj",
+          dimensions = {.05,.05,.005},
+          color       = { 0, 0, 1 },
+          mesh_center = { 0, 0, 0 },
+          src         = "unit_sphere_medres.obj",
       },},
       body    = {   
         mass    = 1., 
@@ -67,14 +67,13 @@ model= {
       joint   = {
         { 0., 0., 0., 1., 0., 0.},
         { 0., 0., 0., 0., 1., 0.},
-        { 0., 0., 1., 0., 0., 0.},
+        { 0., 0., 0., 0., 0., 1.},
       },
       joint_frame = {
           r = {0., 0., 0.},
       }
     },
-
-  },
+  }
 };
 
 --dofile("generateEnumHeader.lua");

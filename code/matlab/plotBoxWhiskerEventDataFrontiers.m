@@ -1,4 +1,4 @@
-function [figH, dataSummary, dataRawVec] = plotBoxWhiskerEventDataFrontiers(...
+function [figH, dataSummary, dataRaw] = plotBoxWhiskerEventDataFrontiers(...
                                  figH, subPlotVec, ...
                                  movementSequence, ...
                                  xPoint, xPointScale,...                   
@@ -11,8 +11,9 @@ function [figH, dataSummary, dataRawVec] = plotBoxWhiskerEventDataFrontiers(...
                                  yLabelText, ...
                                  titleText,...
                                  axisLimits,...
-                                 flag_IntervalEventMode, flag_drawBox,...
-                                 flag_firstCall)
+                                 flag_drawBox,...
+                                 flag_firstCall,...
+                                 numberOfPhases)
 
                  
 figure(figH);
@@ -27,48 +28,80 @@ if(flag_drawBox==1 && flag_firstCall)
    boxPts = [-10,-10; 2000,-10;2000,0;-10,0;-10,-10];
   fill(boxPts(:,1),boxPts(:,2),[1,1,1].*0.9,'EdgeColor','none');
   hold on;
-
 end
-  
-data = [];
-dataSummary =struct('min',NaN,'p25',NaN,'mean',NaN,'p75',NaN','max',NaN,...
-                    'events',zeros(1,2).*NaN);
-                  
-dataRaw = struct('x',[],'y',[]);
-dataRawVec = [];
+if(flag_firstCall ==1)
+  plot([-10,2000],[0,0],'Color',[1,1,1].*0.75);
+  hold on;
+end
 
-eventData = [];
+  
+%Two phases: 
+% 1. start-to-seatoff
+% 2. seatoff-to-standing
+%numberOfPhases = 2;
+
+data(numberOfPhases) = struct('y',[]);
+
+dataSummary(numberOfPhases) =...
+  struct('min',NaN,'p25',NaN,'mean',NaN,'p75',NaN','max',NaN,...
+         'start',zeros(1,1).*NaN,...
+         'end',zeros(1,1).*NaN,...
+         'duration',NaN);
+                  
+dataRaw(numberOfPhases) = struct('x',[],'y',[]);
+
+eventStart(numberOfPhases) = struct('x',[],'y',[]);
+eventEnd(numberOfPhases)   = struct('x',[],'y',[]);
+
+
+dataMin(numberOfPhases) = struct('x',[],'y',[]);
+dataMax(numberOfPhases) = struct('x',[],'y',[]);
+
 for z=1:1:length(movementSequence)
   if( sum(isnan(movementSequence(z).indexReference))==0)
  
     idx0 = movementSequence(z).indexStart;
     idx1 = movementSequence(z).indexReference;
     idx2 = movementSequence(z).indexEnd;
+    
+    
+    for p=1:1:numberOfPhases
 
-    idxA = 0;
-    idxB = 0;
-    switch(flag_IntervalEventMode)
-      case 0
-        idxA = idx0;
-        idxB = idx2;
-      case 1
-        idxA = idx1;
-        idxB = idx2;
-      otherwise assert(0);
+      switch p
+        case 1
+          idxA = idx0;
+          idxB = idx1;
+        case 2
+          idxA = idx1;
+          idxB = idx2;          
+        otherwise assert(0);          
       end
+       
+      eventStart(p).x = [eventStart(p).x; dataIndex(idxA,1)];
+      eventStart(p).y = [eventStart(p).y; dataSeries(idxA,1).*dataScale];
+                  
+      eventEnd(p).x = [eventEnd(p).x; dataIndex(idxB,1)];
+      eventEnd(p).y = [eventEnd(p).y; dataSeries(idxB,1).*dataScale];
+                    
+                   
+      data(p).y   = [data(p).y; dataSeries(idxA:idxB,:).*dataScale];
+    
+      
+      [valMin,idxMin] = min(dataSeries(idxA:idxB,1).*dataScale);
+      [valMax,idxMax] = max(dataSeries(idxA:idxB,1).*dataScale);
+      
+      dataMin(p).x = [dataMin(p).x; dataIndex(idxA+idxMin-1,1)];
+      dataMin(p).y = [dataMin(p).y; valMin];
 
-    yData = dataSeries(idxA:idxB,:).*dataScale;
+      dataMax(p).x = [dataMax(p).x; dataIndex(idxA+idxMax-1,1)];
+      dataMax(p).y = [dataMax(p).y; valMax];
+      
+        
+      dataRaw(p).x = [dataRaw(p).x; dataIndex(idxA:idxB,1)];
+      dataRaw(p).y = [dataRaw(p).y; dataSeries(idxA:idxB,1).*dataScale];
+      
+    end
     
-    eventData = [eventData;...
-                  dataSeries(idxA,:).*dataScale,...
-                  dataSeries(idxB,:).*dataScale];
-                
-    data      = [data; yData];
-    
-    dataRaw.x = dataIndex(idxA:idxB,1);
-    dataRaw.y = dataSeries(idxA:idxB,1).*dataScale;
-    
-    dataRawVec = [dataRawVec;dataRaw];
   end
 
 end
@@ -76,28 +109,35 @@ end
 if(isempty(data) == 0)
 
   
-  dataSorted = sort(data(:,1));
-  n = length(dataSorted);
+  for p=1:1:numberOfPhases
   
-  n25 = round(n*0.25);
-  n75 = round(n*0.75);
-  
-  dataSummary.min=dataSorted(1,1);
-  dataSummary.mean=mean(data(:,1));
-  dataSummary.max=dataSorted(end,1);
+    dataSorted = sort(data(p).y(:,1));
+    n = length(dataSorted);
 
-  dataSummary.p25 = dataSorted(n25,1);
-  dataSummary.p75 = dataSorted(n75,1);
+    n25 = round(n*0.25);
+    n75 = round(n*0.75);
+
+    dataSummary(p).min = mean(dataMin(p).y);
+    dataSummary(p).mean= mean(data(p).y(:,1));
+    dataSummary(p).max = mean(dataMax(p).y);
+
+    dataSummary(p).p25 = dataSorted(n25,1);
+    dataSummary(p).p75 = dataSorted(n75,1);
+
+    dataSummary(p).start = mean(eventStart(p).y);
+    dataSummary(p).end   = mean(eventEnd(p).y);
+    dataSummary(p).duration = mean(eventEnd(p).x-eventStart(p).x);
   
-  for k=1:1:size(dataSummary.events,2)
-    dataSummary.events(1,k) = mean(eventData(:,k));
   end
+  
   xDataMid = (xPoint*xPointScale);
+  p=2;
   
   figH = plotAntsOnALog(figH,subPlotVec, ...
             xDataMid,...
-            dataSummary.min, dataSummary.mean, dataSummary.max,...
-            dataSummary.p25, dataSummary.p75, eventData,...
+            dataSummary(p).min, dataSummary(p).mean, dataSummary(p).max,...
+            dataSummary(p).p25, dataSummary(p).p75, ...
+            [dataSummary(p).start,dataSummary(p).end],...
             {'o','o'},[1,1,1;lineColor],boxWidth,lineColor);
 
 
@@ -175,23 +215,23 @@ text( xDataMid, dataLabelYLocation, dataLabel,...
   'FontSize',8,'Interpreter','latex','HorizontalAlignment','center');  
 hold on;
 
-if(flag_firstCall ==1)
+  if(flag_firstCall ==1)
 
-  if(isempty(xLabelText)==0)
-    xlabel(xLabelText);
-  end
-  if(isempty(yLabelText)==0)
-    ylabel(yLabelText);
-  end
+    if(isempty(xLabelText)==0)
+      xlabel(xLabelText);
+    end
+    if(isempty(yLabelText)==0)
+      ylabel(yLabelText);
+    end
 
-   
-  titleFontSize = get(groot,'defaultAxesFontSize')...
-                 *get(groot,'defaultAxesTitleFontSizeMultiplier');
-  xTitle = axisLimits(1);% - 0.1*(axisLimits(2)-axisLimits(1));
-  yTitle = axisLimits(4) + 0.1*(axisLimits(4)-axisLimits(3));
-  text(xTitle,yTitle,titleText,'FontSize',titleFontSize,...
-      'Interpreter','latex','HorizontalAlignment','left');
-  hold on;
-  %title(titleText);     
-end  
+
+    titleFontSize = get(groot,'defaultAxesFontSize')...
+                   *get(groot,'defaultAxesTitleFontSizeMultiplier');
+    xTitle = axisLimits(1);% - 0.1*(axisLimits(2)-axisLimits(1));
+    yTitle = axisLimits(4) + 0.1*(axisLimits(4)-axisLimits(3));
+    text(xTitle,yTitle,titleText,'FontSize',titleFontSize,...
+        'Interpreter','latex','HorizontalAlignment','left');
+    hold on;
+    %title(titleText);     
+  end  
 end

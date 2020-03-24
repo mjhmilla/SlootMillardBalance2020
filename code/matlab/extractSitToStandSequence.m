@@ -8,6 +8,7 @@ function [sitToStandSequence, sitToStandSequenceInfo] = ...
                 startS2SComVelocityTolerance,...
                 seatOffChairForceZTolerance,...
                 endS2SComHeightTolerance,...
+                endS2SComVelocityTolerance,...
                 movementSequenceDataFileName,...
                 flag_rejectTrialsFootGroundContactBroken,...
                 flag_loadSequenceDataFromFile, ...
@@ -41,6 +42,8 @@ assert(strcmp(segmentInfo(6).phaseName,'standingUnstable')  ==1);
 
 if(flag_loadSequenceDataFromFile == 0)
 
+  
+  comSpeed = sum(comVelocity.^2,2).^0.5;
   %sequenceData = struct('sit2stand',[]);
                   
   sitToStandSequence(1) = ...
@@ -193,13 +196,13 @@ if(flag_loadSequenceDataFromFile == 0)
             indexMaxSittingComVelocity = 0;
             for k=indexSittingStaticStart:indexSeatOff
               if(sum(isnan(comVelocity(k,:)))==0)
-                comSpeed = norm(comVelocity(k,:));
-                if(comSpeed < minSittingComVelocity)
-                  minSittingComVelocity = comSpeed;
+                comSpeedVal = comSpeed(k,1);%norm(comVelocity(k,:));
+                if(comSpeedVal < minSittingComVelocity)
+                  minSittingComVelocity = comSpeedVal;
                   indexMinSittingComVelocity = k;
                 end
-                if(comSpeed > maxSittingComVelocity)
-                  maxSittingComVelocity = comSpeed;
+                if(comSpeedVal > maxSittingComVelocity)
+                  maxSittingComVelocity = comSpeedVal;
                   indexMaxSittingComVelocity = k;
                 end
                 
@@ -217,18 +220,18 @@ if(flag_loadSequenceDataFromFile == 0)
             end
 
             flag_threshold = 0;
-            comSpeed = 0;
+            comSpeedVal = 0;
             while (flag_threshold == 0 && indexStart > indexMinSittingComVelocity)              
               indexStart = indexStart-1;
               if(sum(isnan(comVelocity(indexStart,:)))==0)
-                comSpeed = norm(comVelocity(indexStart,:));
-                if(comSpeed <= startingVelocity)
+                comSpeedVal = comSpeed(indexStart,1);%norm(comVelocity(indexStart,:));
+                if(comSpeedVal <= startingVelocity)
                   flag_threshold=1;
                 end
               end
             end
             assert(flag_threshold==1);
-            valueStart = comSpeed;
+            valueStart = comSpeedVal;
 
             %%
             %
@@ -269,7 +272,15 @@ if(flag_loadSequenceDataFromFile == 0)
               max(comPosition(indexStandingStart:indexStandingEnd,3));
             [minComHeight, indexMinComHeight] = ...
               min(comPosition(indexStandingStart:indexStandingEnd,3));
+            
+            %endS2SComVelocityTolerance
 
+            [maxComSpeed, indexMaxComSpeed] = ...
+              max(comSpeed(indexStandingStart:indexStandingEnd,1));
+            [minComSpeed, indexMinComSpeed] = ...
+              min(comSpeed(indexStandingStart:indexStandingEnd,1));
+            
+            
             standingHeight = 0;
             standingChangeInHeight = maxComHeight-minComHeight;
             if(standingChangeInHeight < endS2SComHeightTolerance)
@@ -277,12 +288,22 @@ if(flag_loadSequenceDataFromFile == 0)
             else
               standingHeight = maxComHeight - endS2SComHeightTolerance;
             end
+            
+            standingSpeed = 0;
+            standingChangeInSpeed = maxComSpeed-minComSpeed;
+            if(standingChangeInSpeed < endS2SComVelocityTolerance)
+              standingSpeed = minComSpeed + 0.5*standingChangeInSpeed;
+            else
+              standingSpeed = minComSpeed + endS2SComVelocityTolerance;              
+            end
 
-            while(indexStandingStart < indexStandingEnd ...
-                  && comPosition(indexStandingStart,3) < standingHeight)
-              indexStandingStart = indexStandingStart+1;
+            indexStanding=indexStandingStart;
+            while(indexStanding < indexStandingEnd ...
+                  && (comPosition(indexStanding,3) < standingHeight ...
+                  ||  comSpeed(indexStanding) > standingSpeed))
+              indexStanding = indexStanding+1;
             end 
-            valueEnd = comPosition(indexStandingStart,3);
+            valueEnd = comPosition(indexStanding,3);
 
             %%
             %
@@ -310,7 +331,7 @@ if(flag_loadSequenceDataFromFile == 0)
               sitToStandSequence(countS2Sq).valueSwitchConditionReference = ... 
                 valueSeatOff;
 
-              sitToStandSequence(countS2Sq).indexEnd = indexEnd;
+              sitToStandSequence(countS2Sq).indexEnd = indexStanding;
               sitToStandSequence(countS2Sq).valueSwitchConditionEnd = ... 
                 valueEnd;
 
@@ -358,7 +379,7 @@ if(flag_loadSequenceDataFromFile == 0)
   fprintf('\t%i: Successful sit-to-stand\n',countS2Sq);
   %fprintf('\t%i: Successful dynamic-sit-to-quiet-stand\n',countS2Sd);
   save(movementSequenceDataFileName,...
-        'sitToStandSequence');
+        'sitToStandSequence','sitToStandSequenceInfo');
 else
   load(movementSequenceDataFileName);
 end

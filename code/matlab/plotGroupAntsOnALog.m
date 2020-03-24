@@ -1,10 +1,9 @@
 function figH = plotGroupAntsOnALog(figH, subPlotVec,...
                                       group,...
-                                      subjectSummaryData,...
-                                      summaryDataStructName,...
-                                      indexTrial,...
+                                      summaryData,...
                                       xPositionData, xPositionVerticalLine,...
-                                      yLabelOffset,flag_plotVerticalLine)
+                                      yLabelOffset,...
+                                      flag_plotVerticalLine)
 
 
 figure(figH);
@@ -14,17 +13,19 @@ end
 if(length(subPlotVec) == 4)
   subplot('Position',subPlotVec);
 end
+% 
+% summaryData = zeros(7,1);
+% n = length(group.index);    
+% for indexSubject = 1:1:length(subjectSummaryData)
+%   if( any(group.index == indexSubject ) )
+%     summaryData = summaryData ...
+%       + subjectSummaryData(indexSubject).(summaryDataStructName)(:,indexTrial);
+%   end
+% end
+% 
+% summaryData = summaryData./n;
 
-summaryData = zeros(7,1);
-n = length(group.index);    
-for indexSubject = 1:1:length(subjectSummaryData)
-  if( any(group.index == indexSubject ) )
-    summaryData = summaryData ...
-      + subjectSummaryData(indexSubject).(summaryDataStructName)(:,indexTrial);
-  end
-end
 
-summaryData = summaryData./n;
 
 axisLim = axis;
 

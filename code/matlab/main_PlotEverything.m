@@ -10,7 +10,7 @@ if(exist('flag_outerLoopMode','var') ==0)
     %1 cap
     %2 cop
     %3 com
-      flag_pointToNearestFootEdge             = 1;
+      flag_pointToNearestFootEdge             = 0;
       flag_pointToNearestFootEdgeSubject      = 0;
 
 
@@ -37,9 +37,9 @@ if(exist('flag_outerLoopMode','var') ==0)
       flag_fpeCapErrorTimeSeriesPlotsEnsemble = 0;
     %flag_fpeCapErrorSeatOffEnsemble      
       
-    flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4 = 4;
+    flag_ModeComVelX0VelY1VelZ2Speed3ComGpVsCop4 = 3;
             
-      flag_comKinematicsTimeSeriesSubject   = 0;
+      flag_comKinematicsTimeSeriesSubject   = 1;
       flag_comKinematicsTimeSeriesEnsemble  = 0;
       flag_comKinematicsSeatOffEnsemble     = 0;
 
