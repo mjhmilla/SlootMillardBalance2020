@@ -10,10 +10,10 @@ function [errorVec, errorName] = ...
   switch flag_ModeBalancePointsVsCom0VsCop1
     case 0
       errorVec = balancePoint - comPosition;
-      errorName = ['(',balancePointName,'-Com)'];
+      errorName = ['(',balancePointName,'-COM)'];
     case 1
       errorVec = balancePoint - copPosition;
-      errorName = ['(',balancePointName,'-Cop)'];
+      errorName = ['(',balancePointName,'-COP)'];
       
     otherwise assert(0)
   end              

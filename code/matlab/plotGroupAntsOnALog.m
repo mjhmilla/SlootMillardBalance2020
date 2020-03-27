@@ -32,11 +32,12 @@ axisLim = axis;
 xPosData = xPositionData;
 xPosLine = xPositionVerticalLine;
 if(flag_plotVerticalLine==1)
-  plot([xPosLine;xPosLine],[axisLim(3);axisLim(4)],...
+  dy = (axisLim(4)-axisLim(3))*0.05;
+  plot([xPosLine;xPosLine],[axisLim(3)+dy;axisLim(4)-dy],...
         'Color',[1,1,1],'LineWidth',1);
   hold on;
-  plot([xPosLine;xPosLine],[axisLim(3);axisLim(4)],...
-        'Color',[0,0,0],'LineWidth',0.5);
+  plot([xPosLine;xPosLine],[axisLim(3)+dy;axisLim(4)-dy],...
+        'Color',[1,1,1].*0.75,'LineWidth',0.5);
   hold on;
 end
 

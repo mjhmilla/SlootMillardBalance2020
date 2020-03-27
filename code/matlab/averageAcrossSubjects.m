@@ -4,7 +4,7 @@ function summaryData = averageAcrossSubjects(group,...
                                       indexTrialType,...
                                       flag_verbose)
 
-summaryData = zeros(8,1);
+meanTrajectory
 %n = length(group.index);    
 n=0;
 for indexSubject = 1:1:length(subjectSummaryData)

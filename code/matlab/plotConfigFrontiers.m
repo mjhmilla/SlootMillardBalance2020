@@ -4,8 +4,8 @@
 %totalWidth = 177.13668/10; %Frontiers journal text width.
 totalWidth = 21.0;
 
-pageHeight  = 29.7;
-pageWidth   = 21.0;
+pageHeight  = 42.;
+pageWidth   = 29.7;
 
 numberOfVerticalPlotRows      = numberOfFiguresPerPage;
 numberOfHorizontalPlotColumns = 1;
@@ -21,7 +21,7 @@ set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultAxesTitleFontWeight','bold');  
 set(groot, 'defaultFigurePaperUnits','centimeters');
 set(groot, 'defaultFigurePaperSize',[pageWidth pageHeight]);
-set(groot,'defaultFigurePaperType','A4');
+set(groot,'defaultFigurePaperType','A3');
 %end
 plotHorizMarginCm = 1;
 plotVertMarginCm  = 1;

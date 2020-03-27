@@ -47,19 +47,36 @@ dataSummary(numberOfPhases) =...
          'start',zeros(1,1).*NaN,...
          'end',zeros(1,1).*NaN,...
          'duration',NaN);
-                  
-dataRaw(numberOfPhases) = struct('x',[],'y',[]);
+  
+
+
+
+
 
 eventStart(numberOfPhases) = struct('x',[],'y',[]);
 eventEnd(numberOfPhases)   = struct('x',[],'y',[]);
 
 
+
 dataMin(numberOfPhases) = struct('x',[],'y',[]);
 dataMax(numberOfPhases) = struct('x',[],'y',[]);
 
+maxNumberOfRepetitions = 0;
 for z=1:1:length(movementSequence)
   if( sum(isnan(movementSequence(z).indexReference))==0)
- 
+    maxNumberOfRepetitions=maxNumberOfRepetitions+1;
+  end  
+end
+
+                 
+dataRaw(numberOfPhases,maxNumberOfRepetitions) = struct('x',[],'y',[]);
+
+indexRepetition=0;
+for z=1:1:length(movementSequence)
+  if( sum(isnan(movementSequence(z).indexReference))==0)
+    indexRepetition =  indexRepetition+1;
+    
+    
     idx0 = movementSequence(z).indexStart;
     idx1 = movementSequence(z).indexReference;
     idx2 = movementSequence(z).indexEnd;
@@ -97,8 +114,11 @@ for z=1:1:length(movementSequence)
       dataMax(p).y = [dataMax(p).y; valMax];
       
         
-      dataRaw(p).x = [dataRaw(p).x; dataIndex(idxA:idxB,1)];
-      dataRaw(p).y = [dataRaw(p).y; dataSeries(idxA:idxB,1).*dataScale];
+      
+      dataRaw(p,indexRepetition).x = ...
+        [dataRaw(p,indexRepetition).x; dataIndex(idxA:idxB,1)];
+      dataRaw(p,indexRepetition).y = ...
+        [dataRaw(p,indexRepetition).y; dataSeries(idxA:idxB,1).*dataScale];
       
     end
     
@@ -106,11 +126,12 @@ for z=1:1:length(movementSequence)
 
 end
 
+
+
 if(isempty(data) == 0)
 
-  
   for p=1:1:numberOfPhases
-  
+
     dataSorted = sort(data(p).y(:,1));
     n = length(dataSorted);
 
@@ -123,11 +144,25 @@ if(isempty(data) == 0)
 
     dataSummary(p).p25 = dataSorted(n25,1);
     dataSummary(p).p75 = dataSorted(n75,1);
+    
+    dataSummary(p).startMin = min(eventStart(p).y);
+    dataSummary(p).startMean= mean(eventStart(p).y);    
+    dataSummary(p).startMax = max(eventStart(p).y);
 
-    dataSummary(p).start = mean(eventStart(p).y);
-    dataSummary(p).end   = mean(eventEnd(p).y);
-    dataSummary(p).duration = mean(eventEnd(p).x-eventStart(p).x);
+    dataSummary(p).start= dataSummary(p).startMean;
+    
+    dataSummary(p).endMin   = min(eventEnd(p).y);    
+    dataSummary(p).endMean  = mean(eventEnd(p).y);
+    dataSummary(p).endMax   = max(eventEnd(p).y);
+    dataSummary(p).end= dataSummary(p).endMean;
+    
+    dataSummary(p).durationMin  = min(eventEnd(p).x-eventStart(p).x);    
+    dataSummary(p).durationMean = mean(eventEnd(p).x-eventStart(p).x);   
+    dataSummary(p).durationMax  = max(eventEnd(p).x-eventStart(p).x);
   
+    dataSummary(p).duration = dataSummary(p).durationMean;
+
+    
   end
   
   xDataMid = (xPoint*xPointScale);
@@ -224,7 +259,8 @@ hold on;
       ylabel(yLabelText);
     end
 
-
+    set(gca,'TickLength',[0 0])
+    
     titleFontSize = get(groot,'defaultAxesFontSize')...
                    *get(groot,'defaultAxesTitleFontSizeMultiplier');
     xTitle = axisLimits(1);% - 0.1*(axisLimits(2)-axisLimits(1));
