@@ -247,7 +247,8 @@ if(isempty(data) == 0)
 box off;
 
 text( xDataMid, dataLabelYLocation, dataLabel,...
-  'FontSize',8,'Interpreter','latex','HorizontalAlignment','center');  
+  'FontSize',8,'Interpreter','latex','HorizontalAlignment','center',...
+  'fontname','Arial');  
 hold on;
 
   if(flag_firstCall ==1)
@@ -266,7 +267,7 @@ hold on;
     xTitle = axisLimits(1);% - 0.1*(axisLimits(2)-axisLimits(1));
     yTitle = axisLimits(4) + 0.1*(axisLimits(4)-axisLimits(3));
     text(xTitle,yTitle,titleText,'FontSize',titleFontSize,...
-        'Interpreter','latex','HorizontalAlignment','left');
+        'Interpreter','latex','HorizontalAlignment','left','fontname','Arial');
     hold on;
     %title(titleText);     
   end  

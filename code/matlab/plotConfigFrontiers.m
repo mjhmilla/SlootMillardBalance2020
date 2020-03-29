@@ -10,12 +10,16 @@ pageWidth   = 29.7;
 numberOfVerticalPlotRows      = numberOfFiguresPerPage;
 numberOfHorizontalPlotColumns = 1;
 
+plotFontName = 'latex';
+
 %if(flag_usingOctave == 0)
 set(groot, 'defaultAxesFontSize',8);
 set(groot, 'defaultTextFontSize',8);
 set(groot, 'defaultAxesLabelFontSizeMultiplier',1.2);
 set(groot, 'defaultAxesTitleFontSizeMultiplier',1.2);
 set(groot, 'defaultAxesTickLabelInterpreter','latex');
+%set(groot, 'defaultAxesFontName',plotFontName);
+%set(groot, 'defaultTextFontName',plotFontName);
 set(groot, 'defaultLegendInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultAxesTitleFontWeight','bold');  

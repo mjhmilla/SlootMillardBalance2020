@@ -4,7 +4,7 @@ close all;
 clear all;
 
 
-flag_loadPrecomputedSubjectStatistics = 0;
+flag_loadPrecomputedSubjectStatistics = 1;
 flag_loadPrecomputedGroupStatistics   = 0;
 flag_writeCSVGroupTables              = 1;
 %%
@@ -540,6 +540,13 @@ if(flag_loadPrecomputedGroupStatistics == 0)
 
           for indexMetric = 1:1:length(metricNameList)
 
+            
+            if(indexTrialsToProcess == 4 ...
+                && indexGroup == indexGroupElderly ...
+                && indexPhase == indexPhaseSeatOff2Stand ...
+                && indexMetric == length(metricNameList))
+              here=1;
+            end
 
             flag_verbose=1;
             groupData(indexGroup,indexTrialsToProcess,indexPhase) ...
