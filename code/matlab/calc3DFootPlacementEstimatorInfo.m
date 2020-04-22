@@ -5,6 +5,7 @@ function fpeInfo = calc3DFootPlacementEstimatorInfo(m,...
                                           HC0,...
                                           r0S0,...
                                           g0,...
+                                          omegaSmall,...
                                           numericTolerance,...
                                           maximumIterations,...
                                           flag_evaluateDerivatives,...
@@ -136,10 +137,10 @@ function fpeInfo = calc3DFootPlacementEstimatorInfo(m,...
 %  .n                 : Vector that is normal to the projection plane (Eqn. 43)
 %  .r0G0              : CoM ground projection location
 %  .Df_Dphi           : Partial derivative of f w.r.t the contact angle
-%  .Df_Domega         : " " of f w.r.t. the whole body angular velocity
+%  .Df_Dw0C0n         : " " of f w.r.t. the whole body angular velocity
 %  .Df_Dh             : " " of f w.r.t. the contact height (See Fig. 6)
-%  .Df_Dvx            : " " of f w.r.t. the velocity of the CoM parallel to the surface
-%  .Df_Dvy            : " " of f w.r.t. the velocity of the CoM normal to the surface
+%  .Df_Dv0C0u            : " " of f w.r.t. the velocity of the CoM parallel to the surface
+%  .Df_Dv0C0k            : " " of f w.r.t. the velocity of the CoM normal to the surface
 %  .Df_DJ             : " " of f w.r.t. the inertia of the body
 %  .Df_Dm             : " " of f w.r.t. the mass of the body
 %  .Df_Dg             : " " of f w.r.t. gravity
@@ -151,7 +152,7 @@ function fpeInfo = calc3DFootPlacementEstimatorInfo(m,...
 % that must be satisfied. To implement this feature in
 % the most generic manner:
 %
-%   0. Define two constraint equations in two unknowns: L and phi.
+%   0. Define two constraint equations in two unknow0C0ns: L and phi.
 %   1. Eqn 1: Change Eqn. 45 so that L is left as L: do not substitute 
 %      L/cos(phi)
 %   2. Eqn 2: The implicit surface function evaluated at the location of the
@@ -180,16 +181,18 @@ fpeInfo = struct('f'               ,  zeros(1,1).*NaN,...
                  'u'               ,  zeros(3,1).*NaN,...
                  'k'               ,  zeros(3,1).*NaN,...                 
                  'r0G0'            ,  zeros(3,1).*NaN,...
-                 'omega'           ,  zeros(1,1).*NaN,...
+                 'w0C0n'           ,  zeros(1,1).*NaN,...
+                 'w0C0'            ,  zeros(3,1).*NaN,...
+                 'w0G0'            ,  zeros(3,1).*NaN,...                 
                  'h'               ,  zeros(1,1).*NaN,...
-                 'vx'              ,  zeros(1,1).*NaN,...
-                 'vy'              ,  zeros(1,1).*NaN,...
+                 'v0C0u'           ,  zeros(1,1).*NaN,...
+                 'v0C0k'           ,  zeros(1,1).*NaN,...
                  'J'               ,  zeros(1,1).*NaN,...                 
                  'Df_Dphi'         ,  zeros(1,1).*NaN,...
-                 'Df_Domega'       ,  zeros(1,1).*NaN,...
+                 'Df_Dw0C0n'       ,  zeros(1,1).*NaN,...
                  'Df_Dh'           ,  zeros(1,1).*NaN,...
-                 'Df_Dvx'          ,  zeros(1,1).*NaN,...
-                 'Df_Dvy'          ,  zeros(1,1).*NaN,...
+                 'Df_Dv0C0u'       ,  zeros(1,1).*NaN,...
+                 'Df_Dv0C0k'       ,  zeros(1,1).*NaN,...
                  'Df_DJ'           ,  zeros(1,1).*NaN,...
                  'Df_Dm'           ,  zeros(1,1).*NaN,...
                  'Df_Dg'           ,  zeros(1,1).*NaN);
@@ -255,6 +258,7 @@ if(flag_validInputs==1)
   %Compute the whole-body average angular velocity
   w0C0 = JC0 \ HC0;
 
+  fpeInfo.w0C0 = w0C0;
   %Get the CoM projection onto the contacting surface
   %rSCS =  rmS0' * (r0C0-r0S0);
   %egS  = (rmS0' * g0) ./ norm(g0);
@@ -269,8 +273,18 @@ if(flag_validInputs==1)
 
   %Compute the whole body angular momentum vector about the COM ground projection
   rGC0x = getCrossProductMatrix(rGC0);
+  JG0   =  JC0 - m.*rGC0x*rGC0x;
+  
+  %Checking the generalization of the parallel axis theorem -rGC0x*rGC0x
+  %rr = (rGC0'*rGC0)*eye(3,3);
+  %rrt= rGC0*rGC0';
+  %pa = rr - rrt;
+  
   HG0   = HC0 + rGC0x * (m.*v0C0);
 
+  w0G0 = JG0 \ HG0;
+  fpeInfo.w0G0 = w0G0;  
+  
   fpeInfo.HG0 = HG0;
 
 
@@ -281,7 +295,8 @@ if(flag_validInputs==1)
   fpeInfo.k = ev0;
   %The projection plane has a normal vector in the direction of the horizontal
   %component of HG0.
-  HG0p  = HG0 - (HG0'*eg0).*eg0;    
+  HG0k  = HG0'*eg0;
+  HG0p  = HG0 - (HG0k).*eg0;    
   en0   = HG0p ./ ( max(numericTolerance,norm(HG0p)) );
 
   %The direction of the step lies along the plane found using the cross product
@@ -290,7 +305,10 @@ if(flag_validInputs==1)
   eu0   = getCrossProductMatrix(en0)*ev0;
   fpeInfo.u = eu0;
 
-  fpeInfo.projectionError = 1 - norm(HG0p)/norm(HG0);
+  omegaEps = [omegaSmall;omegaSmall;omegaSmall];
+  HG0eps = JG0*omegaEps;
+  
+  fpeInfo.projectionError = norm(HG0k)/max( norm(HG0), norm(HG0eps));
   fpeInfo.n               = en0;
 
 
@@ -299,9 +317,9 @@ if(flag_validInputs==1)
   %   the projection plane.
   %==========================================================================
 
-  JC0p    = en0' * JC0 * en0;
-  w0C0p  = en0' * w0C0;
-  v0C0p  = [(eu0'*v0C0);(ev0'*v0C0)];
+  JC0n    = en0' * JC0 * en0;
+  w0C0n  = en0' * w0C0;
+  v0C0n  = [(eu0'*v0C0);(ev0'*v0C0)];
 
 
 
@@ -332,17 +350,17 @@ if(flag_validInputs==1)
 
   %m : already defined
   %g : gravity magnitude - already defined
-  J     = JC0p;
+  J     = JC0n;
   h     = sqrt(rGC0'*rGC0);
-  vx    = v0C0p(1,1);
-  vy    = v0C0p(2,1);
-  omega = w0C0p;
+  v0C0u    = v0C0n(1,1);
+  v0C0k    = v0C0n(2,1);
+
 
   fpeInfo.J = J;
   fpeInfo.h = h;
-  fpeInfo.vx = vx;
-  fpeInfo.vy = vy;
-  fpeInfo.omega = omega;
+  fpeInfo.v0C0u = v0C0u;
+  fpeInfo.v0C0k = v0C0k;
+  fpeInfo.w0C0n = w0C0n;
 
   f     = numericTolerance*10; 
   iter  = 1;
@@ -360,7 +378,7 @@ if(flag_validInputs==1)
     cos2phi   = cosphi*cosphi;
     sinphi    = sin(phi);
     h2        = h*h;      
-    f      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
+    f      = (cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
 
     phiBest = phi;
     errBest = abs(f);
@@ -374,7 +392,7 @@ if(flag_validInputs==1)
       cos2phi   = cosphi*cosphi;
       sinphi    = sin(phiL);
       h2        = h*h;      
-      fL      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
+      fL      = (cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
       errL   = abs(fL);
 
       phiR = phiBest+delta;
@@ -382,7 +400,7 @@ if(flag_validInputs==1)
       cos2phi   = cosphi*cosphi;
       sinphi    = sin(phiR);
       h2        = h*h;      
-      fR      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
+      fR      = (cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
       errR   = abs(fR);
 
       if(errL < errBest && errL <= errR)
@@ -419,9 +437,9 @@ if(flag_validInputs==1)
     sinphi    = sin(phi);
     h2        = h*h;      
 
-    f      = (cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
-    DfDphi = (2*cosphi*sinphi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)...
-                /(cos2phi*J+h2*m)^2+(2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))*((-2*cosphi*omega*sinphi*J)-h*m*sinphi*(sinphi*vy+cosphi*vx)+cosphi*h*m*(cosphi*vy-sinphi*vx)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
+    f      = (cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h*m;
+    DfDphi = (2*cosphi*sinphi*J*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)...
+                /(cos2phi*J+h2*m)^2+(2*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))*((-2*cosphi*w0C0n*sinphi*J)-h*m*sinphi*(sinphi*v0C0k+cosphi*v0C0u)+cosphi*h*m*(cosphi*v0C0k-sinphi*v0C0u)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
 
 
     deltaPhi = -f/DfDphi;
@@ -450,13 +468,13 @@ if(flag_validInputs==1)
   fpeInfo.r0F0 = r0F0;
 
   if(flag_evaluateDerivatives==1)
-    fpeInfo.Df_Dphi    = (2*cosphi*sinphi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2+(2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))*((-2*cosphi*omega*sinphi*J)-h*m*sinphi*(sinphi*vy+cosphi*vx)+cosphi*h*m*(cosphi*vy-sinphi*vx)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
-    fpeInfo.Df_Domega  = (2*cos2phi*J*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
-    fpeInfo.Df_Dh      = (-(2*h*m*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*m*(sinphi*vy+cosphi*vx)*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*m;
-    fpeInfo.Df_Dvx     = (2*cos2phi*h*m*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
-    fpeInfo.Df_Dvy     = (2*cosphi*h*m*sinphi*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m);
-    fpeInfo.Df_DJ      = (2*cos2phi*omega*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)-(cos2phi*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2;
-    fpeInfo.Df_Dm      = (-(h2*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*h*(sinphi*vy+cosphi*vx)*(cos2phi*omega*J+cosphi*h*m*(sinphi*vy+cosphi*vx)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h;
+    fpeInfo.Df_Dphi    = (2*cosphi*sinphi*J*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)/(cos2phi*J+h2*m)^2+(2*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))*((-2*cosphi*w0C0n*sinphi*J)-h*m*sinphi*(sinphi*v0C0k+cosphi*v0C0u)+cosphi*h*m*(cosphi*v0C0k-sinphi*v0C0u)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
+    fpeInfo.Df_Dw0C0n  = (2*cos2phi*J*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m);
+    fpeInfo.Df_Dh      = (-(2*h*m*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*m*(sinphi*v0C0k+cosphi*v0C0u)*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*m;
+    fpeInfo.Df_Dv0C0u     = (2*cos2phi*h*m*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m);
+    fpeInfo.Df_Dv0C0k     = (2*cosphi*h*m*sinphi*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m);
+    fpeInfo.Df_DJ      = (2*cos2phi*w0C0n*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m)-(cos2phi*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)/(cos2phi*J+h2*m)^2;
+    fpeInfo.Df_Dm      = (-(h2*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*h*(sinphi*v0C0k+cosphi*v0C0u)*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h;
     fpeInfo.Df_Dg      = 2*(cosphi-1)*cosphi*h*m;                
   end
 end

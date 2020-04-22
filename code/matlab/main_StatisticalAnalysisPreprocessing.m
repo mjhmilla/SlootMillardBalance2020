@@ -4,7 +4,7 @@ close all;
 clear all;
 
 
-flag_loadPrecomputedSubjectStatistics = 1;
+flag_loadPrecomputedSubjectStatistics = 0;
 flag_loadPrecomputedGroupStatistics   = 0;
 flag_writeCSVGroupTables              = 1;
 %%
@@ -21,7 +21,9 @@ end
 
 metricNameList = {'duration',...
                   'com2edge','com2cop','comvel',...
-                  'fpe2edge','fpewidth','fpelen','fpeasmhkz'};
+                  'comvelx','comvely','comvelz',...
+                  'angvel','angvelx','angvely','angvelz','angveln',...
+                  'fpe2edge','fpewidth','fpelen','fpeasmhkz','timemaxfpe'};
                 
 % duration: the time taken to complete the phase
 %
@@ -78,8 +80,8 @@ flag_printGroupSummaryStats = 1;
 subjectsToProcess =  ...
   {'configH01','configH02','configH03','configH04','configH05',...
    'configH06','configH07','configH08','configH09','configH10',...
-   'configE01','configE02','configE03','configE05','configE06',...
-   'configE07','configE08','configE09'};
+   'configE01','configE02','configE03','configE04','configE05',...
+   'configE06','configE07','configE08','configE09'};
 
  
 
@@ -95,12 +97,16 @@ indexGroupElderly = 2;
 groups(indexGroupYoung  ).index = [1,2,3,4,5,6,7,8,9,10];
 groups(indexGroupYoung  ).name = 'Y';
 groups(indexGroupYoung  ).label = 'Young (Y)';
-groups(indexGroupElderly).index = [11,12,13,14,15, 16,17,18];
+groups(indexGroupElderly).index = [11,12,13,14,15, 16,17,18,19];
 groups(indexGroupElderly).name = 'E';
 groups(indexGroupElderly).label = 'Elderly (E)';
 
 groups(indexGroupYoung  ).color   = [0,0,0];
 groups(indexGroupElderly).color   = gorgeousGreen;
+
+assert( (length(groups(indexGroupElderly).index)...
+        +length(groups(indexGroupYoung  ).index)) ...
+        == length(subjectsToProcess)); 
 
 
 numberOfInterpolationPoints = 20; %Number of points to use to interpolate the raw data
@@ -122,10 +128,19 @@ subjectData(length(subjectsToProcess),length(trialsToProcess),numberOfPhases) =.
                    'com2edge'      ,phaseStatsStruct,...
                    'com2cop'       ,phaseStatsStruct,...
                    'comvel'        ,phaseStatsStruct,...
+                   'comvelx'       ,phaseStatsStruct,...
+                   'comvely'       ,phaseStatsStruct,...
+                   'comvelz'       ,phaseStatsStruct,...
+                   'angvel'        ,phaseStatsStruct,...                   
+                   'angvelx'       ,phaseStatsStruct,...
+                   'angvely'       ,phaseStatsStruct,...
+                   'angvelz'       ,phaseStatsStruct,...  
+                   'angveln'       ,phaseStatsStruct,...
                    'fpe2edge'      ,phaseStatsStruct,...
                    'fpelen'        ,phaseStatsStruct,...
                    'fpewidth'      ,phaseStatsStruct,...
-                   'fpeasmhkz'     ,phaseStatsStruct); 
+                   'fpeasmhkz'     ,phaseStatsStruct,...
+                   'timemaxfpe'    ,phaseStatsStruct); 
               
 groupData(length(groups),length(trialsToProcess),numberOfPhases) = ...
       struct(  'name','',...
@@ -138,10 +153,19 @@ groupData(length(groups),length(trialsToProcess),numberOfPhases) = ...
                'com2edge'      ,phaseStatsStruct,...
                'com2cop'       ,phaseStatsStruct,...
                'comvel'        ,phaseStatsStruct,...
+               'comvelx'       ,phaseStatsStruct,...
+               'comvely'       ,phaseStatsStruct,...
+               'comvelz'       ,phaseStatsStruct,...
+               'angvel'        ,phaseStatsStruct,...                   
+               'angvelx'       ,phaseStatsStruct,...
+               'angvely'       ,phaseStatsStruct,...
+               'angvelz'       ,phaseStatsStruct,...
+               'angveln'       ,phaseStatsStruct,...               
                'fpe2edge'      ,phaseStatsStruct,...
                'fpelen'        ,phaseStatsStruct,...
                'fpewidth'      ,phaseStatsStruct,...
-               'fpeasmhkz'     ,phaseStatsStruct);
+               'fpeasmhkz'     ,phaseStatsStruct,...
+               'timemaxfpe'    ,phaseStatsStruct);
 
 %%
 %
@@ -227,8 +251,13 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Fetch all of the data for this trial
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          c3dGrfDataAvailable = -1;
+          
           load([trialFolder,c3DFileName]);
-
+          
+          %Make sure that this flag has been overwritten: c3dGrfDataAvailable
+          assert(c3dGrfDataAvailable ~= -1);
+         
           disp(['  :',c3DFileName]);
           % c3dTime
           % c3dMarkers
@@ -364,12 +393,14 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
           angleLabel    = 'Angle (deg)';
           distanceLabel = 'Distance (cm)';
           velocityLabel = 'Velocity (cm/s)';
+          angularVelocityLabel = 'Angular Velocity (deg/s)';
           scaleTime     = 1;
           scaleForce    = 1;
           scaleDistance = 100;
           scaleAngle    = 180/pi;
           scaleVelocity = 100;
-
+          scaleAngularVelocity = scaleAngle;
+          
 
 
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -391,17 +422,20 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
 
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Com-cop
-          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-          data = sum( (c3dGrf(index_FeetForcePlate).cop(:,1:2) ...
-                               - wholeBodyData(:,colComPos(1,1:2))).^2 ,2).^0.5;
-          scaleData   = scaleDistance;
-          [phaseStats, timingStats] = ...
-            calcMovementSequenceDataSummary(movementSequence, ...
-                c3dTime, data, scaleData,numberOfPhases,...
-                numberOfInterpolationPoints); 
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+          
+          if(c3dGrfDataAvailable==1)
+            data = sum( (c3dGrf(index_FeetForcePlate).cop(:,1:2) ...
+                                 - wholeBodyData(:,colComPos(1,1:2))).^2 ,2).^0.5;
+            scaleData   = scaleDistance;
+            [phaseStats, timingStats] = ...
+              calcMovementSequenceDataSummary(movementSequence, ...
+                  c3dTime, data, scaleData,numberOfPhases,...
+                  numberOfInterpolationPoints); 
 
-          for p=1:1:numberOfPhases
-            subjectData(indexSubject,indexTrialsToProcess,p).com2cop = phaseStats(p);    
+            for p=1:1:numberOfPhases
+              subjectData(indexSubject,indexTrialsToProcess,p).com2cop = phaseStats(p);    
+            end
           end
 
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -417,6 +451,120 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
           for p=1:1:numberOfPhases
             subjectData(indexSubject,indexTrialsToProcess,p).comvel = phaseStats(p);    
           end
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com velocity x
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = wholeBodyData(:,colComVel(1,1));
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).comvelx = phaseStats(p);    
+          end
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com velocity y
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = wholeBodyData(:,colComVel(1,2));
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).comvely = phaseStats(p);    
+          end
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com velocity z
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = wholeBodyData(:,colComVel(1,3));
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).comvelz = phaseStats(p);    
+          end
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = sum( fpeData.w0C0.^2, 2).^0.5;
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angvel = phaseStats(p);    
+          end          
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity x
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = fpeData.w0C0(:,1);
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angvelx = phaseStats(p);    
+          end          
+
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity y
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = fpeData.w0C0(:,2);
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angvely = phaseStats(p);    
+          end          
+
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity z
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = fpeData.w0C0(:,3);
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angvelz = phaseStats(p);    
+          end                    
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity n
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = fpeData.w0C0n;
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angveln = phaseStats(p);    
+          end                    
+          
+          
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Fpe-to-foot edge
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
@@ -434,49 +582,53 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Fpe-cop variation across width
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-          flag_ModeBalancePointsVsCom0VsCop1 =   1;
-          flag_ModeAnalyzeBalanceAlong0Across1 = 1;
-          [data,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
-                        fpeData.u,fpeData.n,...
-                        wholeBodyData(:,colComPos),...
-                        c3dGrf(index_FeetForcePlate).cop,...
-                        flag_ModeBalancePointsVsCom0VsCop1,...
-                        flag_ModeAnalyzeBalanceAlong0Across1,...
-                        'Fpe');
-          scaleData   = scaleDistance;
-          [phaseStats, timingStats] = ...
-            calcMovementSequenceDataSummary(movementSequence, ...
-                c3dTime, data, scaleData,numberOfPhases,...
-                numberOfInterpolationPoints); 
+          
+          if(c3dGrfDataAvailable ==1)
+            flag_ModeBalancePointsVsCom0VsCop1 =   1;
+            flag_ModeAnalyzeBalanceAlong0Across1 = 1;
+            [data,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
+                          fpeData.u,fpeData.n,...
+                          wholeBodyData(:,colComPos),...
+                          c3dGrf(index_FeetForcePlate).cop,...
+                          flag_ModeBalancePointsVsCom0VsCop1,...
+                          flag_ModeAnalyzeBalanceAlong0Across1,...
+                          'Fpe');
+            scaleData   = scaleDistance;
+            [phaseStats, timingStats] = ...
+              calcMovementSequenceDataSummary(movementSequence, ...
+                  c3dTime, data, scaleData,numberOfPhases,...
+                  numberOfInterpolationPoints); 
 
-          for p=1:1:numberOfPhases
-            subjectData(indexSubject,indexTrialsToProcess,p).fpewidth = phaseStats(p);    
+            for p=1:1:numberOfPhases
+              subjectData(indexSubject,indexTrialsToProcess,p).fpewidth = phaseStats(p);    
+            end
           end
 
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Fpe-cop variation across length
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 
-          flag_ModeBalancePointsVsCom0VsCop1   = 1;
-          flag_ModeAnalyzeBalanceAlong0Across1 = 0; 
-          [data,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
-                        fpeData.u,fpeData.n,...
-                        wholeBodyData(:,colComPos),...
-                        c3dGrf(index_FeetForcePlate).cop,...
-                        flag_ModeBalancePointsVsCom0VsCop1,...
-                        flag_ModeAnalyzeBalanceAlong0Across1,...
-                        'Fpe');
+          if(c3dGrfDataAvailable==1)
+            flag_ModeBalancePointsVsCom0VsCop1   = 1;
+            flag_ModeAnalyzeBalanceAlong0Across1 = 0; 
+            [data,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
+                          fpeData.u,fpeData.n,...
+                          wholeBodyData(:,colComPos),...
+                          c3dGrf(index_FeetForcePlate).cop,...
+                          flag_ModeBalancePointsVsCom0VsCop1,...
+                          flag_ModeAnalyzeBalanceAlong0Across1,...
+                          'Fpe');
 
-          scaleData   = scaleDistance;
-         [phaseStats, timingStats] = ...
-            calcMovementSequenceDataSummary(movementSequence, ...
-                c3dTime, data, scaleData,numberOfPhases,...
-                numberOfInterpolationPoints); 
+            scaleData   = scaleDistance;
+           [phaseStats, timingStats] = ...
+              calcMovementSequenceDataSummary(movementSequence, ...
+                  c3dTime, data, scaleData,numberOfPhases,...
+                  numberOfInterpolationPoints); 
 
-          for p=1:1:numberOfPhases
-            subjectData(indexSubject,indexTrialsToProcess,p).fpelen = phaseStats(p);    
+            for p=1:1:numberOfPhases
+              subjectData(indexSubject,indexTrialsToProcess,p).fpelen = phaseStats(p);    
+            end
           end
-          
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           % Fpe assumption that the vertical component of Hgp is negligible
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
@@ -491,7 +643,34 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
             subjectData(indexSubject,indexTrialsToProcess,p).fpeasmhkz = phaseStats(p);    
           end
           
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Time relative to seat-off at which the distance (COM-FPE)u is
+          % maximized
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          flag_ModeBalancePointsVsCom0VsCop1   = 0;
+          flag_ModeAnalyzeBalanceAlong0Across1 = 0; 
+          [fpelength,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
+                        fpeData.u,fpeData.n,...
+                        wholeBodyData(:,colComPos),...
+                        [],...
+                        flag_ModeBalancePointsVsCom0VsCop1,...
+                        flag_ModeAnalyzeBalanceAlong0Across1,...
+                        'Fpe');          
+          
+          timemaxfpe=calcTimeToMaximum(movementSequence,c3dTime,fpelength);
 
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+              c3dTime, fpelength, scaleOne,numberOfPhases,...
+              numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).timemaxfpe ...
+              = phaseStats(p);    
+          end
+          
+          
         end
 
 
@@ -535,7 +714,7 @@ if(flag_loadPrecomputedGroupStatistics == 0)
             = groups(indexGroup).index;
           groupData(indexGroup,indexTrialsToProcess,indexPhase).trialId ...
            = trialTypeNames{indexTrial};
-         groupData(indexGroup,indexTrialsToProcess,indexPhase).trialTypeIndex ...
+          groupData(indexGroup,indexTrialsToProcess,indexPhase).trialTypeIndex ...
            = indexTrial;
 
           for indexMetric = 1:1:length(metricNameList)
@@ -570,137 +749,11 @@ else
 end
 
 
-
 if(flag_writeCSVGroupTables==1)
-  for indexTrialsToProcess=1:1:length(trialsToProcess)
+  tableFolderName = ['../../outputData/Frontiers2020Pub/'];
+  success = writeGroupMetricTable(tableFolderName, groupData, groups, ...
+                                  metricNameList, metricSubFields,...
+                                  trialsToProcess, trialTypeNames,...
+                                  phaseNames,nameToeTag);
+end                              
 
-    indexTrial = 0;
-    for k=1:1:length(trialTypeNames)
-      if(contains(trialsToProcess{indexTrialsToProcess},trialTypeNames{k}))
-        indexTrial = k;
-      end
-    end  
-
-    for indexPhase=1:1:numberOfPhases
-
-      csvData = zeros(9 ,length(metricNameList)*length(groups)*length(metricSubFields));
-      csvRowLabels = {'median','p25p75','min','mean','max','p05','p25','p75','p95'};
-      csvColumnLabelsA = cell(1,length(metricNameList)*length(groups)*length(metricSubFields));
-      csvColumnLabelsB = cell(1,length(metricNameList)*length(groups)*length(metricSubFields));
-      csvColumnLabelsC = cell(1,length(metricNameList)*length(groups)*length(metricSubFields));
-
-      idxColumn = 1;
-      for indexMetric=1:1:length(metricNameList)
-        metricName = metricNameList{indexMetric};
-
-          idxRow = 1;
-          for indexField=1:1:length(metricSubFields)
-            for indexGroup=1:1:length(groups)
-
-              fieldName = metricSubFields{indexField};
-
-              csvColumnLabelsA{1,idxColumn} = metricName;
-              csvColumnLabelsB{1,idxColumn} = fieldName;            
-              csvColumnLabelsC{1,idxColumn} = groups(indexGroup).name;
-
-              if( isfield( groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName),fieldName)==1)            
-                if(isfield( groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName),'median') == 1)
-                  if(isempty( groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).median) == 0)
-                    minData    = groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).min;
-                    meanData  = groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).mean;
-                    maxData    = groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).max;
-                    medianData = groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).median;
-
-                    p05Data = groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).p05;
-                    p25Data = groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).p25;
-                    p75Data = groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).p75;
-                    p95Data = groupData(indexGroup,indexTrialsToProcess,indexPhase).(metricName).(fieldName).p95;
-
-                    csvData(1,idxColumn) = medianData;
-                    csvData(2,idxColumn) = p75Data-p25Data;
-                    csvData(3,idxColumn) = minData;
-                    csvData(4,idxColumn) = meanData;
-                    csvData(5,idxColumn) = maxData;
-                    csvData(6,idxColumn) = p05Data;
-                    csvData(7,idxColumn) = p25Data;
-                    csvData(8,idxColumn) = p75Data;
-                    csvData(9,idxColumn) = p95Data;              
-                  end
-                end
-              end
-              idxColumn=idxColumn+1;          
-            end
-          end
-      end
-      idxColumn = idxColumn-1;
-
-      
-      
-      tableName = ['../../outputData/Frontiers2020Pub/table',...
-        trialTypeNames{indexTrial},...
-        phaseNames{indexPhase},'Group',nameToeTag,'.csv'];
-
-      fid =fopen(tableName,'w');
-
-      fprintf(fid,',,');
-      for i=1:1:size(csvData,1)
-        fprintf(fid,',%s',csvRowLabels{1,i});      
-      end
-      fprintf(fid,',\n');
-      
-      
-      emptyLine = ',,,';
-      for i=1:1:size(csvData,1)
-        emptyLine = [emptyLine,','];
-      end
-      emptyLine = [emptyLine,'\n'];
-      
-      lastLabel = csvColumnLabelsA{1,1};
-      
-      for j=1:1:size(csvData,2)
-        if( j>1)
-          if(strcmp(lastLabel,csvColumnLabelsA{1,j})==0)
-            fprintf(fid,emptyLine);
-          end
-        end
-        
-        fprintf(fid,'%s',csvColumnLabelsA{1,j});
-        fprintf(fid,',%s',csvColumnLabelsB{1,j});
-        fprintf(fid,',%s',csvColumnLabelsC{1,j});
-        
-        lastLabel = csvColumnLabelsA{1,j};
-        
-        for i=1:1:size(csvData,1)
-          fprintf(fid,',%1.6f',csvData(i,j));
-        end
-        fprintf(fid,',\n');   
-      end
-            
-%       for i = 1:1:size(csvData,2)
-%         fprintf(fid,',%s',csvColumnLabelsA{1,i});
-%       end
-%       fprintf(fid,',\n');    
-% 
-%       for i = 1:1:size(csvData,2)
-%         fprintf(fid,',%s',csvColumnLabelsB{1,i});
-%       end
-%       fprintf(fid,',\n');    
-% 
-%       for i = 1:1:size(csvData,2)
-%         fprintf(fid,',%s',csvColumnLabelsC{1,i});
-%       end
-%       fprintf(fid,',\n');    
-% 
-% 
-%       for i=1:1:size(csvData,1)
-%         fprintf(fid,'%s',csvRowLabels{1,i});
-%         for j=1:1:size(csvData,2)
-%           fprintf(fid,',%1.2f',csvData(i,j));
-%         end     
-%         fprintf(fid,'\n');
-%       end 
-
-      fclose(fid);
-    end
-  end
-end

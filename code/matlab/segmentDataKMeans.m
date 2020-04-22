@@ -6,24 +6,31 @@ function [segmentedData, segmentInfo] = segmentDataKMeans(...
                       comPosition,...                      
                       c3DGrfChair,...
                       c3DGrfFeet,...
+                      comgp2FootConvexHullDist,...
                       fpeDataGroundPlane,...                      
                       standingHeightLowerBound, ...
                       footContactZMovementTolerance,...
                       numberOfLowFootMarkersForStance,...
                       segmentedDataFileName,...
-                      flag_loadTimingDataFromFile)
+                      flag_loadTimingDataFromFile,...
+                      c3dGrfDataAvailable)
 %highNormalForce,...                  
 %segmentedData = [];  
 %segmentInfo = [];
 if(flag_loadTimingDataFromFile == 0)
-
+  
   c3DFootMarkerNames = {c3DFootMarkerRightNames{:},...
                         c3DFootMarkerLeftNames{:}};
-  
+
   assert(size(c3DMarkers.(c3DFootMarkerNames{1}),1)==size(c3DTime,1));
-  assert(size(c3DTime,1) == size(c3DGrfChair.force,1));
-  assert(size(c3DGrfChair.force,1)==size(c3DGrfFeet.force,1));
-  assert(size(c3DGrfChair.force,1)==size(fpeDataGroundPlane.r0G0,1));
+  
+  if(c3dGrfDataAvailable==1)
+
+    assert(size(c3DTime,1) == size(c3DGrfChair.force,1));
+    assert(size(c3DGrfChair.force,1)==size(c3DGrfFeet.force,1));
+    assert(size(c3DGrfChair.force,1)==size(fpeDataGroundPlane.r0G0,1));
+
+  end
   
   indexSittingStatic      = 0;
   indexSittingDynamic     = 1;
@@ -54,13 +61,20 @@ if(flag_loadTimingDataFromFile == 0)
   segmentInfo(6).phaseId    = indexStandingUnstable;
   segmentInfo(6).phaseName = 'standingUnstable';
 
+  numberOfPoints = 0;
+  if(c3dGrfDataAvailable==1)
+    numberOfPoints = size(c3DGrfChair.force,1);
+  else
+    numberOfPoints = size(comPosition,1);
+  end
   
-  segmentedData = struct('phase', zeros(size(c3DGrfChair.force,1),1),...                      
+  
+  segmentedData = struct('phase', zeros(numberOfPoints,1),...                      
                       'phaseTransitions', zeros(1,2).*NaN,... 
                       'phaseTransitionTimes', zeros(1,1).*NaN,...
                       'phaseTransitionIndices',zeros(1,1).*NaN,...
-                      'footContactLeft',zeros(size(c3DGrfChair.force,1),1),...
-                      'footContactRight',zeros(size(c3DGrfChair.force,1),1));                    
+                      'footContactLeft',zeros(numberOfPoints,1),...
+                      'footContactRight',zeros(numberOfPoints,1));                    
 
   phasePrev = indexUnclassified;
   
@@ -68,24 +82,57 @@ if(flag_loadTimingDataFromFile == 0)
   
   optionsKMeans = statset('Display','off');
   
-  %Solve for 3 clusters on the chair side force plate
-  clusterChairForcePlate = kmeans(c3DGrfChair.force(:,3),3,...
-                                  'Options',optionsKMeans);  
+  %Here the letter 'X' is used in the name because these thresholds are
+  %identified using different methods depending on what data is available:
+  % Ground forces, if available
+  % com-gp distance to BOS if available.
+  idXStanding   = 0;
+  idXTransition = 0;
+  idXSitting    = 0;  
   
-  id1 = find(clusterChairForcePlate ==1);
-  id2 = find(clusterChairForcePlate ==2);
-  id3 = find(clusterChairForcePlate ==3);
+  clusterX = [];
   
-  fz1 = mean(c3DGrfChair.force(id1,3));
-  fz2 = mean(c3DGrfChair.force(id2,3));
-  fz3 = mean(c3DGrfChair.force(id3,3));
+  if(c3dGrfDataAvailable == 1)
+    %Solve for 3 clusters on the chair side force plate
+    clusterX = kmeans(c3DGrfChair.force(:,3),3,...
+                      'Options',optionsKMeans);  
 
-  [val,idx] = sort([fz1;fz2;fz3]);
+    id1 = find(clusterX ==1);
+    id2 = find(clusterX ==2);
+    id3 = find(clusterX ==3);
 
-  idFzStanding   = idx(1);
-  idFzTransition = idx(2);
-  idFzSitting    = idx(3);
-  
+    fz1 = mean(c3DGrfChair.force(id1,3));
+    fz2 = mean(c3DGrfChair.force(id2,3));
+    fz3 = mean(c3DGrfChair.force(id3,3));
+
+    [val,idx] = sort([fz1;fz2;fz3]);
+
+    idXStanding   = idx(1);
+    idXTransition = idx(2);
+    idXSitting    = idx(3);
+  else
+    
+    %Negative distances are within the convex hull in the data
+    %structure: this sign convention is changed when the plots 
+    %are generated.
+    clusterX = kmeans(comgp2FootConvexHullDist.distance,3,...
+                      'Options',optionsKMeans);
+
+    id1 = find(clusterX ==1);
+    id2 = find(clusterX ==2);
+    id3 = find(clusterX ==3);
+ 
+    d1 = mean(comgp2FootConvexHullDist.distance(id1,1));
+    d2 = mean(comgp2FootConvexHullDist.distance(id2,1));
+    d3 = mean(comgp2FootConvexHullDist.distance(id3,1));
+
+    [val,idx] = sort([d1;d2;d3]);
+
+    idXStanding   = idx(1); %Com cluster furthest inside BOS    
+    idXTransition = idx(2); %Transition
+    idXSitting    = idx(3); %Com cluster farthest outside BOS
+            
+  end
   %Solve for 3 clusters on com height
   clusterComHeight = kmeans(comPosition(:,3),3,...
                             'Options',optionsKMeans);
@@ -147,7 +194,7 @@ if(flag_loadTimingDataFromFile == 0)
 
   nLeftFootBrokeContact = 0;
   nRightFootBrokeContact = 0;
-  for i=1:1:size(c3DGrfChair.force,1)
+  for i=1:1:numberOfPoints
     
     comHeight = comPosition(i,3);
 
@@ -214,8 +261,8 @@ if(flag_loadTimingDataFromFile == 0)
     if(    isnan(comHeight)==0 && isnan(lfpe(i,1))==0 ...
         && sum(isnan(r0F0))==0 && isnan(distanceToConvexHull) == 0 )
       
-      if(    (clusterChairForcePlate(i,1)==idFzSitting) ...
-          || (clusterChairForcePlate(i,1)==idFzTransition) )   
+      if(    (clusterX(i,1)==idXSitting) ...
+          || (clusterX(i,1)==idXTransition) )   
         
         %c3DGrfChair.force(i,3) >= smallNormalForce ...
         %  && comHeight <= sittingHeightUpperBound)
@@ -252,6 +299,9 @@ if(flag_loadTimingDataFromFile == 0)
           end
       end
 
+      if(isnan(phase)==1)
+        here=1;
+      end
       assert(isnan(phase)==0);
 
     end

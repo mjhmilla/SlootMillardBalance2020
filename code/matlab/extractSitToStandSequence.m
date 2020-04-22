@@ -4,6 +4,7 @@ function [sitToStandSequence, sitToStandSequenceInfo] = ...
                 comPosition,...
                 comVelocity,...
                 c3dGrfChair,...
+                fpeStepLength,...
                 quietDwellTime, ...
                 startS2SComVelocityTolerance,...
                 seatOffChairForceZTolerance,...
@@ -12,6 +13,7 @@ function [sitToStandSequence, sitToStandSequenceInfo] = ...
                 movementSequenceDataFileName,...
                 flag_rejectTrialsFootGroundContactBroken,...
                 flag_loadSequenceDataFromFile, ...
+                c3dGrfDataAvailable,...
                 flag_verbose)
                 
 
@@ -235,33 +237,52 @@ if(flag_loadSequenceDataFromFile == 0)
 
             %%
             %
-            %Refine seat off index: seat off will
-            % occur when the chair reaches some tolerance value above 
-            % the minimum recorded velue
+            %Refine seat off index: 
+            %
             %%
-            %Signal sometimes bounces below zero from the Kistler plates            
-            fzChair = c3dGrfChair.force(indexSeatOff:indexStandingStart,3);
-            fzChair( find(fzChair < 0)) = median(fzChair);
+            valueSeatOff = 0;
+            if(c3dGrfDataAvailable == 1)
+              %%
+              % If ground forces are available: seat off will
+              % occur when the chair reaches some tolerance value above 
+              % the minimum recorded velue
+              %%
+              %Signal sometimes bounces below zero from the Kistler plates  
+              
+              fzChair = c3dGrfChair.force(indexSeatOff:indexStandingStart,3);
+              fzChair( find(fzChair < 0)) = median(fzChair);
 
-            [minFzVal, indexMinFz] = ...
-             max(c3dGrfChair.force(indexStandingStart:indexStandingEnd,3));
-            [maxFzVal, indexMaxFz] = max(fzChair);
-            seatOffChangeInForce = maxFzVal-minFzVal;
-            if(seatOffChangeInForce < seatOffChairForceZTolerance)
-              seatOffForce = minFzVal +0.5*seatOffChangeInForce;
+              [minFzVal, indexMinFz] = ...
+               max(c3dGrfChair.force(indexStandingStart:indexStandingEnd,3));
+              [maxFzVal, indexMaxFz] = max(fzChair);
+              seatOffChangeInForce = maxFzVal-minFzVal;
+              if(seatOffChangeInForce < seatOffChairForceZTolerance)
+                seatOffForce = minFzVal +0.5*seatOffChangeInForce;
+              else
+                seatOffForce = minFzVal + seatOffChairForceZTolerance;
+              end
+
+              idxSeg = 1;
+              while(   idxSeg < (indexStandingStart-indexSeatOff+1) ...
+                    && fzChair(idxSeg) > seatOffForce)
+                idxSeg=idxSeg+1;
+              end
+              assert(idxSeg < (indexStandingStart-indexSeatOff+1));
+              indexSeatOff = indexSeatOff+idxSeg-1;
+              valueSeatOff = fzChair(idxSeg);
             else
-              seatOffForce = minFzVal + seatOffChairForceZTolerance;
+              
+              %Seatoff occurs very close to the maximum whole body
+              %angular velocity.
+              [wnMax, idx]= max(abs(fpeStepLength(...
+                                    indexStart:indexStandingStart,1)));
+                                  
+              indexSeatOff = indexStart+idx-1;
+              valueSeatOff = ...
+                fpeStepLength(indexSeatOff,1);
+              
             end
-
-            idxSeg = 1;
-            while(   idxSeg < (indexStandingStart-indexSeatOff+1) ...
-                  && fzChair(idxSeg) > seatOffForce)
-              idxSeg=idxSeg+1;
-            end
-            assert(idxSeg < (indexStandingStart-indexSeatOff+1));
-            indexSeatOff = indexSeatOff+idxSeg-1;
-            valueSeatOff = fzChair(idxSeg);
-
+            
             %%
             %
             %Refine standing index : standing will occur when the com

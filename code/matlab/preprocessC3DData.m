@@ -1,6 +1,7 @@
 function [c3dTime, c3dMarkers,c3dMarkerNames, c3dMarkerUnits,...
-          c3dForcePlates, c3dForcePlateInfo, c3dGrf] = ...
-    preprocessC3DData( c3dFileNameAndPath, flag_MetersRadians, flag_verbose )
+          c3dForcePlates, c3dForcePlateInfo, c3dGrf, c3dGrfDataAvailable] = ...
+    preprocessC3DData( c3dFileNameAndPath, flag_MetersRadians, flag_grfDataRecorded,...
+    flag_verbose )
 %%
 % This function will read in a c3d file, resolve force plate readings to
 % forces and moments acting at the center of pressure, and give everything 
@@ -19,6 +20,7 @@ function [c3dTime, c3dMarkers,c3dMarkerNames, c3dMarkerUnits,...
 [c3dH, c3dByteOrder, c3dStorageFormat] = ...
     btkReadAcquisition(c3dFileNameAndPath);
 
+c3dGrfDataAvailable = flag_grfDataRecorded;
   
 
 unitMarker = btkGetPointsUnit(c3dH,'MARKER');
@@ -69,59 +71,91 @@ numberOfItems = size(c3dMarkers.(c3dMarkerNames{1}),1);
 c3dTime = [0:1:(numberOfItems-1)]'./c3dMarkersInfo.frequency;
 
 %Force plates
+
 inGlobalFrame=1;
 fpw = btkGetGroundReactionWrenches(c3dH, inGlobalFrame);
-[c3dForcePlates, c3dForcePlateInfo] = btkGetForcePlatforms(c3dH);
 
 
-numberSkip = size(fpw(1).P,1)/numberOfItems;
-timeForcePlate = (size(fpw(1).P,1)-1)/c3dForcePlateInfo(1).frequency;
+%Check to see if there is ground force data to process
+if(length(fpw) == 0)
+  c3dGrfDataAvailable = 0;
+end
 
-assert( abs(max(c3dTime) - timeForcePlate) < 1/c3dMarkersInfo.frequency,...
-    'Error: Markers and Forceplates have different collection durations.');
+flag_dataIsAllIdentical = 1;
+if(c3dGrfDataAvailable == 1)
+    for i=1:1:length(fpw)
+      minF = min(min(fpw(i).F));
+      maxF = max(max(fpw(i).F));
 
-c3dGrf(length(c3dForcePlates)) = struct('cop',zeros(numberOfItems,3),...
-                                     'force',zeros(numberOfItems,3),...
-                                     'moment',zeros(numberOfItems,3));
+      if(abs(maxF-minF) > sqrt(eps))
+        flag_dataIsAllIdentical = 0;
+      end
+    end
+end
+
+if(flag_dataIsAllIdentical==1)
+  c3dGrfDataAvailable = 0;
+end
+
+if(c3dGrfDataAvailable==0)
+  c3dForcePlates    = []; 
+  c3dForcePlateInfo = []; 
+  c3dGrf            = [];
+end
+
+%If there is ground force data to process, process it.
+if(c3dGrfDataAvailable ==1)
+  [c3dForcePlates, c3dForcePlateInfo] = btkGetForcePlatforms(c3dH);
 
 
-for i=1:1:length(c3dForcePlates)
-  origin = c3dForcePlates(i).origin';
-  for j=1:1:numberOfItems
-    k = numberSkip*(j-1)+1;
-    p = fpw(i).P(k,:) + origin;
-    f = fpw(i).F(k,:);
-    m = fpw(i).M(k,:);
-    
-    fx = f(1,1);
-    fy = f(1,2);
-    fz = f(1,3);
+  numberSkip = size(fpw(1).P,1)/numberOfItems;
+  timeForcePlate = (size(fpw(1).P,1)-1)/c3dForcePlateInfo(1).frequency;
 
-    mx = m(1,1);
-    my = m(1,2);
-    mz = m(1,3);    
+  assert( abs(max(c3dTime) - timeForcePlate) < 1/c3dMarkersInfo.frequency,...
+      'Error: Markers and Forceplates have different collection durations.');
 
-    dx = -my/fz;
-    dy =  mx/fz;
-    dz = 0;
-    
-    xR = [   0,  -dz,  dy;...
-            dz,   0, -dx;...
-           -dy,  dx,  0];
-    dm = (xR * f')';         
-    
-    c3dGrf(i).force(j,:) = f;        
-    c3dGrf(i).cop(j,:)    = (p + [dx,dy,dz]).*scaleDistance;
-    c3dGrf(i).moment(j,:) = (m - dm).*scaleDistance;
-    
+  c3dGrf(length(c3dForcePlates)) = struct('cop',zeros(numberOfItems,3),...
+                                       'force',zeros(numberOfItems,3),...
+                                       'moment',zeros(numberOfItems,3));
+
+
+  for i=1:1:length(c3dForcePlates)
+    origin = c3dForcePlates(i).origin';
+    for j=1:1:numberOfItems
+      k = numberSkip*(j-1)+1;
+      p = fpw(i).P(k,:) + origin;
+      f = fpw(i).F(k,:);
+      m = fpw(i).M(k,:);
+
+      fx = f(1,1);
+      fy = f(1,2);
+      fz = f(1,3);
+
+      mx = m(1,1);
+      my = m(1,2);
+      mz = m(1,3);    
+
+      dx = -my/fz;
+      dy =  mx/fz;
+      dz = 0;
+
+      xR = [   0,  -dz,  dy;...
+              dz,   0, -dx;...
+             -dy,  dx,  0];
+      dm = (xR * f')';         
+
+      c3dGrf(i).force(j,:) = f;        
+      c3dGrf(i).cop(j,:)    = (p + [dx,dy,dz]).*scaleDistance;
+      c3dGrf(i).moment(j,:) = (m - dm).*scaleDistance;
+
+    end
+  end
+
+  for i=1:1:length(c3dForcePlates)
+    c3dForcePlates(i).corners = c3dForcePlates(i).corners.*scaleDistance;
+    c3dForcePlates(i).origin  = c3dForcePlates(i).origin.*scaleDistance;  
   end
 end
-
-for i=1:1:length(c3dForcePlates)
-  c3dForcePlates(i).corners = c3dForcePlates(i).corners.*scaleDistance;
-  c3dForcePlates(i).origin  = c3dForcePlates(i).origin.*scaleDistance;  
-end
-
 
 if(flag_verbose==1)
  

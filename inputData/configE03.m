@@ -1,6 +1,8 @@
 subjectAge                  = 65;
 subjectGender1Male0Female   = 0;
 
+forcePlateDataRecorded = 1;
+
 subjectId = 'E03';
 inputFolder  = [subjectId,'/'];%^,'/','3. V3D_Matt/'];
 outputFolder = [subjectId,'/'];%,'/'];

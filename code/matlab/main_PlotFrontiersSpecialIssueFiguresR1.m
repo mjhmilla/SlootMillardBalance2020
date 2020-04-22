@@ -33,34 +33,108 @@ phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
 
 indexPhase = indexPhaseSeatOff2Stand;
 
-trialsToProcess = {'Chest','Conv','Leg','Side','Rob'};
+trialsToProcess = {'Side','Chest','Conv','Leg','Side','Rob'};
 
+%flag_plotConfig = 0; %Frontiers 2020
+flag_plotConfig = 0; %Comvel;
+% 0. Frontiers balance metrics
+% 1. Com velocity
+% 2. Com angular velocity
+% 3. Time since peak (fpe-com).u
+plotConfigName = '';
 
-metricNameList = {'duration','com2edge','com2cop','comvel',...
-                  'fpe2edge','fpewidth','fpelen','fpeasmhkz'};
-                
-metricYLim = [  0,8;  -6,17; 0,17; 0,65;...
-              -6,17; -5,10; -5,10.5; 0,0.015];
-offsetYLable = -0.05;            
-            
-metricYAxisLabel = {'Time (s)','Distance (cm)','Distance (cm)','Velocity (cm/s)',...
-                    'Distance (cm)','Distance (cm)','Distance (cm)','Percentage (\%)'};
-                  
-metricYAxisScale = [1,1,1,1,...
-                     1,1,1,100];
-                                      
-metricTitle = {' Duration',...
-               'A. COM to nearest BOS edge',...
-               'B. COM to COP',...
-               'C. COM Speed',...
-               'A. FPE to nearest BOS edge',...
-               'B. FPE-COP in $\hat{t}$',...
-               'C. FPE-COP in $\hat{s}$',...
-               'FPE Assumption: $$\epsilon = 1- H_{GP}\cdot\hat{k}/|H_{GP}| \approx 0 $$'};
+switch flag_plotConfig
+  case 0
+    metricNameList = {'com2edge','com2cop','comvel',...
+                      'fpe2edge','fpewidth','fpelen','angvel','angvelz'};
 
-metricPlotHalfPlaneBox = [0,1,0,0,1,0,0,0];             
-             
+    metricYLim = [-6,17; 0,17; 0,65;...
+                  -6,17; -5,10; -5,10.5; 0,100; -90, 60];
+    
+
+    metricYAxisLabel = {'Distance (cm)','Distance (cm)','Velocity (cm/s)',...
+                        'Distance (cm)','Distance (cm)','Distance (cm)',...
+                        'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)'};
+
+    metricYAxisScale = [1,1,1,1,...
+                         1,1,1,1];
+
+    metricTitle = {'A. COM$_{\mathrm{GP}}$ to nearest BOS edge',...
+                   'B. COM$_{\mathrm{GP}}$ to COP',...
+                   'C. COM Speed',...
+                   'A. FPE to nearest BOS edge',...
+                   'B. FPE-COP in $\hat{t}$',...
+                   'C. FPE-COP in $\hat{s}$',...
+                   'A. Angular speed',...
+                   'B. Angular velocity about the vertical axis'};
+
+    metricPlotHalfPlaneBox = [1,0,0,1,0,0,0,0];             
+
+    metricAnnotationLines = [1,0,0,1,0,0,1,0];
+    
+    plotConfigName = 'ComFpeBalanceMetrics';
+  case 1
+    metricNameList = {'comvel','comvelx','comvely','comvelz'};
+
+    metricYLim = [ 0,65; -5,65; -5,5; -5,65];
+         
+
+    metricYAxisLabel = {'Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)'};
+
+    metricYAxisScale = [1,1,1,1];
+
+    metricTitle = {'COM Speed',...
+                   'COM Velocity in X',...
+                   'COM Velocity in Y',...
+                   'COM Velocity in Z'};
+
+    metricPlotHalfPlaneBox = [0,0,0,0];             
+
+    metricAnnotationLines = [0,0,0,0];
+
+    plotConfigName = 'ComVelocity';    
+    
+  case 2
+    metricNameList = {'angvel','angvelx','angvely','angvelz','angveln'};
+
+    metricYLim = [ 0, 100; -25,25; -40, 100; -90,60; -30, 110];
+         
+
+    metricYAxisLabel = {'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)',...
+                        'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)',...
+                        'Angular Velocity ($$^\circ$$/s)'};
+
+    metricYAxisScale = [1,1,1,1,1];
+
+    metricTitle = {'Angular Speed',...
+                   'Angular Velocity about X',...
+                   'Angular Velocity about Y',...
+                   'Angular Velocity about Z',...
+                   'Angular Velocity about $$\hat{t}$$'};
+
+    metricPlotHalfPlaneBox = [0,0,0,0,0];             
+
+    metricAnnotationLines = [0,0,0,0,0];
+
+    plotConfigName = 'ComAngularVelocity';  
+    
+  case 3
+      metricNameList = {'timemaxfpe'};
+      metricYLim = [-0.05,0.150];
+      metricYAxisLabel = {'Time'};
+      metricYAxisScale = [1];
+      metricTitle = {'Time since max((FPE-COM).u)'};
+      metricPlotHalfPlaneBox = [0];
+      metricAnnotationLines = [0];
+      plotConfigName = 'MaxFpeTimeOffset';
+  otherwise assert(0);
+    
+end
+    
 numberOfFiguresPerPage = length(metricNameList);
+
+boxWidth = 0.33;
+      
 plotConfigFrontiers;
 
 
@@ -74,7 +148,7 @@ gorgeousGreen       = [102 204 0]./255;
 bellaBlue           = [51 153 255]./255; 
 ostentatiousOrange  = [255 128 0]./255;
 
-groups(2) = struct('name',[],'color',[],'label',[]);
+groups(2) = struct('name',[],'color',[],'label',[],'x',0);
 
 indexGroupYoung   = 1;
 indexGroupElderly = 2;
@@ -84,7 +158,7 @@ groups(indexGroupYoung  ).label = 'Young (Y)';
 groups(indexGroupElderly).name  = 'E';
 groups(indexGroupElderly).label = 'Elderly (E)';
 
-colorMod = 0.75;
+colorMod = 0.66;
 
 colorA = [0,0,0];
 colorB = colorA.*(1-colorMod) + [1,1,1].*colorMod;
@@ -130,8 +204,13 @@ load([frontiersDataDir,'subjectTrialPhaseMetricData',nameToeTag,'.mat']);
 
 figPlotMatrix(length(trialsToProcess) )= struct('h',[]);
   
-xDeltaSubjectGroup = 0.5;            
-xPlotLim = size(subjectData,1) + size(groupData,1) + xDeltaSubjectGroup;
+xDeltaSubjectGroup = 0.5; 
+marginWidthForSignificanceStats = 2;
+
+xPlotLim = size(subjectData,1) ...
+         + size(groupData,1) ...
+         + xDeltaSubjectGroup ...
+         + marginWidthForSignificanceStats;
 
 
 
@@ -173,12 +252,12 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       y0 = -10;
       y1 = 0;
       dataBox = [x0,y0;x1,y0;x1,y1;x0,y1;x0,y0];
-      fill(dataBox(:,1),dataBox(:,2),[1,1,1].*0.5,'EdgeColor','none');
+      fill(dataBox(:,1),dataBox(:,2),[1,1,1].*0.9,'EdgeColor','none');
       hold on;      
     else
       x0 = -0.5;
       x1 = xPlotLim;
-      plot([x0;x1],[0;0],'Color',[1,1,1].*0.5,'LineWidth',0.5);
+      plot([x0;x1],[0;0],'Color',[1,1,1].*0.75,'LineWidth',0.5);
       hold on;
     end
     
@@ -208,7 +287,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
           figH = plotMetricDistributionEventData(figH, subPlotVec, indexSubject,...
                 subjectData(indexSubject,indexTrial,indexPhase).(metricName),...
                 metricYAxisScale(1,indexMetric),...
-                subjectId, groups(indexGroup).color, axisLimits,plotFontName);
+                subjectId, groups(indexGroup).color, axisLimits, boxWidth, plotFontName);
           hold on;
 
           if(indexSubject == 1)          
@@ -249,14 +328,13 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       xPosition =   size(subjectData,1)...
                    + indexGroup;
                
-      if(indexGroup==2 && indexTrial == 5 && indexPhase == 2 && indexMetric==1)
-        here=1;
-      end
+      groups(indexGroup).x = xPosition;
+      
       figH = plotMetricDistributionEventData(figH, subPlotVec, xPosition,...
               groupData(indexGroup,indexTrial,indexPhase).(metricName),...
               metricYAxisScale(1,indexMetric),...
               groups(indexGroup).name, groups(indexGroup).color, ...
-              axisLimits,plotFontName);
+              axisLimits,boxWidth,plotFontName);
         hold on;
         
       %Compute the Wilcoxin rank sum test  
@@ -267,36 +345,15 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
           groupData(indexGroupYoung,indexTrial,indexPhase).(metricName),...
           groupData(indexGroupElderly,indexTrial,indexPhase).(metricName));
         
-        x0 = size(subjectData,1)+1;
-        x1 = size(subjectData,1)+2;
-        axisLim = axis;
-        yA = axisLim(1,3);
-        yB = axisLim(1,4);
-        dy = yB-yA;
-        y1 = yB-2*0.05*dy;
-        y0 = yB-3*0.05*dy;
-        plot([x0;x0],[y0;y1],'-','Color',[0,0,0],'LineWidth',0.5);
-        hold on;
-        plot([x1;x1],[y0;y1],'-','Color',[0,0,0],'LineWidth',0.5);
-        hold on;
-        plot([x0;x1],[y1;y1],'-','Color',[0,0,0],'LineWidth',0.5);
-        hold on;
-        
-        starText = '';
-        if(phaseResults.h==1)
-          starText = '*';
-        else
-          starText = '';
-        end
-
+        figH = plotGroupComparisons(figH, subPlotVec,...
+                 groups(1).x, groupData(1,indexTrial,indexPhase).(metricName),...
+                 groups(2).x, groupData(2,indexTrial,indexPhase).(metricName),...
+                 phaseResults, startResults, [],...
+                 'all', 'seat-off', 'standing',...
+                 metricAnnotationLines(1,indexMetric),boxWidth,plotFontName);
         
         
-        
-        statsText = sprintf('%sp = %1.2e',starText,phaseResults.p);
-        text( x0,yB+0.05*dy,statsText,...
-            'FontSize',6,'HorizontalAlignment','left',...
-            'fontname',plotFontName);
-          hold on;        
+     
         
       end
     end 
@@ -307,7 +364,9 @@ for indexTrialsToProcess=1:1:length(trialsToProcess)
   figure(figPlotMatrix(indexTrialsToProcess).h);  
   configPlotExporter;
   print('-dpdf',['../../plots/Frontiers2020Pub/fig_Results',...
-                  trialsToProcess{indexTrialsToProcess},'.pdf']);  
+                  trialsToProcess{indexTrialsToProcess},...
+                  plotConfigName,... 
+                  nameToeTag,'.pdf']);  
 end  
   
         
