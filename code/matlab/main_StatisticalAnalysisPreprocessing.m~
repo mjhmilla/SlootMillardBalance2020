@@ -4,7 +4,7 @@ close all;
 clear all;
 
 
-flag_includeTrialsWithoutGrf = 1;
+flag_includeTrialsWithoutGrf = 0;
 
 flag_loadPrecomputedSubjectStatistics = 0;
 flag_loadPrecomputedGroupStatistics   = 0;
@@ -79,7 +79,6 @@ flag_printGroupSummaryStats = 1;
 % Subject/Grouping/Data
 %
 %%
-
 subjectsToProcess =  ...
   {'configH01','configH02','configH03','configH04','configH05',...
    'configH06','configH07','configH08','configH09','configH10',...
@@ -107,11 +106,10 @@ groups(indexGroupElderly).label = 'Elderly (E)';
 groups(indexGroupYoung  ).color   = [0,0,0];
 groups(indexGroupElderly).color   = gorgeousGreen;
 
-if(length(subjectsToProcess) > 1)
-  assert( (length(groups(indexGroupElderly).index)...
-          +length(groups(indexGroupYoung  ).index)) ...
-          == length(subjectsToProcess)); 
-end
+assert( (length(groups(indexGroupElderly).index)...
+        +length(groups(indexGroupYoung  ).index)) ...
+        == length(subjectsToProcess)); 
+
 
 numberOfInterpolationPoints = 20; %Number of points to use to interpolate the raw data
 
@@ -406,181 +404,31 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
           scaleAngularVelocity = scaleAngle;
           
 
-          if(   (c3dGrfDataAvailable == 0 ...
-                    && flag_includeTrialsWithoutGrf == 1) ...
-              || (c3dGrfDataAvailable == 1) )
+
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com-edge
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+
+          data       = -comgp2FootConvexHullDist.distance;
+          scaleData  = scaleDistance;                
+
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).com2edge = phaseStats(p);
+            subjectData(indexSubject,indexTrialsToProcess,p).duration = timingStats(p);          
+          end
+
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com-cop
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
           
-            if(c3dGrfDataAvailable == 0 ...
-                    && flag_includeTrialsWithoutGrf == 1)
-              here=1;
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com-edge
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-
-            data       = -comgp2FootConvexHullDist.distance;
-            scaleData  = scaleDistance;                
-
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).com2edge = phaseStats(p);
-              subjectData(indexSubject,indexTrialsToProcess,p).duration = timingStats(p);          
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com-cop
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-
-            if(c3dGrfDataAvailable==1)
-              data = sum( (c3dGrf(index_FeetForcePlate).cop(:,1:2) ...
-                                   - wholeBodyData(:,colComPos(1,1:2))).^2 ,2).^0.5;
-              scaleData   = scaleDistance;
-              [phaseStats, timingStats] = ...
-                calcMovementSequenceDataSummary(movementSequence, ...
-                    c3dTime, data, scaleData,numberOfPhases,...
-                    numberOfInterpolationPoints); 
-
-              for p=1:1:numberOfPhases
-                subjectData(indexSubject,indexTrialsToProcess,p).com2cop = phaseStats(p);    
-              end
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com velocity
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = sum( wholeBodyData(:,colComVel).^2, 2).^0.5;
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).comvel = phaseStats(p);    
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com velocity x
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = wholeBodyData(:,colComVel(1,1));
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).comvelx = phaseStats(p);    
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com velocity y
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = wholeBodyData(:,colComVel(1,2));
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).comvely = phaseStats(p);    
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com velocity z
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = wholeBodyData(:,colComVel(1,3));
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).comvelz = phaseStats(p);    
-            end
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com angular velocity
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = sum( fpeData.w0C0.^2, 2).^0.5;
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).angvel = phaseStats(p);    
-            end          
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com angular velocity x
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = fpeData.w0C0(:,1);
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).angvelx = phaseStats(p);    
-            end          
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com angular velocity y
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = fpeData.w0C0(:,2);
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).angvely = phaseStats(p);    
-            end          
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com angular velocity z
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = fpeData.w0C0(:,3);
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).angvelz = phaseStats(p);    
-            end                    
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Com angular velocity n
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            data        = fpeData.w0C0n;
-            scaleData   = scaleVelocity;
-            [phaseStats, timingStats] = ...
-              calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, data, scaleData,numberOfPhases,...
-                  numberOfInterpolationPoints); 
-
-            for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).angveln = phaseStats(p);    
-            end                    
-
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Fpe-to-foot edge
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
-            data        = -fpe2FootConvexHullDist.distance;
+          if(c3dGrfDataAvailable==1)
+            data = sum( (c3dGrf(index_FeetForcePlate).cop(:,1:2) ...
+                                 - wholeBodyData(:,colComPos(1,1:2))).^2 ,2).^0.5;
             scaleData   = scaleDistance;
             [phaseStats, timingStats] = ...
               calcMovementSequenceDataSummary(movementSequence, ...
@@ -588,102 +436,243 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
                   numberOfInterpolationPoints); 
 
             for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).fpe2edge = phaseStats(p);    
+              subjectData(indexSubject,indexTrialsToProcess,p).com2cop = phaseStats(p);    
             end
+          end
 
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Fpe-cop variation across width
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com velocity
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = sum( wholeBodyData(:,colComVel).^2, 2).^0.5;
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
 
-            if(c3dGrfDataAvailable ==1)
-              flag_ModeBalancePointsVsCom0VsCop1 =   1;
-              flag_ModeAnalyzeBalanceAlong0Across1 = 1;
-              [data,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
-                            fpeData.u,fpeData.n,...
-                            wholeBodyData(:,colComPos),...
-                            c3dGrf(index_FeetForcePlate).cop,...
-                            flag_ModeBalancePointsVsCom0VsCop1,...
-                            flag_ModeAnalyzeBalanceAlong0Across1,...
-                            'Fpe');
-              scaleData   = scaleDistance;
-              [phaseStats, timingStats] = ...
-                calcMovementSequenceDataSummary(movementSequence, ...
-                    c3dTime, data, scaleData,numberOfPhases,...
-                    numberOfInterpolationPoints); 
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).comvel = phaseStats(p);    
+          end
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com velocity x
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = wholeBodyData(:,colComVel(1,1));
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
 
-              for p=1:1:numberOfPhases
-                subjectData(indexSubject,indexTrialsToProcess,p).fpewidth = phaseStats(p);    
-              end
-            end
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).comvelx = phaseStats(p);    
+          end
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com velocity y
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = wholeBodyData(:,colComVel(1,2));
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
 
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Fpe-cop variation across length
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).comvely = phaseStats(p);    
+          end
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com velocity z
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = wholeBodyData(:,colComVel(1,3));
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
 
-            if(c3dGrfDataAvailable==1)
-              flag_ModeBalancePointsVsCom0VsCop1   = 1;
-              flag_ModeAnalyzeBalanceAlong0Across1 = 0; 
-              [data,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
-                            fpeData.u,fpeData.n,...
-                            wholeBodyData(:,colComPos),...
-                            c3dGrf(index_FeetForcePlate).cop,...
-                            flag_ModeBalancePointsVsCom0VsCop1,...
-                            flag_ModeAnalyzeBalanceAlong0Across1,...
-                            'Fpe');
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).comvelz = phaseStats(p);    
+          end
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = sum( fpeData.w0C0.^2, 2).^0.5;
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
 
-              scaleData   = scaleDistance;
-             [phaseStats, timingStats] = ...
-                calcMovementSequenceDataSummary(movementSequence, ...
-                    c3dTime, data, scaleData,numberOfPhases,...
-                    numberOfInterpolationPoints); 
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angvel = phaseStats(p);    
+          end          
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity x
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = fpeData.w0C0(:,1);
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
 
-              for p=1:1:numberOfPhases
-                subjectData(indexSubject,indexTrialsToProcess,p).fpelen = phaseStats(p);    
-              end
-            end
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Fpe assumption that the vertical component of Hgp is negligible
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angvelx = phaseStats(p);    
+          end          
 
-            scaleOne = 1;
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity y
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = fpeData.w0C0(:,2);
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angvely = phaseStats(p);    
+          end          
+
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity z
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = fpeData.w0C0(:,3);
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angvelz = phaseStats(p);    
+          end                    
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Com angular velocity n
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          data        = fpeData.w0C0n;
+          scaleData   = scaleVelocity;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).angveln = phaseStats(p);    
+          end                    
+          
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Fpe-to-foot edge
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+          data        = -fpe2FootConvexHullDist.distance;
+          scaleData   = scaleDistance;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, data, scaleData,numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).fpe2edge = phaseStats(p);    
+          end
+
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Fpe-cop variation across width
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+          
+          if(c3dGrfDataAvailable ==1)
+            flag_ModeBalancePointsVsCom0VsCop1 =   1;
+            flag_ModeAnalyzeBalanceAlong0Across1 = 1;
+            [data,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
+                          fpeData.u,fpeData.n,...
+                          wholeBodyData(:,colComPos),...
+                          c3dGrf(index_FeetForcePlate).cop,...
+                          flag_ModeBalancePointsVsCom0VsCop1,...
+                          flag_ModeAnalyzeBalanceAlong0Across1,...
+                          'Fpe');
+            scaleData   = scaleDistance;
             [phaseStats, timingStats] = ...
               calcMovementSequenceDataSummary(movementSequence, ...
-                  c3dTime, fpeData.projectionError, scaleOne, numberOfPhases,...
+                  c3dTime, data, scaleData,numberOfPhases,...
                   numberOfInterpolationPoints); 
 
             for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).fpeasmhkz = phaseStats(p);    
+              subjectData(indexSubject,indexTrialsToProcess,p).fpewidth = phaseStats(p);    
             end
+          end
 
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Fpe-cop variation across length
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            % Time relative to seat-off at which the distance (COM-FPE)u is
-            % maximized
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
-            flag_ModeBalancePointsVsCom0VsCop1   = 0;
+          if(c3dGrfDataAvailable==1)
+            flag_ModeBalancePointsVsCom0VsCop1   = 1;
             flag_ModeAnalyzeBalanceAlong0Across1 = 0; 
-            [fpelength,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
+            [data,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
                           fpeData.u,fpeData.n,...
                           wholeBodyData(:,colComPos),...
-                          [],...
+                          c3dGrf(index_FeetForcePlate).cop,...
                           flag_ModeBalancePointsVsCom0VsCop1,...
                           flag_ModeAnalyzeBalanceAlong0Across1,...
-                          'Fpe');          
+                          'Fpe');
 
-            timemaxfpe=calcTimeToMaximum(movementSequence,c3dTime,fpelength);
-
-            [phaseStats, timingStats] = ...
+            scaleData   = scaleDistance;
+           [phaseStats, timingStats] = ...
               calcMovementSequenceDataSummary(movementSequence, ...
-                c3dTime, timemaxfpe, scaleOne,numberOfPhases,...
-                numberOfInterpolationPoints); 
+                  c3dTime, data, scaleData,numberOfPhases,...
+                  numberOfInterpolationPoints); 
 
             for p=1:1:numberOfPhases
-              subjectData(indexSubject,indexTrialsToProcess,p).timemaxfpe ...
-                = phaseStats(p);    
+              subjectData(indexSubject,indexTrialsToProcess,p).fpelen = phaseStats(p);    
             end
-            
           end
-  
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Fpe assumption that the vertical component of Hgp is negligible
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+          
+          scaleOne = 1;
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+                c3dTime, fpeData.projectionError, scaleOne, numberOfPhases,...
+                numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).fpeasmhkz = phaseStats(p);    
+          end
+          
+          
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          % Time relative to seat-off at which the distance (COM-FPE)u is
+          % maximized
+          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%            
+          flag_ModeBalancePointsVsCom0VsCop1   = 0;
+          flag_ModeAnalyzeBalanceAlong0Across1 = 0; 
+          [fpelength,dataName] = calcBalancePointDistance(fpeData.r0F0, ...
+                        fpeData.u,fpeData.n,...
+                        wholeBodyData(:,colComPos),...
+                        [],...
+                        flag_ModeBalancePointsVsCom0VsCop1,...
+                        flag_ModeAnalyzeBalanceAlong0Across1,...
+                        'Fpe');          
+          
+          timemaxfpe=calcTimeToMaximum(movementSequence,c3dTime,fpelength);
+
+          [phaseStats, timingStats] = ...
+            calcMovementSequenceDataSummary(movementSequence, ...
+              c3dTime, timemaxfpe, scaleOne,numberOfPhases,...
+              numberOfInterpolationPoints); 
+
+          for p=1:1:numberOfPhases
+            subjectData(indexSubject,indexTrialsToProcess,p).timemaxfpe ...
+              = phaseStats(p);    
+          end
+          
+          
         end
 
 

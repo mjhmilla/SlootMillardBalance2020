@@ -9,6 +9,8 @@ clear all;
 %
 %%
 
+flag_PaperPlots0Presentation1 = 0;
+
 flag_ConvexHullWithToes0Without1  = 0;
 nameToeTag = '';
 if(flag_ConvexHullWithToes0Without1 == 1)
@@ -35,8 +37,7 @@ indexPhase = indexPhaseSeatOff2Stand;
 
 trialsToProcess = {'Side','Chest','Conv','Leg','Side','Rob'};
 
-%flag_plotConfig = 0; %Frontiers 2020
-flag_plotConfig = 0; %Comvel;
+flag_plotConfig = 0; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
 % 2. Com angular velocity
@@ -135,8 +136,13 @@ numberOfFiguresPerPage = length(metricNameList);
 
 boxWidth = 0.33;
       
-plotConfigFrontiers;
-
+switch flag_PaperPlots0Presentation1
+  case 0
+    plotConfigFrontiers;
+  case 1
+    plotConfigPresentation;
+  otherwise assert(0);
+end
 
 %%
 %

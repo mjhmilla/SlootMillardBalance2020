@@ -5,6 +5,8 @@ function [phaseStatsStruct, timingStruct] = ...
 
 assert(numberOfPhases==2);            
             
+assert(isempty(dataSeries)==0);
+
 
 numberOfRepetitions = 0;
 for z=1:1:length(movementSequence)
@@ -88,8 +90,18 @@ for z=1:1:length(movementSequence)
         otherwise assert(0);          
       end
        
+      %Make sure all of the values in this segment are actual numbers.
+      assert( sum( isnan(dataIndex(idxA:idxB,1))) == 0);
+      assert( sum( isinf(dataIndex(idxA:idxB,1))) == 0);
+      
+      %Make sure that this array is not just constants: something should be
+      %varying
+      assert( std(dataIndex(idxA:idxB,1)) > sqrt(eps));
+      
+      
       duration = (dataIndex(idxB,1)-dataIndex(idxA,1));      
       normDataTime = [dataIndex(idxA:1:idxB,1)-dataIndex(idxA,1)]./duration;
+      
       
       data(p).val      = [data(p).val;      dataSeries(idxA:idxB,1).*dataScale];
       dataStart(p).val = [dataStart(p).val; dataSeries(idxA,1).*dataScale];
