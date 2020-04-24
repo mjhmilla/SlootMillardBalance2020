@@ -3,7 +3,8 @@ function figH = plotGroupComparisons( figH, subPlotVec,...
                               xPositionGroupB, statsStructB,...
                               statsABPhase, statsABStart, statsABEnd,...
                               phaseLabel,startLabel,endLabel, ...
-                              flag_drawAnnotationLines,boxWidth,plotFontName)
+                              flag_drawAnnotationLines,boxWidth,...
+                              plotFontName, plotFontColor)
 
 figure(figH);
 if(length(subPlotVec) == 3)
@@ -144,7 +145,7 @@ if(isempty(statsABPhase)==0)
           xData     = xB;
           yMedian   = statsStructB.phase.median;         
         end
-
+        
         %plot([xData;xP],[yMedian;yMiddle],'-','Color',[0,0,0],'LineWidth',0.5);
         %hold on;
 
@@ -169,7 +170,7 @@ if(isempty(statsABPhase)==0)
         text( xP,yMiddle,statsText,...
             'FontSize',6,'HorizontalAlignment','left',...
             'VerticalAlignment', vertAlign,...
-            'fontname',plotFontName);
+            'fontname',plotFontName,'Color',plotFontColor);
           hold on;   
 
       end

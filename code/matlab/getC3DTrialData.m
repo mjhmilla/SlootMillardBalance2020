@@ -23,13 +23,15 @@ else
   c3dMatFileName = c3dFileName(1:1:(idx-1));    
   load( [dataFolderMat,c3dMatFileName,'.mat']);
   
-  if(exist('c3dGrfDataAvailable','var')==0)
-    if(isempty(c3dGrf)==0)
-      c3dGrfDataAvailable = 1;
-    else
-      c3dGrfDataAvailable = 0;
-    end
-  end
+  %Make sure this variable gets overwritten.
+  assert(isnan(c3dGrfDataAvailable)==0)
+  %if(exist('c3dGrfDataAvailable','var')==0)
+  %  if(isempty(c3dGrf)==0)
+  %  c3dGrfDataAvailable = 1;
+  %  else
+  %    c3dGrfDataAvailable = 0;
+  %  end
+  %end
   
   if(strcmp(c3dMarkerUnits.marker,'mm')==1)
     mm2m = 0.001;

@@ -2,24 +2,14 @@
 % Setup plot parameters
 %%
 %totalWidth = 177.13668/10; %Frontiers journal text width.
-totalWidth = 21.0;
-
-pageHeight  = 42.;
-pageWidth   = 29.7;
-
-numberOfVerticalPlotRows      = numberOfFiguresPerPage;
-numberOfHorizontalPlotColumns = 1;
 
 plotFontName = 'latex';
 
-%if(flag_usingOctave == 0)
 set(groot, 'defaultAxesFontSize',8);
 set(groot, 'defaultTextFontSize',8);
 set(groot, 'defaultAxesLabelFontSizeMultiplier',1.2);
 set(groot, 'defaultAxesTitleFontSizeMultiplier',1.2);
 set(groot, 'defaultAxesTickLabelInterpreter','latex');
-%set(groot, 'defaultAxesFontName',plotFontName);
-%set(groot, 'defaultTextFontName',plotFontName);
 set(groot, 'defaultLegendInterpreter','latex');
 set(groot, 'defaultTextInterpreter','latex');
 set(groot, 'defaultAxesTitleFontWeight','bold');  
@@ -30,9 +20,8 @@ set(groot,'defaultFigurePaperType','A3');
 plotHorizMarginCm = 1;
 plotVertMarginCm  = 1;
 
-plotHeight= 5;%((pageHeight-plotVertMarginCm)/numberOfVerticalPlotRows);
-
-plotWidth = 16;%((pageWidth-plotHorizMarginCm)/numberOfHorizontalPlotColumns);
+%plotHeight= 5;%((pageHeight-plotVertMarginCm)/numberOfVerticalPlotRows);
+%plotWidth = 16;%((pageWidth-plotHorizMarginCm)/numberOfHorizontalPlotColumns);
 
 %plotHeight = min(plotWidth,plotHeight);
 %plotWidth  = min(plotWidth,plotHeight);

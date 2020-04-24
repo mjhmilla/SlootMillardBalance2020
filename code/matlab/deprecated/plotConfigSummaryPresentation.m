@@ -4,7 +4,7 @@
 %totalWidth = 177.13668/10; %Frontiers journal text width.
 totalWidth = 21.0;
 
-pageHeight  = 42.;
+pageHeight  = 42.*2;
 pageWidth   = 29.7;
 
 numberOfVerticalPlotRows      = numberOfFiguresPerPage;
@@ -30,9 +30,8 @@ set(groot,'defaultFigurePaperType','A3');
 plotHorizMarginCm = 1;
 plotVertMarginCm  = 1;
 
-plotHeight= 5;%((pageHeight-plotVertMarginCm)/numberOfVerticalPlotRows);
-
-plotWidth = 12.8;%16;%((pageWidth-plotHorizMarginCm)/numberOfHorizontalPlotColumns);
+%plotHeight= 9.6;%((pageHeight-plotVertMarginCm)/numberOfVerticalPlotRows);
+%plotWidth = 12.8;%16;%((pageWidth-plotHorizMarginCm)/numberOfHorizontalPlotColumns);
 
 %plotHeight = min(plotWidth,plotHeight);
 %plotWidth  = min(plotWidth,plotHeight);

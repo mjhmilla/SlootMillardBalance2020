@@ -9,7 +9,7 @@ clear all;
 %
 %%
 
-flag_PaperPlots0Presentation1 = 0;
+flag_PaperPlots0Presentation1 = 1;
 
 flag_ConvexHullWithToes0Without1  = 0;
 nameToeTag = '';
@@ -37,12 +37,32 @@ indexPhase = indexPhaseSeatOff2Stand;
 
 trialsToProcess = {'Side','Chest','Conv','Leg','Side','Rob'};
 
-flag_plotConfig = 0; 
+flag_plotConfig = 4; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
 % 2. Com angular velocity
 % 3. Time since peak (fpe-com).u
+% 4. Summary plot
 plotConfigName = '';
+
+flag_plotSubjectData = 0;
+flag_plotGroupData   = 0;
+
+
+switch(flag_PaperPlots0Presentation1)
+  case 0
+    lineWidth  = 0.75;
+    boxWidth   = 0.33;
+    panelHeight = 5;
+    panelWidth  = 16;
+  case 1
+    lineWidth  = 0.5;
+    boxWidth   = 0.33;
+    panelHeight = 9.6;
+    panelWidth  = 12.8;
+  otherwise assert(0);
+end    
+
 
 switch flag_plotConfig
   case 0
@@ -73,11 +93,32 @@ switch flag_plotConfig
 
     metricAnnotationLines = [1,0,0,1,0,0,1,0];
     
-    plotConfigName = 'ComFpeBalanceMetrics';
+    plotConfigName = 'ComFpeBalanceMetrics';   
+    
+    flag_plotSubjectData = 1;
+    flag_plotGroupData   = 1;
+
+    % Plot Config    
+
+    numberOfFiguresPerPage        = length(metricNameList);
+    numberOfVerticalPlotRows      = numberOfFiguresPerPage;
+    numberOfHorizontalPlotColumns = 1;    
+    assert(numberOfVerticalPlotRows*numberOfHorizontalPlotColumns ...
+             >= numberOfFiguresPerPage);
+
+    plotHorizMarginCm = 1;
+    plotVertMarginCm  = 1.5;           
+    pageHeight  = numberOfVerticalPlotRows*(panelHeight) + 2;
+    pageWidth   = numberOfHorizontalPlotColumns*(panelWidth) + 2;           
+    plotHeight  = panelHeight;
+    plotWidth   = panelWidth ;
+    
+    plotConfigGeneric;
+ 
   case 1
     metricNameList = {'comvel','comvelx','comvely','comvelz'};
 
-    metricYLim = [ 0,65; -5,65; -5,5; -5,65];
+    metricYLim = [ 0,65; -20,65; -10,10; -40,65];
          
 
     metricYAxisLabel = {'Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)'};
@@ -94,11 +135,30 @@ switch flag_plotConfig
     metricAnnotationLines = [0,0,0,0];
 
     plotConfigName = 'ComVelocity';    
+
+    flag_plotSubjectData = 1;
+    flag_plotGroupData   = 1;
+    
+    % Plot Config    
+    numberOfFiguresPerPage        = length(metricNameList);
+    numberOfVerticalPlotRows      = numberOfFiguresPerPage;
+    numberOfHorizontalPlotColumns = 1;    
+    assert(numberOfVerticalPlotRows*numberOfHorizontalPlotColumns ...
+             >= numberOfFiguresPerPage);
+           
+    plotHorizMarginCm = 1;
+    plotVertMarginCm  = 1.5;           
+    pageHeight  = numberOfVerticalPlotRows*(panelHeight) + 2;
+    pageWidth   = numberOfHorizontalPlotColumns*(panelWidth) + 2;              
+    plotHeight  = panelHeight;
+    plotWidth   = panelWidth ;
+    
+    plotConfigGeneric;
     
   case 2
     metricNameList = {'angvel','angvelx','angvely','angvelz','angveln'};
 
-    metricYLim = [ 0, 100; -25,25; -40, 100; -90,60; -30, 110];
+    metricYLim = [ 0, 120; -25,25; -40, 120; -90,60; -30, 120];
          
 
     metricYAxisLabel = {'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)',...
@@ -118,31 +178,116 @@ switch flag_plotConfig
     metricAnnotationLines = [0,0,0,0,0];
 
     plotConfigName = 'ComAngularVelocity';  
+        
+    flag_plotSubjectData = 1;
+    flag_plotGroupData   = 1;
+    
+    % Plot Config    
+    numberOfFiguresPerPage        = length(metricNameList);
+    numberOfVerticalPlotRows      = numberOfFiguresPerPage;
+    numberOfHorizontalPlotColumns = 1;    
+    assert(numberOfVerticalPlotRows*numberOfHorizontalPlotColumns ...
+             >= numberOfFiguresPerPage);
+           
+    plotHorizMarginCm = 1;
+    plotVertMarginCm  = 1.5;           
+    pageHeight  = numberOfVerticalPlotRows*(panelHeight) + 2;
+    pageWidth   = numberOfHorizontalPlotColumns*(panelWidth) + 2;          
+    plotHeight  = panelHeight;
+    plotWidth   = panelWidth ;
+    
+    plotConfigGeneric;
     
   case 3
-      metricNameList = {'timemaxfpe'};
-      metricYLim = [-0.05,0.150];
-      metricYAxisLabel = {'Time'};
-      metricYAxisScale = [1];
-      metricTitle = {'Time since max((FPE-COM).u)'};
-      metricPlotHalfPlaneBox = [0];
-      metricAnnotationLines = [0];
-      plotConfigName = 'MaxFpeTimeOffset';
-  otherwise assert(0);
+    metricNameList = {'timemaxfpe'};
+    metricYLim = [-0.05,0.25];
+    metricYAxisLabel = {'Time'};
+    metricYAxisScale = [1];
+    metricTitle = {'Time since max((FPE-COM).u)'};
+    metricPlotHalfPlaneBox = [0];
+    metricAnnotationLines = [0];
+    plotConfigName = 'MaxFpeTimeOffset';
     
-end
-    
-numberOfFiguresPerPage = length(metricNameList);
 
-boxWidth = 0.33;
-      
-switch flag_PaperPlots0Presentation1
-  case 0
-    plotConfigFrontiers;
-  case 1
-    plotConfigPresentation;
-  otherwise assert(0);
+    flag_plotSubjectData = 1;
+    flag_plotGroupData   = 1;
+        
+    % Plot Config    
+    numberOfFiguresPerPage        = length(metricNameList);
+    numberOfVerticalPlotRows      = numberOfFiguresPerPage;
+    numberOfHorizontalPlotColumns = 1;    
+    assert(numberOfVerticalPlotRows*numberOfHorizontalPlotColumns ...
+             >= numberOfFiguresPerPage);
+           
+    plotHorizMarginCm = 1;
+    plotVertMarginCm  = 1.5;           
+    pageHeight  = numberOfVerticalPlotRows*(panelHeight) + 2;
+    pageWidth   = numberOfHorizontalPlotColumns*(panelWidth) + 2;  
+                  
+    plotHeight  = panelHeight;
+    plotWidth   = panelWidth ;
+    
+    plotConfigGeneric;
+    
+  case 4
+    
+    metricNameList = {'com2edge','com2cop','comvel',...
+                      'angvel','angvelz','fpe2edge'};
+
+    metricYLim = [-1,17;    0,15;  0,65;...
+                  0,115; -25, 25; -1,17];
+    
+
+    metricYAxisLabel = {'Distance (cm)','Distance (cm)','Velocity (cm/s)',...
+                        'Angular Speed ($$^\circ$$/s)',...
+                        'Angular Speed ($$^\circ$$/s)','Distance (cm)'};
+
+    metricYAxisScale = [1,1,1,...
+                        1,1,1];
+
+    metricTitle = {'A. COM$_{\mathrm{GP}}$-BOS: $d_{COM}$',...
+                   'B. COM$_{\mathrm{GP}}$-COP',...
+                   'C. COM Speed: $|v_{COM}|_2$',...
+                   'A. Ang. Speed: $|\omega_{avg}|_2$',...
+                   'B. Ang. Speed: $\omega_{avg}\cdot\hat{z}$',...
+                   'C. FPE-BOS: $d_{FPE}$'};
+
+    metricPlotHalfPlaneBox = [1,0,0,...
+                              0,0,1];             
+
+    metricAnnotationLines = [1,0,0,...
+                             0,0,1];
+    
+    plotConfigName = 'ComFpeBalanceMetricsSummary';   
+       
+    flag_plotSubjectData = 0;
+    flag_plotGroupData   = 1;
+    
+    
+    % Plot Config
+    numberOfFiguresPerPage        = length(metricNameList);
+    numberOfVerticalPlotRows      = 2;
+    numberOfHorizontalPlotColumns = 3;    
+    assert(numberOfVerticalPlotRows*numberOfHorizontalPlotColumns ...
+             >= numberOfFiguresPerPage);
+
+    plotHorizMarginCm = 1.5;
+    plotVertMarginCm  = 1.5;    
+    
+    plotHeight  =  panelHeight / numberOfVerticalPlotRows;
+    plotWidth   = (panelWidth)  / numberOfHorizontalPlotColumns;
+    
+    pageHeight  = numberOfVerticalPlotRows*(plotHeight) + 2;
+    pageWidth   = numberOfHorizontalPlotColumns*(plotWidth) + 2;  
+    
+    plotConfigGeneric;
+    
+  otherwise
+    assert(0);
+    
 end
+    
+
 
 %%
 %
@@ -213,10 +358,21 @@ figPlotMatrix(length(trialsToProcess) )= struct('h',[]);
 xDeltaSubjectGroup = 0.5; 
 marginWidthForSignificanceStats = 2;
 
-xPlotLim = size(subjectData,1) ...
-         + size(groupData,1) ...
-         + xDeltaSubjectGroup ...
-         + marginWidthForSignificanceStats;
+xPlotLim = 0;
+
+if(flag_plotSubjectData == 1 && flag_plotGroupData == 1)
+  xPlotLim = size(subjectData,1) ...
+           + size(groupData,1) ...
+           + xDeltaSubjectGroup ...
+           + marginWidthForSignificanceStats;
+end
+
+if(flag_plotSubjectData == 0 && flag_plotGroupData == 1)
+  marginWidthForSignificanceStats = 1.5;
+  xPlotLim = size(groupData,1) ...
+           + xDeltaSubjectGroup ...
+           + marginWidthForSignificanceStats;
+end
 
 
 
@@ -271,97 +427,108 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
     
     for indexGroup=1:1:size(groupData,1)
  
-      subjectsInGroup = groupData(indexGroup,indexTrial,indexPhase).subjectIndex;
-      for indexGroupMember=1:1:length(subjectsInGroup)
-        indexSubject = subjectsInGroup(1,indexGroupMember);
+      groupXPosition = indexGroup;
+      axisLimits = [0,xPlotLim, ...
+                    metricYLim(indexMetric,1),...
+                    metricYLim(indexMetric,2)];      
+                  
+      if(flag_plotSubjectData == 1)
+        subjectsInGroup = groupData(indexGroup,indexTrial,indexPhase).subjectIndex;
+        for indexGroupMember=1:1:length(subjectsInGroup)
+          indexSubject = subjectsInGroup(1,indexGroupMember);
+
+          if( isempty(subjectData(indexSubject,indexTrial,indexPhase).subjectId) == 0)
+
+
+
+            subjectId = subjectData(indexSubject,indexTrial,indexPhase).subjectId(2:3);
+            if(contains(subjectId,'0'))
+              idx = strfind(subjectId,'0');
+              if(idx == 1)
+                subjectId = subjectId(2);
+              end
+            end                    
+
+            fontColor = groups(indexGroup).color(1,:);
+
+            figH = plotMetricDistributionEventData(figH, subPlotVec, indexSubject,...
+                  subjectData(indexSubject,indexTrial,indexPhase).(metricName),...
+                  metricYAxisScale(1,indexMetric),...
+                  subjectId, groups(indexGroup).color, axisLimits, ...
+                  boxWidth, lineWidth, plotFontName, fontColor);
+            hold on;
+
+          end
+        end
         
-        if( isempty(subjectData(indexSubject,indexTrial,indexPhase).subjectId) == 0)
-                
-          axisLimits = [0,xPlotLim, ...
-                        metricYLim(indexMetric,1),...
-                        metricYLim(indexMetric,2)];
+        groupXPosition =   size(subjectData,1) + indexGroup;
+      end      
+             
+      if(flag_plotGroupData == 1)
+      
+        groups(indexGroup).x = groupXPosition;
 
-          subjectId = subjectData(indexSubject,indexTrial,indexPhase).subjectId(2:3);
-          if(contains(subjectId,'0'))
-            idx = strfind(subjectId,'0');
-            if(idx == 1)
-              subjectId = subjectId(2);
-            end
-          end                    
+        fontColor = groups(indexGroup).color(1,:);
 
-
-          figH = plotMetricDistributionEventData(figH, subPlotVec, indexSubject,...
-                subjectData(indexSubject,indexTrial,indexPhase).(metricName),...
+        figH = plotMetricDistributionEventData(figH, subPlotVec, ...
+                groupXPosition,...
+                groupData(indexGroup,indexTrial,indexPhase).(metricName),...
                 metricYAxisScale(1,indexMetric),...
-                subjectId, groups(indexGroup).color, axisLimits, boxWidth, plotFontName);
+                groups(indexGroup).name, groups(indexGroup).color, ...
+                axisLimits,boxWidth,lineWidth,plotFontName,fontColor);
           hold on;
 
-          if(indexSubject == 1)          
-            axisLimitsScaled = axis;
-            ylabel(metricYAxisLabel{indexMetric});
-            titleFontSize =  get(groot,'defaultAxesFontSize')...
-                            *get(groot,'defaultAxesTitleFontSizeMultiplier');
+        %Compute the Wilcoxin rank sum test  
+        if(indexGroup == size(groupData,1))
+          assert(indexGroup == 2)
+          [phaseResults, startResults, endResults] = ...
+            calcGroupComparison(...
+            groupData(indexGroupYoung,indexTrial,indexPhase).(metricName),...
+            groupData(indexGroupElderly,indexTrial,indexPhase).(metricName));
 
-            xTitle = axisLimitsScaled(1,1);
-            yTitle = axisLimitsScaled(1,4) ...
-                    + 0.1*(axisLimitsScaled(1,4)-axisLimitsScaled(1,3));          
-
-            %'Interpreter','latex',      
-            text(xTitle,yTitle,metricTitle{indexMetric},...
-                 'FontSize',titleFontSize,...
-                 'HorizontalAlignment','left',...
-                 'fontname',plotFontName);
-            hold on;
-
-            maxSubject = size(subjectData,1);
-            x0 = maxSubject+xDeltaSubjectGroup;
-            y0 = axisLimitsScaled(1,3);
-            y1 = axisLimitsScaled(1,4);
-            dy =y1-y0;
-            plot([x0;x0],[(y0+0.05*dy);(y1-0.05*dy)],...
-                 '-','Color',[1,1,1].*0.5,'LineWidth',0.5)
-            hold on;
-          end
-
-
-          set(gca,'TickLength',[0 0]);
-          set(gca,'XTickLabel',[]); 
-          box off;
+          fontColor = [0,0,0];
+          figH = plotGroupComparisons(figH, subPlotVec,...
+                   groups(1).x, groupData(1,indexTrial,indexPhase).(metricName),...
+                   groups(2).x, groupData(2,indexTrial,indexPhase).(metricName),...
+                   phaseResults, startResults, [],...
+                   'all', 'seat-off', 'standing',...
+                   metricAnnotationLines(1,indexMetric),boxWidth,...
+                   plotFontName,fontColor);
 
         end
       end
       
-      xPosition =   size(subjectData,1)...
-                   + indexGroup;
-               
-      groups(indexGroup).x = xPosition;
-      
-      figH = plotMetricDistributionEventData(figH, subPlotVec, xPosition,...
-              groupData(indexGroup,indexTrial,indexPhase).(metricName),...
-              metricYAxisScale(1,indexMetric),...
-              groups(indexGroup).name, groups(indexGroup).color, ...
-              axisLimits,boxWidth,plotFontName);
+      if(indexGroup == 1)          
+        axisLimitsScaled = axis;
+        ylabel(metricYAxisLabel{indexMetric});
+        titleFontSize =  get(groot,'defaultAxesFontSize')...
+                        *get(groot,'defaultAxesTitleFontSizeMultiplier');
+
+        xTitle = axisLimitsScaled(1,1) - 0.3*( axisLimitsScaled(1,2)-axisLimitsScaled(1,1) );
+        yTitle = axisLimitsScaled(1,4) ...
+                + 0.1*(axisLimitsScaled(1,4)-axisLimitsScaled(1,3));          
+
+        %'Interpreter','latex',      
+        text(xTitle,yTitle,metricTitle{indexMetric},...
+             'FontSize',titleFontSize,...
+             'HorizontalAlignment','left',...
+             'fontname',plotFontName);
         hold on;
-        
-      %Compute the Wilcoxin rank sum test  
-      if(indexGroup == size(groupData,1))
-        assert(indexGroup == 2)
-        [phaseResults, startResults, endResults] = ...
-          calcGroupComparison(...
-          groupData(indexGroupYoung,indexTrial,indexPhase).(metricName),...
-          groupData(indexGroupElderly,indexTrial,indexPhase).(metricName));
-        
-        figH = plotGroupComparisons(figH, subPlotVec,...
-                 groups(1).x, groupData(1,indexTrial,indexPhase).(metricName),...
-                 groups(2).x, groupData(2,indexTrial,indexPhase).(metricName),...
-                 phaseResults, startResults, [],...
-                 'all', 'seat-off', 'standing',...
-                 metricAnnotationLines(1,indexMetric),boxWidth,plotFontName);
-        
-        
-     
-        
-      end
+
+        maxSubject = size(subjectData,1);
+        x0 = maxSubject+xDeltaSubjectGroup;
+        y0 = axisLimitsScaled(1,3);
+        y1 = axisLimitsScaled(1,4);
+        dy =y1-y0;
+        plot([x0;x0],[(y0+0.05*dy);(y1-0.05*dy)],...
+             '-','Color',[1,1,1].*0.5,'LineWidth',0.5)
+        hold on;
+      end      
+      
+      set(gca,'TickLength',[0 0]);
+      set(gca,'XTickLabel',[]); 
+      box off;
+      
     end 
   end
 end
