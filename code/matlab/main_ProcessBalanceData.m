@@ -4,11 +4,11 @@ clear all;
 
 %List of the subjects to process
 
-subjectsToProcess = {...  
-  'configE01','configE02','configE03','configE04','configE05', ...
-  'configE06','configE07','configE08','configE09',...
-  'configH01','configH02','configH03','configH04','configH05',...
-  'configH06','configH07','configH08','configH09','configH10'};
+subjectsToProcess = {'configH01'};%...
+% {'configE01','configE02','configE03','configE04','configE05', ...
+%  'configE06','configE07','configE08','configE09',...
+%  'configH01','configH02','configH03','configH04','configH05',...
+%  'configH06','configH07','configH08','configH09','configH10'}; 
 
 
 
@@ -45,7 +45,7 @@ omegaSmall = 0.01;
 
 startS2SComVelocityTolerance = 0.01; %m/s
 endS2SComVelocityTolerance   = 0.01; %m/s
-seatOffChairForceZTolerance  = 1;    %N
+seatOffChairForceZTolerance  = 10;    %N
 endS2SComHeightTolerance     = 0.01; %m
 
 %Motion segmentation constants
@@ -97,6 +97,10 @@ quietDwellTime = 0.5;
 % Processing Flags
 %%
 
+c3dPlanarProjection = struct('generate',1,...
+                             'write',1,...
+                             'normal',[0,1,0]);
+
 
 %Preprocessing of C3D data
 flag_loadC3DMatFileData         = 0;
@@ -108,22 +112,22 @@ flag_verbose                    = 0;
 flag_writeComDataForMeshup = 1;
 
 %FPE processing
-flag_loadFpeDataFromFile   = 0;
+flag_loadFpeDataFromFile   = 1;
 flag_writeFpeDataForMeshup = 0;
 
 %Capture point processing
-flag_loadCapDataFromFile   = 0;
+flag_loadCapDataFromFile   = 1;
 flag_writeCapDataForMeshup = 0;
 
 %Calc distance between key ground points and the convex hull of the feet.
 %Here the key ground points are: CoM ground projection, CoP, Fpe, Cap
-flag_loadKeyPointDistanceToFootConvexHull = 0;
+flag_loadKeyPointDistanceToFootConvexHull = 1;
 
 %Motion segmentation
-flag_loadSegmentedMotionDataFromFile = 0;
+flag_loadSegmentedMotionDataFromFile = 1;
 
 %Motion sequence identification
-flag_loadMovementSequenceFromFile =0;
+flag_loadMovementSequenceFromFile =1;
 
 
 %Plotting
@@ -237,7 +241,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
       %%
       headerRows          = 4; 
       textInRowBeforeData = 'ITEM';
-
+      
 
       [c3dTime, ...
        c3dMarkers, ... 
@@ -250,11 +254,14 @@ for indexSubject = 1:1:length(subjectsToProcess)
          getC3DTrialData( inputC3DFolder, ...
                           outputTrialFolder,...
                           c3dFileName,...
+                          c3dPlanarProjection,...                          
                           flag_loadC3DMatFileData, ...
                           flag_useMetersRadiansInC3DData, ...
                           forcePlateDataRecorded,...
                           flag_verbose);
 
+
+                        
 
       [anthroData, anthroColNames] = ...
           getAnthropometryData( inputAnthroFolder,...
@@ -564,7 +571,44 @@ for indexSubject = 1:1:length(subjectsToProcess)
                 flag_verboseMotionSequence,...
                 c3dGrfDataAvailable);    
 
+%           [b,a] = butter(2,10/(150*0.5),'low');
+%           c3dGrfChairForceZFiltered = filtfilt(b,a,c3dGrfChair.force(:,3));
+%           
+%           figSeatOff = figure;
+%           subplot(2,1,1);
+%             plot(c3dTime, c3dGrfChair.force(:,3),'k');
+%             hold on;
+%             for idx = 1:1:length(sitToStandQuietSequence)
+%               plot(c3dTime(sitToStandQuietSequence(idx).indexReference,1),...
+%                    c3dGrfChair.force(sitToStandQuietSequence(idx).indexReference,3),...
+%                    'c*');
+%               hold on;
+%             end
+%             xlabel('Time (s)');
+%             ylabel('Force (N)');
+%             title('Chair Force Plate Z Data: Raw');
+%           subplot(2,1,2);
+%             plot(c3dTime,...
+%                  c3dGrfChairForceZFiltered(:,1),...
+%                'r');
+%             hold on;
+%             for idx = 1:1:length(sitToStandQuietSequence)
+%               plot(c3dTime(sitToStandQuietSequence(idx).indexReference,1),...
+%                    c3dGrfChairForceZFiltered(sitToStandQuietSequence(idx).indexReference,1),...
+%                    'c*');
+%               hold on;
+%             end            
+%             xlabel('Time (s)');
+%             ylabel('Force (N)');
+%             title('Chair Force Plate Z Data: Filtered');
+%             
+%           hold on;
+%           here=1;
         %end
+        %for iter = 1:1:length(sitToStandQuietSequence)
+        %  fprintf('%i.\t%1.3e\n',iter, sitToStandQuietSequence(iter).valueSwitchConditionReference);
+        %end
+        
         here=1;
       end
 
@@ -593,7 +637,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
           heelLength = ...
             (norm( 0.5*(c3dMarkers.('R_FAL')(1,:)+c3dMarkers.('R_TAM')(1,:)) ...
-                  -c3dMarkers.('R_FCC')(1,:)));
+                  -c3dMarkers.('R_FCC')(1,:)))*0.75;
 
           heelHeight = ...
             0.5*(c3dMarkers.('R_FAL')(1,3)+c3dMarkers.('L_FAL')(1,3));
@@ -605,8 +649,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
               norm( 0.5.*(c3dMarkers.('R_SAE')(1,3)+c3dMarkers.('L_SAE')(1,3)) ...
                         - c3dMarkers.('CV7')(1,3) );
           humerusHeadRadius = 0.03;
-          shoulderToC7Length = shoulderToC7Length + humerusHeadRadius; 
-
+          shoulderToC7Length = (shoulderToC7Length + humerusHeadRadius); 
+          
           success = writeModelFactoryModelFile(...
                     [outputTrialFolder, outputModelFactoryAnthropometryFile],...
                     subjectAge,...
@@ -621,15 +665,18 @@ for indexSubject = 1:1:length(subjectsToProcess)
                     shoulderToC7Length,...
                     footWidth);
 
-
+          %%
+          % Make the 3d model
+          %%
+                  
           success  = writeModelFactoryEnvironmentFile(...
                         [outputTrialFolder, outputModelFactoryEnvironmentFile], ...
                         flag_modelFactoryAddMarkers, ...
                          modelFactoryLuaModel,...
                          modelFactoryDescriptionFile,...                      
                          modelFactoryScalingAlgorithm,...
-                         outputModelFactoryAnthropometryFile);
-
+                         outputModelFactoryAnthropometryFile);                  
+                       
           flag_plotModelFactoryModel = 0;
           flag_verboseModelFactoryOutput =0;
           success = ...
@@ -641,6 +688,26 @@ for indexSubject = 1:1:length(subjectsToProcess)
             copyfile([outputTrialFolder,modelFactoryLuaModel],...
                      [inputC3DFolders{indexTrial},modelFactoryLuaModel],'f');
 
+          %%
+          % Make the 2d model
+          %%
+          success  = writeModelFactoryEnvironmentFile(...
+                        [outputTrialFolder, outputModelFactoryEnvironmentFile2D], ...
+                        flag_modelFactoryAddMarkers, ...
+                         modelFactoryLuaModel2D,...
+                         modelFactoryDescriptionFile2D,...                      
+                         modelFactoryScalingAlgorithm2D,...
+                         outputModelFactoryAnthropometryFile);                        
+                       
+          success = ...
+            createModel([outputTrialFolder, outputModelFactoryEnvironmentFile2D],...
+                         flag_plotModelFactoryModel,...
+                         flag_verboseModelFactoryOutput);
+
+          [success,message,messageId] = ...
+            copyfile([outputTrialFolder,modelFactoryLuaModel],...
+                     [inputC3DFolders{indexTrial},modelFactoryLuaModel2D],'f');
+                       
         end
 
         if(indexTrial ~= index_Static)

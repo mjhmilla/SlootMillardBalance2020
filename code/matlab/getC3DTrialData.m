@@ -1,23 +1,34 @@
 function [c3dTime, c3dMarkers,c3dMarkerNames,c3dMarkerUnits,...
           c3dForcePlates, c3dForcePlateInfo, c3dGrf,c3dGrfDataAvailable] = ...
     getC3DTrialData(  dataFolderRaw,dataFolderMat,...
-                      c3dFileName, flag_loadMatFileData,...
-                      flag_MetersRadians, flag_grfDataRecorded, flag_verbose)
+                      c3dFileName, c3dPlanarSettings, ...
+                      flag_loadMatFileData, flag_MetersRadians, ...
+                      flag_grfDataRecorded, flag_verbose)
    
    
 c3dGrfDataAvailable = NaN;
+c3dPlanar = [];
 
 if(flag_loadMatFileData == 0)
   [c3dTime, c3dMarkers,c3dMarkerNames,c3dMarkerUnits,...
-   c3dForcePlates, c3dForcePlateInfo, c3dGrf,c3dGrfDataAvailable] = ...
-    preprocessC3DData( [dataFolderRaw,c3dFileName], flag_MetersRadians,...
-    flag_grfDataRecorded,flag_verbose );
+   c3dForcePlates, c3dForcePlateInfo, c3dGrf,c3dGrfDataAvailable,...
+   c3dPlanar] = ...
+    preprocessC3DData( [dataFolderRaw,c3dFileName], c3dPlanarSettings,...
+                       flag_MetersRadians,flag_grfDataRecorded,...
+                       flag_verbose );
   
   idx = strfind(c3dFileName,'.');
   c3dMatFileName = c3dFileName(1:1:(idx-1));    
   save( [dataFolderMat,c3dMatFileName,'.mat'],...
       'c3dTime', 'c3dMarkers','c3dMarkerNames','c3dMarkerUnits',...
-      'c3dForcePlates','c3dForcePlateInfo','c3dGrf','c3dGrfDataAvailable');
+      'c3dForcePlates','c3dForcePlateInfo','c3dGrf',...
+      'c3dGrfDataAvailable');
+  if(isempty(c3dPlanar)==0)
+    if(c3dPlanarSettings.write == 1)
+      c3dPlanarFileName = [c3dFileName(1:1:(idx-1)),'_2D.c3d'];      
+      btkWriteAcquisition(c3dPlanar,[dataFolderMat,c3dPlanarFileName]);
+    end
+  end
 else
   idx = strfind(c3dFileName,'.');
   c3dMatFileName = c3dFileName(1:1:(idx-1));    
@@ -25,13 +36,6 @@ else
   
   %Make sure this variable gets overwritten.
   assert(isnan(c3dGrfDataAvailable)==0)
-  %if(exist('c3dGrfDataAvailable','var')==0)
-  %  if(isempty(c3dGrf)==0)
-  %  c3dGrfDataAvailable = 1;
-  %  else
-  %    c3dGrfDataAvailable = 0;
-  %  end
-  %end
   
   if(strcmp(c3dMarkerUnits.marker,'mm')==1)
     mm2m = 0.001;

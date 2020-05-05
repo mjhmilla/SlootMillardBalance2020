@@ -247,29 +247,34 @@ if(flag_loadSequenceDataFromFile == 0)
               % occur when the chair reaches some tolerance value above 
               % the minimum recorded velue
               %%
-              %Signal sometimes bounces below zero from the Kistler plates  
               
-              fzChair = c3dGrfChair.force(indexSeatOff:indexStandingStart,3);
-              fzChair( find(fzChair < 0)) = median(fzChair);
-
-              [minFzVal, indexMinFz] = ...
-               max(c3dGrfChair.force(indexStandingStart:indexStandingEnd,3));
-              [maxFzVal, indexMaxFz] = max(fzChair);
+              fzChairSeated = c3dGrfChair.force(indexSittingStaticEnd:indexStandingEnd,3);
+              
+              %Signal sometimes bounces below zero from the Kistler plates:
+              % these values are ignored
+              fzChairSeated( find(fzChairSeated < 0)) = NaN;
+              
+              
+              [minFzVal, indexMinFz] = min(fzChairSeated,[], 'omitnan');
+              [maxFzVal, indexMaxFz] = max(fzChairSeated,[], 'omitnan');
               seatOffChangeInForce = maxFzVal-minFzVal;
-              if(seatOffChangeInForce < seatOffChairForceZTolerance)
-                seatOffForce = minFzVal +0.5*seatOffChangeInForce;
-              else
-                seatOffForce = minFzVal + seatOffChairForceZTolerance;
-              end
+              assert(seatOffChangeInForce > seatOffChairForceZTolerance);
+             
+              seatOffForce = minFzVal + seatOffChairForceZTolerance;
+
 
               idxSeg = 1;
-              while(   idxSeg < (indexStandingStart-indexSeatOff+1) ...
-                    && fzChair(idxSeg) > seatOffForce)
+              idxSegMax = (indexStandingEnd-indexSittingStaticEnd+1);
+              while(   idxSeg < idxSegMax ...
+                    && ( fzChairSeated(idxSeg) > seatOffForce || isnan(fzChairSeated(idxSeg))==1 ))
                 idxSeg=idxSeg+1;
               end
-              assert(idxSeg < (indexStandingStart-indexSeatOff+1));
-              indexSeatOff = indexSeatOff+idxSeg-1;
-              valueSeatOff = fzChair(idxSeg);
+              if(idxSeg >= idxSegMax)
+                here=1;
+              end
+              assert(idxSeg < idxSegMax);
+              indexSeatOff = indexSittingStaticEnd+idxSeg-1;
+              valueSeatOff = seatOffForce;%fzChairSeated(idxSeg)-seatOffForce;
             else
               
               %Seatoff occurs very close to the maximum whole body
@@ -283,6 +288,7 @@ if(flag_loadSequenceDataFromFile == 0)
               
             end
             
+            indexStandingStart = indexSeatOff;
             %%
             %
             %Refine standing index : standing will occur when the com
@@ -344,6 +350,10 @@ if(flag_loadSequenceDataFromFile == 0)
             
             if(flag_bothFeetOnFloor==1 ...
                 || flag_rejectTrialsFootGroundContactBroken == 0)
+              
+              assert(indexSeatOff > indexStart);              
+              assert(indexStanding > indexSeatOff);
+              
               sitToStandSequence(countS2Sq).indexStart = indexStart;
               sitToStandSequence(countS2Sq).valueSwitchConditionStart = ... 
                 valueStart;

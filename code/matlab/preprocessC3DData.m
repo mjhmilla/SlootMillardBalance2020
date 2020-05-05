@@ -1,7 +1,8 @@
 function [c3dTime, c3dMarkers,c3dMarkerNames, c3dMarkerUnits,...
-          c3dForcePlates, c3dForcePlateInfo, c3dGrf, c3dGrfDataAvailable] = ...
-    preprocessC3DData( c3dFileNameAndPath, flag_MetersRadians, flag_grfDataRecorded,...
-    flag_verbose )
+          c3dForcePlates, c3dForcePlateInfo, c3dGrf, c3dGrfDataAvailable,c3dPlanar] = ...
+    preprocessC3DData( c3dFileNameAndPath, c3dPlanarSettings, ...
+                       flag_MetersRadians, flag_grfDataRecorded,...
+                       flag_verbose )
 %%
 % This function will read in a c3d file, resolve force plate readings to
 % forces and moments acting at the center of pressure, and give everything 
@@ -21,7 +22,6 @@ function [c3dTime, c3dMarkers,c3dMarkerNames, c3dMarkerUnits,...
     btkReadAcquisition(c3dFileNameAndPath);
 
 c3dGrfDataAvailable = flag_grfDataRecorded;
-  
 
 unitMarker = btkGetPointsUnit(c3dH,'MARKER');
 unitAngle  = btkGetPointsUnit(c3dH,'ANGLE');
@@ -50,7 +50,7 @@ end
 if(flag_verbose == 1)  
   disp('C3D Units');
   disp([unitMarker, ' : Points Distance Unit']);
-  disp([unitAngle, ' : Points Angle Unit']);
+  disp([unitAngle,  ' : Points Angle Unit']);
   disp([unitMoment, ' : Points Moment Unit']);
 end
 
@@ -69,6 +69,7 @@ end
 
 numberOfItems = size(c3dMarkers.(c3dMarkerNames{1}),1);
 c3dTime = [0:1:(numberOfItems-1)]'./c3dMarkersInfo.frequency;
+
 
 %Force plates
 
@@ -156,6 +157,39 @@ if(c3dGrfDataAvailable ==1)
     c3dForcePlates(i).origin  = c3dForcePlates(i).origin.*scaleDistance;  
   end
 end
+
+if(c3dPlanarSettings.generate == 1)
+  pn = btkGetPointNumber(c3dH);       %number of points
+  fn = btkGetPointFrameNumber(c3dH);  %number of frames;
+  an = btkGetAnalogNumber(c3dH); %number of analog channels
+  %r  = btkGetAnalogSampleNumberPerFrame(c3dH); %number of samples per video frame.
+  r = 1;
+  c3dPlanar = btkNewAcquisition(pn,fn,an,r);
+  btkSetFrequency(c3dPlanar, c3dMarkersInfo.frequency)
+  assert( abs( norm(c3dPlanarSettings.normal)-1) < eps*10);
+  
+  projDir = c3dPlanarSettings.normal;
+  
+  for i=1:1:length(c3dMarkerNames)
+    [points,pointInfo] = btkSetPointLabel(c3dPlanar,i,c3dMarkerNames{i});
+    
+    [values,residuals,info] = btkGetPoint(c3dH,i);
+    
+    for j=1:1:fn
+      values(j,:) = values(j,:) - sum(values(j,:).*projDir).*projDir;
+    end        
+    [points,pointInfo]=btkSetPoint(c3dPlanar,i,values);    
+  end
+  
+  %if(c3dGrfDataAvailable ==1)
+  %  for i=1:1:size(c3dGrf)      
+  %  end
+  %end
+    
+else
+  c3dPlanar = [];
+end
+  
 
 if(flag_verbose==1)
  

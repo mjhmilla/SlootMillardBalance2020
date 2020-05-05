@@ -52,19 +52,28 @@ outputCopToFootHullDistanceFileNames   = cell(numberOfTrialTypes,1);
 %Model factory output file settings
 outputModelFactoryAnthropometryFile = ['modelFactoryAnthropometry'];
 outputModelFactoryEnvironmentFile = ['modelFactoryEnvironment.env'];
+outputModelFactoryEnvironmentFile2D = ['modelFactoryEnvironment2D.env'];
 flag_modelFactoryAddMarkers = 1;
 modelFactoryLuaModel = [subjectId,'.lua'];
+modelFactoryLuaModel2D = [subjectId,'_2D.lua'];
 
 
 
 modelFactoryCommonFileDirectory = [outputPath,'/ModelFactoryModelFiles/'];
 modelFactoryDescriptionFile = ['3DHumanHeiAge_Description'];
+modelFactoryDescriptionFile2D = ['2DHumanHeiAge_Description'];
 
 [success,message,messageId] = ...
   copyfile([modelFactoryCommonFileDirectory,modelFactoryDescriptionFile],...
             [outputSubjectFolder{1},modelFactoryDescriptionFile],'f');
 
-modelFactoryScalingAlgorithm = 'deLeva1996_segmentedTrunk';
+[success,message,messageId] = ...
+  copyfile([modelFactoryCommonFileDirectory,modelFactoryDescriptionFile2D],...
+            [outputSubjectFolder{1},modelFactoryDescriptionFile2D],'f');
+          
+          
+modelFactoryScalingAlgorithm   = 'deLeva1996_segmentedTrunk';
+modelFactoryScalingAlgorithm2D = 'deLeva1996_segmentedTrunk_sagittal_bimanual';
 
 for i=1:1:length(list)
   

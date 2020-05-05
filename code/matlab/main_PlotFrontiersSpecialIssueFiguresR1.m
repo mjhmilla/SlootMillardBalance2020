@@ -35,13 +35,13 @@ phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
 
 indexPhase = indexPhaseSeatOff2Stand;
 
-trialsToProcess = {'Side','Chest','Conv','Leg','Side','Rob'};
+trialsToProcess = {'Side'};%{'Side','Chest','Conv','Leg','Side','Rob'};
 
-flag_plotConfig = 4; 
+flag_plotConfig = 0; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
 % 2. Com angular velocity
-% 3. Time since peak (fpe-com).u
+% 3. Switching Conditions: Time since peak (fpe-com).u, fz err at seat-off
 % 4. Summary plot
 plotConfigName = '';
 
@@ -58,14 +58,19 @@ switch(flag_PaperPlots0Presentation1)
   case 1
     lineWidth  = 0.5;
     boxWidth   = 0.33;
-    panelHeight = 9.6;
-    panelWidth  = 12.8;
+    panelWidth = 12.8;
+    panelHeight  = 9.6;
   otherwise assert(0);
 end    
 
 
 switch flag_plotConfig
   case 0
+    
+    if(flag_PaperPlots0Presentation1)
+      panelHeight = panelHeight*0.5;
+    end
+        
     metricNameList = {'com2edge','com2cop','comvel',...
                       'fpe2edge','fpewidth','fpelen','angvel','angvelz'};
 
@@ -199,14 +204,14 @@ switch flag_plotConfig
     plotConfigGeneric;
     
   case 3
-    metricNameList = {'timemaxfpe'};
-    metricYLim = [-0.05,0.25];
-    metricYAxisLabel = {'Time'};
-    metricYAxisScale = [1];
-    metricTitle = {'Time since max((FPE-COM).u)'};
-    metricPlotHalfPlaneBox = [0];
-    metricAnnotationLines = [0];
-    plotConfigName = 'MaxFpeTimeOffset';
+    metricNameList = {'timemaxfpe','fzerrseatoff'};
+    metricYLim = [-0.05,0.25; -5, 5];
+    metricYAxisLabel = {'Time (s)','Force (N)'};
+    metricYAxisScale = [1, 1];
+    metricTitle = {'Time since max((FPE-COM).u)','Chair Fz Err at Seat-Off'};
+    metricPlotHalfPlaneBox = [0,0];
+    metricAnnotationLines = [0,1];
+    plotConfigName = 'SwitchingConditions';
     
 
     flag_plotSubjectData = 1;
@@ -231,6 +236,10 @@ switch flag_plotConfig
     
   case 4
     
+    tmp = panelWidth;
+    panelWidth = panelHeigth;
+    panelHeight = tmp;
+    
     metricNameList = {'com2edge','com2cop','comvel',...
                       'angvel','angvelz','fpe2edge'};
 
@@ -245,12 +254,12 @@ switch flag_plotConfig
     metricYAxisScale = [1,1,1,...
                         1,1,1];
 
-    metricTitle = {'A. COM$_{\mathrm{GP}}$-BOS: $d_{COM}$',...
-                   'B. COM$_{\mathrm{GP}}$-COP',...
+    metricTitle = {'A. COM$_{GP}$ inside BOS: $d_{COM}$',...
+                   'B. COM$_{GP}$-COP Dist.: $_{COM}d_{COP}$',...
                    'C. COM Speed: $|v_{COM}|_2$',...
-                   'A. Ang. Speed: $|\omega_{avg}|_2$',...
-                   'B. Ang. Speed: $\omega_{avg}\cdot\hat{z}$',...
-                   'C. FPE-BOS: $d_{FPE}$'};
+                   'D. Ang. Speed: $|\omega_{avg}|_2$',...
+                   'E. FPE Asmpt.: $\omega_{avg}\cdot\hat{k} \approx 0$',...
+                   'F. FPE Dyn. Stab. Margin: $d_{FPE}$'};
 
     metricPlotHalfPlaneBox = [1,0,0,...
                               0,0,1];             
@@ -266,8 +275,8 @@ switch flag_plotConfig
     
     % Plot Config
     numberOfFiguresPerPage        = length(metricNameList);
-    numberOfVerticalPlotRows      = 2;
-    numberOfHorizontalPlotColumns = 3;    
+    numberOfVerticalPlotRows      = 3;
+    numberOfHorizontalPlotColumns = 2;    
     assert(numberOfVerticalPlotRows*numberOfHorizontalPlotColumns ...
              >= numberOfFiguresPerPage);
 
@@ -504,7 +513,10 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
         titleFontSize =  get(groot,'defaultAxesFontSize')...
                         *get(groot,'defaultAxesTitleFontSizeMultiplier');
 
-        xTitle = axisLimitsScaled(1,1) - 0.3*( axisLimitsScaled(1,2)-axisLimitsScaled(1,1) );
+        xTitle = axisLimitsScaled(1,1); 
+        if(flag_plotConfig==4)
+          xTitle = xTitle - 0.3*( axisLimitsScaled(1,2)-axisLimitsScaled(1,1) );
+        end
         yTitle = axisLimitsScaled(1,4) ...
                 + 0.1*(axisLimitsScaled(1,4)-axisLimitsScaled(1,3));          
 
@@ -534,9 +546,15 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
 end
 
 for indexTrialsToProcess=1:1:length(trialsToProcess)
+  formatTag = '';
+  if(flag_PaperPlots0Presentation1 == 1)
+    formatTag = 'Beamer';
+  end
+  
   figure(figPlotMatrix(indexTrialsToProcess).h);  
   configPlotExporter;
   print('-dpdf',['../../plots/Frontiers2020Pub/fig_Results',...
+                  formatTag,...
                   trialsToProcess{indexTrialsToProcess},...
                   plotConfigName,... 
                   nameToeTag,'.pdf']);  

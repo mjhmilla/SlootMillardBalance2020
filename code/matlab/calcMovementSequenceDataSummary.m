@@ -112,7 +112,7 @@ for z=1:1:length(movementSequence)
                          dataSeries(idxA:idxB,1).*dataScale,...
                          normTime);
                        
-      phaseStatsStruct(p).phase.data(idx).x = normTime.*duration;
+      phaseStatsStruct(p).phase.data(idx).x = normTime.*duration+dataIndex(idxA,1);
       phaseStatsStruct(p).phase.data(idx).y = normData;
       phaseStatsStruct(p).phase.n = phaseStatsStruct(p).phase.n + idxB-idxA+1;
       
