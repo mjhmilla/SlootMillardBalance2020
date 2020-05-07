@@ -1,20 +1,23 @@
 function [c3dTime, c3dMarkers,c3dMarkerNames, c3dMarkerUnits,...
-          c3dForcePlates, c3dForcePlateInfo, c3dGrf, c3dGrfDataAvailable,c3dPlanar] = ...
-    preprocessC3DData( c3dFileNameAndPath, c3dPlanarSettings, ...
-                       flag_MetersRadians, flag_grfDataRecorded,...
-                       flag_verbose )
+          c3dForcePlates, c3dForcePlateInfo, c3dGrf, c3dGrfDataAvailable] = ...
+    preprocessC3DData(  c3dFileNameAndPath, flag_createC3DFilesForRBDL,...
+                        c3dRbdlPlanarSettings, c3dRbdlPath,...                       
+                        flag_MetersRadians, flag_grfDataRecorded,...
+                        flag_verbose )
 %%
 % This function will read in a c3d file, resolve force plate readings to
 % forces and moments acting at the center of pressure, and give everything 
 %a common sense of time 
 %
 % @param c3dFileNameAndPath : full path to the c3d file
-%
 % @return 
-%   c3dTime: an n-by-1 vector of time samples for both marker and grf data
-%   c3dMarkers: a struct with fields of marker names containing n-by-3 data
-%   c3dMarkerNames : a cell array of the marker names
-%   c3dGrf: an array of structs (one per force plate) that contain fields
+%   c3dTime:              an n-by-1 vector of time samples for both marker and grf data
+%   c3dMarkers:           a struct with fields of marker names containing n-by-3 data
+%   c3dMarkerNames :      a cell array of the marker names
+%   c3dGrf:               an array of structs (one per force plate) that contain fields
+%   c3dGrfDataAvailable:  a flag that is 1 if this data set contains ground
+%                         forces.
+%   c3dSpatial: 
 %%
 
 %Markers
@@ -158,36 +161,89 @@ if(c3dGrfDataAvailable ==1)
   end
 end
 
-if(c3dPlanarSettings.generate == 1)
+if(flag_createC3DFilesForRBDL == 1)
   pn = btkGetPointNumber(c3dH);       %number of points
   fn = btkGetPointFrameNumber(c3dH);  %number of frames;
-  an = btkGetAnalogNumber(c3dH); %number of analog channels
-  %r  = btkGetAnalogSampleNumberPerFrame(c3dH); %number of samples per video frame.
-  r = 1;
-  c3dPlanar = btkNewAcquisition(pn,fn,an,r);
-  btkSetFrequency(c3dPlanar, c3dMarkersInfo.frequency)
-  assert( abs( norm(c3dPlanarSettings.normal)-1) < eps*10);
+
+  c3dRbdl = btkNewAcquisition(pn,fn);
+  btkSetFrequency(c3dRbdl, c3dMarkersInfo.frequency)
   
-  projDir = c3dPlanarSettings.normal;
+  c3dRbdlPlanar = btkNewAcquisition(pn,fn);
+  btkSetFrequency(c3dRbdlPlanar, c3dMarkersInfo.frequency)
+  
+  assert( abs( norm(c3dRbdlPlanarSettings.normal)-1) < eps*10);
+  
+  projDir = c3dRbdlPlanarSettings.normal;
   
   for i=1:1:length(c3dMarkerNames)
-    [points,pointInfo] = btkSetPointLabel(c3dPlanar,i,c3dMarkerNames{i});
+    [points,pointInfo] = btkSetPointLabel(c3dRbdlPlanar,i,c3dMarkerNames{i});  
+    [points,pointInfo] = btkSetPointLabel(c3dRbdl,i,c3dMarkerNames{i});  
     
     [values,residuals,info] = btkGetPoint(c3dH,i);
+    [points,pointInfo] = btkSetPoint(c3dRbdl,i,values);
     
     for j=1:1:fn
       values(j,:) = values(j,:) - sum(values(j,:).*projDir).*projDir;
     end        
-    [points,pointInfo]=btkSetPoint(c3dPlanar,i,values);    
-  end
+    [points,pointInfo]=btkSetPoint(c3dRbdlPlanar,i,values);    
+  end 
   
-  %if(c3dGrfDataAvailable ==1)
-  %  for i=1:1:size(c3dGrf)      
-  %  end
-  %end
+  if(c3dGrfDataAvailable ==1)
+    for i=1:1:length(c3dGrf)      
+      namePre = ['FP',num2str(i)];
+      
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdl,[namePre,'_FX'],c3dGrf(i).force(:,1));
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdl,[namePre,'_FY'],c3dGrf(i).force(:,2));
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdl,[namePre,'_FZ'],c3dGrf(i).force(:,3));      
+            
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdl,[namePre,'_COPX'],c3dGrf(i).cop(:,1));
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdl,[namePre,'_COPY'],c3dGrf(i).cop(:,2));
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdl,[namePre,'_COPZ'],c3dGrf(i).cop(:,3));            
+      
+      force2D = c3dGrf(i).force;
+      cop2D   = c3dGrf(i).cop;   
+      for k=1:1:size(force2D,1)
+        force2D(k,:) = force2D(k,:) - sum(force2D(k,:).*projDir).*projDir;
+        cop2D(k,:)   = cop2D(k,:)   - sum(cop2D(k,:).*projDir).*projDir;        
+      end
+      
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdlPlanar,[namePre,'_FX'],force2D(:,1));
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdlPlanar,[namePre,'_FY'],force2D(:,2));
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdlPlanar,[namePre,'_FZ'],force2D(:,3));      
+            
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdlPlanar,[namePre,'_COPX'],cop2D(:,1));
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdlPlanar,[namePre,'_COPY'],cop2D(:,2));
+      [analogs,analogsInfo] = ...
+        btkAppendAnalog(c3dRbdlPlanar,[namePre,'_COPZ'],cop2D(:,3));      
+      
+    end
+  end
+    
+  [filepath,c3dFileName,ext] = fileparts(c3dFileNameAndPath);
+ 
+  
+  c3dRbdlFileName = [c3dFileName,'_Rbdl.c3d'];          
+  btkWriteAcquisition(c3dRbdl,[c3dRbdlPath,c3dRbdlFileName]);
+  btkCloseAcquisition(c3dRbdl);
+    
+  c3dPlanarFileName = [c3dFileName,'_Rbdl_2D.c3d'];      
+  btkWriteAcquisition(c3dRbdlPlanar,[c3dRbdlPath,c3dPlanarFileName]);
+  btkCloseAcquistion(c3dRbdlPlanar);
     
 else
-  c3dPlanar = [];
+  c3dRbdl       = [];
+  c3dRbdlPlanar = [];
 end
   
 

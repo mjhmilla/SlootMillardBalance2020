@@ -35,9 +35,9 @@ phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
 
 indexPhase = indexPhaseSeatOff2Stand;
 
-trialsToProcess = {'Side'};%{'Side','Chest','Conv','Leg','Side','Rob'};
+trialsToProcess = {'Side','Chest','Conv','Leg','Side','Rob'};
 
-flag_plotConfig = 0; 
+flag_plotConfig = 4; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
 % 2. Com angular velocity
@@ -237,7 +237,7 @@ switch flag_plotConfig
   case 4
     
     tmp = panelWidth;
-    panelWidth = panelHeigth;
+    panelWidth = panelHeight;
     panelHeight = tmp;
     
     metricNameList = {'com2edge','com2cop','comvel',...
