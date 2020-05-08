@@ -239,7 +239,7 @@ if(flag_createC3DFilesForRBDL == 1)
     
   c3dPlanarFileName = [c3dFileName,'_Rbdl_2D.c3d'];      
   btkWriteAcquisition(c3dRbdlPlanar,[c3dRbdlPath,c3dPlanarFileName]);
-  btkCloseAcquistion(c3dRbdlPlanar);
+  btkCloseAcquisition(c3dRbdlPlanar);
     
 else
   c3dRbdl       = [];
