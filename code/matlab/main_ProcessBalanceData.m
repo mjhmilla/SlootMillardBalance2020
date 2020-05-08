@@ -4,11 +4,11 @@ clear all;
 
 %List of the subjects to process
 
-subjectsToProcess = {'configE08'};%...
-% {'configE01','configE02','configE03','configE04','configE05', ...
-%  'configE06','configE07','configE08','configE09',...
-%  'configH01','configH02','configH03','configH04','configH05',...
-%  'configH06','configH07','configH08','configH09','configH10'}; 
+subjectsToProcess = ...
+ {'configE01','configE02','configE03','configE04','configE05', ...
+  'configE06','configE07','configE08','configE09',...
+  'configH01','configH02','configH03','configH04','configH05',...
+  'configH06','configH07','configH08','configH09','configH10'}; 
 
 pathToBTK='/home/mjhmilla/dev/BTKRoot/BTKCore-install/share/btk-0.3dev/Wrapping/Matlab/btk/';
 addpath(pathToBTK);
@@ -100,7 +100,7 @@ c3dPlanarProjection = struct('normal',[0,1,0]);
 
 
 %Preprocessing of C3D data
-flag_loadC3DMatFileData         = 0;
+flag_loadC3DMatFileData         = 1;
 flag_useMetersRadiansInC3DData  = 1;
 flag_writeC3DDataForMeshup      = 1;
 flag_verbose                    = 0;
@@ -570,6 +570,26 @@ for indexSubject = 1:1:length(subjectsToProcess)
                 flag_verboseMotionSequence,...
                 c3dGrfDataAvailable);    
 
+          if(c3dGrfDataAvailable == 1)
+            for idxSeq=1:1:length(sitToStandQuietSequence)
+              idxA = sitToStandQuietSequence(idxSeq).indexEnd;
+              idxB = min(idxA+50, size(c3dGrfFeet.force,1));
+
+              fzMean = mean(c3dGrfFeet.force(idxA:1:idxB,3));
+              fzStd  = std(c3dGrfFeet.force(idxA:1:idxB,3));
+
+              fzErr = abs(mass*9.81-fzMean)/(0.5*abs(mass*9.81+fzMean));
+              fzErrMark = '';
+              if fzErr > 0.1
+                fzErrMark = '*';
+              end
+              fprintf('      %s%1.1f +/- %1.1f: force plate\n', fzErrMark, fzMean,fzStd); 
+            end
+            
+             
+            
+          end
+              
 %           [b,a] = butter(2,10/(150*0.5),'low');
 %           c3dGrfChairForceZFiltered = filtfilt(b,a,c3dGrfChair.force(:,3));
 %           
@@ -653,6 +673,16 @@ for indexSubject = 1:1:length(subjectsToProcess)
                         - c3dMarkers.('CV7')(1,3) );
           humerusHeadRadius = 0.03;
           shoulderToC7Length = (shoulderToC7Length + humerusHeadRadius); 
+          
+          fzMax = zeros(length(c3dGrf),1);
+          for i=1:1:length(c3dGrf)
+            fzMax(i,1) = max(c3dGrf(i).force(:,3));
+          end
+          
+          fprintf('    %1.1f: recorded mass\n', mass*9.81);
+          fprintf('    %1.1f: force plate\n',  max(fzMax));          
+          %assert( abs(max(fzMax)-(mass*9.81))...
+          %          /(0.5*abs(max(fzMax)+(mass*9.81))) < 0.1);
           
           success = writeModelFactoryModelFile(...
                     [outputTrialFolder, outputModelFactoryAnthropometryFile],...
