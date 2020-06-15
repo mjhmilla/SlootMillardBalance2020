@@ -43,7 +43,7 @@ omegaSmall = 0.01;
 
 startS2SComVelocityTolerance = 0.01; %m/s
 endS2SComVelocityTolerance   = 0.01; %m/s
-seatOffChairForceZTolerance  = 10;    %N
+seatOffChairForceZTolerance  = 1;    %N
 endS2SComHeightTolerance     = 0.01; %m
 
 %Motion segmentation constants
@@ -121,10 +121,10 @@ flag_writeCapDataForMeshup = 0;
 flag_loadKeyPointDistanceToFootConvexHull = 1;
 
 %Motion segmentation
-flag_loadSegmentedMotionDataFromFile = 1;
+flag_loadSegmentedMotionDataFromFile = 0;
 
 %Motion sequence identification
-flag_loadMovementSequenceFromFile =1;
+flag_loadMovementSequenceFromFile =0;
 flag_writeCsvSequenceFile         =0;
 
 %Plotting

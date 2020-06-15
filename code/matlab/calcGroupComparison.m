@@ -1,12 +1,10 @@
 function [phaseResults,startResults,endResults] = calcGroupComparison( ...
                         groupMetricDataA, groupMetricDataB)
 
-phaseResults=struct('p',NaN,'h',NaN,'alpha',NaN);
-startResults=struct('p',NaN,'h',NaN,'alpha',NaN);
-endResults=struct('p',NaN,'h',NaN,'alpha',NaN);
-
+phaseResults = struct('p',NaN,'h',NaN,'alpha',NaN);
+startResults = struct('p',NaN,'h',NaN,'alpha',NaN);
+endResults   = struct('p',NaN,'h',NaN,'alpha',NaN);
                       
-
 if( isfield(groupMetricDataA,'phase') && isfield(groupMetricDataB,'phase'))        
   if(isfield(groupMetricDataA.phase,'median') && isfield(groupMetricDataB.phase,'median'))
     dataA = [];    

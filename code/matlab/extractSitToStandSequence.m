@@ -250,18 +250,21 @@ if(flag_loadSequenceDataFromFile == 0)
               %%
               
               fzChairSeated = c3dGrfChair.force(indexSittingStaticEnd:indexStandingEnd,3);
-              
+
+              fzChairStanding = c3dGrfChair.force(indexStandingStart:indexStandingEnd,3);
+             
               %Signal sometimes bounces below zero from the Kistler plates:
               % these values are ignored
-              fzChairSeated( find(fzChairSeated < 0)) = NaN;
+              fzChairSeated(   find(fzChairSeated   < 0)) = NaN;
+              fzChairStanding( find(fzChairStanding < 0)) = NaN;
               
+              [minFzVal, indexMinFz] = min(fzChairStanding, [], 'omitnan');
+              [maxFzVal, indexMaxFz] = max(fzChairStanding, [], 'omitnan');
               
-              [minFzVal, indexMinFz] = min(fzChairSeated,[], 'omitnan');
-              [maxFzVal, indexMaxFz] = max(fzChairSeated,[], 'omitnan');
-              seatOffChangeInForce = maxFzVal-minFzVal;
-              assert(seatOffChangeInForce > seatOffChairForceZTolerance);
+              %seatOffChangeInForce = maxFzVal-minFzVal;
+              %assert(seatOffChangeInForce > seatOffChairForceZTolerance);
              
-              seatOffForce = minFzVal + seatOffChairForceZTolerance;
+              seatOffForce = maxFzVal + seatOffChairForceZTolerance;
 
 
               idxSeg = 1;
@@ -275,7 +278,7 @@ if(flag_loadSequenceDataFromFile == 0)
               end
               assert(idxSeg < idxSegMax);
               indexSeatOff = indexSittingStaticEnd+idxSeg-1;
-              valueSeatOff = seatOffForce;%fzChairSeated(idxSeg)-seatOffForce;
+              valueSeatOff = fzChairSeated(idxSeg)-seatOffForce;
             else
               
               %Seatoff occurs very close to the maximum whole body
@@ -352,6 +355,12 @@ if(flag_loadSequenceDataFromFile == 0)
             if(flag_bothFeetOnFloor==1 ...
                 || flag_rejectTrialsFootGroundContactBroken == 0)
               
+              if(indexSeatOff <= indexStart)
+                here=1;
+              end
+              if(indexStanding <= indexSeatOff)
+                here=1;
+              end
               assert(indexSeatOff > indexStart);              
               assert(indexStanding > indexSeatOff);
               

@@ -9,12 +9,19 @@ clear all;
 %
 %%
 
-flag_PaperPlots0Presentation1 = 1;
+flag_PaperPlots0Presentation1 = 0;
 
 flag_ConvexHullWithToes0Without1  = 0;
 nameToeTag = '';
 if(flag_ConvexHullWithToes0Without1 == 1)
   nameToeTag = '_NoToes';
+end
+
+
+flag_excludeE06 = 0;
+nameExcludeE06Tag = '';
+if(flag_excludeE06 == 1)
+  nameExcludeE06Tag = '_NoE06';
 end
 
 
@@ -35,9 +42,9 @@ phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
 
 indexPhase = indexPhaseSeatOff2Stand;
 
-trialsToProcess = {'Side','Chest','Conv','Leg','Side','Rob'};
+trialsToProcess = {'Side'};%{'Side','Chest','Conv','Leg','Side','Rob'};
 
-flag_plotConfig = 4; 
+flag_plotConfig = 0; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
 % 2. Com angular velocity
@@ -357,8 +364,10 @@ cd(codeDir);
 %
 %%
 
-load([frontiersDataDir,'groupTrialPhaseMetricData',nameToeTag,'.mat']);
-load([frontiersDataDir,'subjectTrialPhaseMetricData',nameToeTag,'.mat']);
+load([frontiersDataDir,'groupTrialPhaseMetricData',...
+      nameToeTag,nameExcludeE06Tag,'.mat']);
+load([frontiersDataDir,'subjectTrialPhaseMetricData',...
+      nameToeTag,nameExcludeE06Tag,'.mat']);
 
   
 
@@ -557,7 +566,7 @@ for indexTrialsToProcess=1:1:length(trialsToProcess)
                   formatTag,...
                   trialsToProcess{indexTrialsToProcess},...
                   plotConfigName,... 
-                  nameToeTag,'.pdf']);  
+                  nameToeTag,nameExcludeE06Tag,'.pdf']);  
 end  
   
         

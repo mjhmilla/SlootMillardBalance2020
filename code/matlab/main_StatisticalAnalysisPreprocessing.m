@@ -20,6 +20,12 @@ if(flag_ConvexHullWithToes0Without1 == 1)
   nameToeTag = '_NoToes';
 end
 
+flag_excludeE06 = 0;
+nameExcludeE06Tag = '';
+if(flag_excludeE06 == 1)
+  nameExcludeE06Tag = '_NoE06';
+end
+  
 
 metricNameList = {'duration',...
                   'com2edge','com2cop','comvel',...
@@ -86,7 +92,14 @@ subjectsToProcess =  ...
    'configH06','configH07','configH08','configH09','configH10',...
    'configE01','configE02','configE03','configE04','configE05',...
    'configE06','configE07','configE08','configE09'};
-
+ 
+if(flag_excludeE06==1)
+subjectsToProcess =  ...
+  {'configH01','configH02','configH03','configH04','configH05',...
+   'configH06','configH07','configH08','configH09','configH10',...
+   'configE01','configE02','configE03','configE04','configE05',...
+   'configE07','configE08','configE09'};  
+end
  
 
 groups(2) = struct('index',[],'name',[],'color',[],'label',[]);
@@ -101,7 +114,14 @@ indexGroupElderly = 2;
 groups(indexGroupYoung  ).index = [1,2,3,4,5,6,7,8,9,10];
 groups(indexGroupYoung  ).name = 'Y';
 groups(indexGroupYoung  ).label = 'Young (Y)';
-groups(indexGroupElderly).index = [11,12,13,14,15, 16,17,18,19];
+
+indexElderly = [11,12,13,14,15, 16,17,18,19];
+if(flag_excludeE06==1)
+  indexElderly = [11,12,13,14,15,16,17,18];
+end
+groups(indexGroupElderly).index = indexElderly;
+
+
 groups(indexGroupElderly).name = 'E';
 groups(indexGroupElderly).label = 'Elderly (E)';
 
@@ -720,10 +740,13 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
     end
 
   end
+  
 
-  save([frontiersDataDir,'subjectTrialPhaseMetricData',nameToeTag,'.mat'],'subjectData');
+  save([frontiersDataDir,'subjectTrialPhaseMetricData',nameToeTag,...
+        nameExcludeE06Tag,'.mat'],'subjectData');
 else
-  load([frontiersDataDir,'subjectTrialPhaseMetricData',nameToeTag,'.mat']);
+  load([frontiersDataDir,'subjectTrialPhaseMetricData',...
+        nameToeTag,nameExcludeE06Tag,'.mat']);
 end
 
 if(flag_loadPrecomputedGroupStatistics == 0)
@@ -784,9 +807,11 @@ if(flag_loadPrecomputedGroupStatistics == 0)
     end
   end
   
-  save([frontiersDataDir,'groupTrialPhaseMetricData',nameToeTag,'.mat'],'groupData');
+  save([frontiersDataDir,'groupTrialPhaseMetricData',...
+        nameToeTag,nameExcludeE06Tag,'.mat'],'groupData');
 else
-  load([frontiersDataDir,'groupTrialPhaseMetricData',nameToeTag,'.mat']);  
+  load([frontiersDataDir,'groupTrialPhaseMetricData',...
+        nameToeTag,nameExcludeE06Tag,'.mat']);  
 end
 
 
@@ -795,6 +820,11 @@ if(flag_writeCSVGroupTables==1)
   success = writeGroupMetricTable(tableFolderName, groupData, groups, ...
                                   metricNameList, metricSubFields,...
                                   trialsToProcess, trialTypeNames,...
-                                  phaseNames,nameToeTag);
+                                  phaseNames,[nameToeTag,nameExcludeE06Tag]);
+                                
+  success = writeParticipantMetricTable(tableFolderName, subjectData, ...
+                                  metricNameList, metricSubFields,...
+                                  trialsToProcess, trialTypeNames,...
+                                  phaseNames,[nameToeTag,nameExcludeE06Tag]);                                
 end                              
 

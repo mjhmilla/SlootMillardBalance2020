@@ -2,12 +2,28 @@ import glob
 import os
 import rbdl
 import c3d
+import argparse
+import sys
 from numpy import genfromtxt 
 #import scipy as sci
 #import csv
-#import c3d
 #
 #import matplotlib.pyplot as plt
+
+def getGroupNameList(reader, groupName, categoryName):
+    nameList=[]
+    groups = ((k, v) for k, v in reader.groups.items() if isinstance(k, str))
+    for key, g in sorted(groups):
+        if isinstance(key, str):
+            if key == groupName:
+                for key,p in sorted(g.params.items()):
+                    if key == categoryName and len(p.dimensions) == 2:
+                        C, R = p.dimensions
+                        for r in range(R):
+                            name=p.string_array[r]
+                            nameList.append(name.strip())                                                       
+    return nameList
+
 
 dirPythonCode  = os.getcwd()
 dirCode        = os.path.join(dirPythonCode,os.pardir)
@@ -23,6 +39,8 @@ subjectsToProcess = ["E01"]
 
 os.chdir(dirOutputData)
 
+
+
 for subject in subjectsToProcess:
     os.chdir(subject)
     print(os.getcwd())
@@ -30,6 +48,16 @@ for subject in subjectsToProcess:
         print(luaFile)
         isModel2D=True if luaFile.find(tag2D)>=0 else False
         model = rbdl.loadModel(luaFile, kwargs={"floating_base":True,"verbose":True})
+
+        
+        qinit    = np.ndarray(shape(model.q_size), dtype=float, mode="c")
+        qres     = np.ndarray(shape(model.q_size), dtype=float, mode="c")
+
+        #body_ids = np.ndarray(shape(, dtype=float, mode="c")
+        #body_point_position = np.ndarray[double, ndim=2, mode="c"] 
+        #target_pos_position =np.ndarray[double, ndim=2, mode="c"] 
+        #np.ndarray[double, ndim=1, mode="c"] qres,
+
         print("DoF: ", model.q_size)   
         for root,dirs,files in os.walk(os.getcwd()):
             for name in dirs:
@@ -41,8 +69,15 @@ for subject in subjectsToProcess:
                         c3dFileName=file
                     if file.find(tag2D) == -1 and isModel2D == False:
                         c3dFileName=file
-                c3dReader=c3d.Reader(open(c3dFileName,'rb'))
                 print('\t'+'\t'+c3dFileName)
+                reader=c3d.Reader(open(c3dFileName,'rb'))   
+
+                #Get the names of the c3d marker entries
+                pointNames = getGroupNameList(reader, 'POINT', 'LABELS')
+                #analogNames= getGroupNameList(reader,'ANALOG','LABELS')
+
+                
+
                 sequenceFileName = ""
                 for file in glob.glob('*.csv'):
                     if file.find(tagSequence)==0:
