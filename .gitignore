@@ -37,6 +37,9 @@ outputData/H07/*
 outputData/H08/*
 outputData/H09/*
 outputData/H10/*
+*.qtm
+*.mat
+*.txt
 *.json
 *.txt
 *.c3d
