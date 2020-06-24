@@ -138,6 +138,14 @@ function figH = plotMetricDistributionEventData2(figH, subPlotVec,...
 
     textYOffset = y0-0.075*dy;
 
+    if(flagPlotStart==1 && flagPlotPhase==0 && flagPlotEnd==0)
+      xPosition=startPosition;
+    end
+    if(flagPlotStart==0 && flagPlotPhase==0 && flagPlotEnd==1)
+      xPosition=endPosition;
+    end
+    
+    
     %'Interpreter','latex',
     text(xPosition,textYOffset,metricLabel,...
       'FontSize',8,'HorizontalAlignment','center',...

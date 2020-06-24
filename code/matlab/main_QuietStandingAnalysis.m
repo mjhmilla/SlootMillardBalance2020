@@ -4,7 +4,7 @@ clear all;
 
 %List of the subjects to process
 
-flag_NoE06 = 0;
+flag_NoE06 = 1;
 
 
 subjectsToProcess = ...
@@ -53,6 +53,8 @@ cd(codeDir);
 gravityVector     = [0;0;-9.81];
 gravityVectorDir  = gravityVector./norm(gravityVector);
 
+contactPlanes = [0,0,0]; 
+
 %%
 %Data Records
 %%
@@ -62,7 +64,9 @@ dataStruct = struct('comSpeed',dataRecord,...
                     'angSpeed',dataRecord,...
                     'angZSpeed',dataRecord,...
                     'comCopDist',dataRecord,...
-                    'comBosDist',dataRecord);
+                    'comBosDist',dataRecord,...
+                    'fpeCopInTDist',dataRecord,...
+                    'fpeCopInSDist',dataRecord);
 
 
 summaryRecord = zeros(4, 5);
@@ -366,8 +370,83 @@ for indexSubject = 1:1:length(subjectsToProcess)
   fprintf('\t%1.3f\tmin\n', dataStruct.comBosDist(2,indexSubject));
   fprintf('\t%1.3f\tmax\n', dataStruct.comBosDist(3,indexSubject));
   fprintf('\t%1.3f\tstd\n', dataStruct.comBosDist(4,indexSubject));                                         
-      
+
+  %%
+  %
+  % Evaluate the FPE / Retreive Data
+  %
+  %%
+
+  %Planes to evaluate the FPE  
+  [valMaxRFax, idxMaxRFax] = max(c3dMarkers.('R_FAX')(:,3));
+  [valMaxLFax, idxMaxLFax] = max(c3dMarkers.('L_FAX')(:,3));
+  idxSeat = 1;
+  idxFloor= 2;
+  
+  flag_loadFpeDataFromFile=0;
+  omegaSmall = 0.01;
+
+  %Numerical tolerances on the solution               
+  tol     = 1e-9;
+  iterMax = 100;                
+
+  %File to save/laod the file
+  flag_fpeVerbose = 0;
+  flag_fpeEvaluateDerivatives = 0;
+  fpeData = process3DFootPlacementEstimator(...
+              mass,...
+              wholeBodyData,...
+              colComPos,...
+              colComVel,...
+              colJo,...
+              colHo,...
+              gravityVector,...
+              contactPlanes,...
+              omegaSmall,...
+              tol,...
+              iterMax,...
+              flag_fpeEvaluateDerivatives,...
+              flag_fpeVerbose,...
+              [outputPath,'/',subjectLabels{1,indexSubject},'_fpe.mat'],...
+              flag_loadFpeDataFromFile)  ;
+            
+            
+  
+  rFC0t=zeros(size(fpeData.f)).*NaN;
+  rFC0s=zeros(size(fpeData.f)).*NaN;
+  
+  for z=idxStart:1:idxEnd
+    rFC0 = c3dGrf(idxFP).cop(z,:)-fpeData.r0F0(z,:);    
+    rFC0t(z,1) = sum(rFC0.*fpeData.n(z,:));
+    rFC0s(z,1) = sum(rFC0.*fpeData.u(z,:));
+  end
+            
+  dataStruct.fpeCopInT(1,indexSubject) = mean(rFC0t,'omitnan').*(100);
+  dataStruct.fpeCopInT(2,indexSubject) = min(rFC0t).*(100);
+  dataStruct.fpeCopInT(3,indexSubject) = max(rFC0t).*(100);
+  dataStruct.fpeCopInT(4,indexSubject) = std(rFC0t,'omitnan').*(100);                                       
+
+  fprintf('FPE-COP in t (cm)\n');
+  fprintf('\t%1.3f\tmean\n',dataStruct.fpeCopInT(1,indexSubject));
+  fprintf('\t%1.3f\tmin\n', dataStruct.fpeCopInT(2,indexSubject));
+  fprintf('\t%1.3f\tmax\n', dataStruct.fpeCopInT(3,indexSubject));
+  fprintf('\t%1.3f\tstd\n', dataStruct.fpeCopInT(4,indexSubject));   
+  
+  dataStruct.fpeCopInS(1,indexSubject) = mean(rFC0s,'omitnan').*(100);
+  dataStruct.fpeCopInS(2,indexSubject) = min(rFC0s).*(100);
+  dataStruct.fpeCopInS(3,indexSubject) = max(rFC0s).*(100);
+  dataStruct.fpeCopInS(4,indexSubject) = std(rFC0s,'omitnan').*(100);                                       
+
+  fprintf('FPE-COP in s (cm)\n');
+  fprintf('\t%1.3f\tmean\n',dataStruct.fpeCopInS(1,indexSubject));
+  fprintf('\t%1.3f\tmin\n', dataStruct.fpeCopInS(2,indexSubject));
+  fprintf('\t%1.3f\tmax\n', dataStruct.fpeCopInS(3,indexSubject));
+  fprintf('\t%1.3f\tstd\n', dataStruct.fpeCopInS(4,indexSubject));    
+  
+  here=1;
 end        
+
+save([outputPath,'/quietStanding',E06Ending,'.mat'],'dataStruct');
 
 summaryRecord = zeros(4, 5);
 

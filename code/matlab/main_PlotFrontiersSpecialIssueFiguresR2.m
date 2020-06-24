@@ -46,6 +46,48 @@ indexPhase = indexPhaseSeatOff2Stand;
 
 trialsToProcess = {'Side'};%{'Side','Chest','Conv','Leg','Side','Rob'};
 
+quietStandingFile = 'QuietStanding_SubAnalysis/quietStanding_NoE06.mat';
+
+
+%%
+%
+% Setup the input/output directory structure
+%
+%%
+inputDirRelative    = '../../inputData'         ;
+outputDirRelative   = '../../outputData'        ;
+frontiersPlotDir    = '../../plots/Frontiers2020Pub/' ;
+frontiersDataDir    = '../../outputData/Frontiers2020Pub/';
+
+codeDir = pwd;
+  cd(inputDirRelative);
+  inputPath = pwd;
+  processConfigCommon;  
+  cd(codeDir);
+  cd(outputDirRelative);
+  outputPath = pwd; 
+  quietStandingFilePath = [outputPath,'/',quietStandingFile];
+cd(codeDir);
+
+%%
+%
+% Load the data
+%
+%%
+
+tmp = load(quietStandingFilePath);
+quietStandingData = tmp.dataStruct;
+
+load([frontiersDataDir,'groupTrialPhaseMetricData',...
+      nameToeTag,nameExcludeE06Tag,'.mat']);
+load([frontiersDataDir,'subjectTrialPhaseMetricData',...
+      nameToeTag,nameExcludeE06Tag,'.mat']);
+
+
+%%
+% Configure the plots
+%%
+
 flag_plotConfig = 0; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
@@ -84,7 +126,7 @@ switch flag_plotConfig
                       'fpe2edge','fpewidth','fpelen','angvel','angvelz'};
 
     metricYLim = [-6,17; 0,17; 0,65;...
-                  -6,17; -5,10; -5,10.5; 0,100; -90, 60];
+                  -6,17; -5,10; -5,10.5; 0,120; -90, 60];
     
 
     metricYAxisLabel = {'Distance (cm)','Distance (cm)','Velocity (cm/s)',...
@@ -94,18 +136,53 @@ switch flag_plotConfig
     metricYAxisScale = [1,1,1,1,...
                          1,1,1,1];
 
-    metricTitle = {'A. COM$_{\mathrm{GP}}$ to nearest BOS edge',...
-                   'B. COM$_{\mathrm{GP}}$ to COP',...
-                   'C. COM Speed',...
-                   'A. FPE to nearest BOS edge',...
-                   'B. FPE-COP in $\hat{t}$',...
-                   'C. FPE-COP in $\hat{s}$',...
-                   'A. Angular speed',...
-                   'B. Angular velocity about the vertical axis'};
+    metricTitle = {'A. COM$_{\mathrm{GP}}$ to nearest BOS edge (${_C}r{_B}$)',...
+                   'B. COM$_{\mathrm{GP}}$ to COP (${_C}r{_P}$)',...
+                   'C. COM Speed ($|v{_C}|_2$)',...
+                   'A. FPE to nearest BOS edge (${_F}r{_B}$)',...
+                   'B. FPE-COP in $\hat{t}$ (${_F}r{_C} \cdot \hat{t}$)',...
+                   'C. FPE-COP in $\hat{s}$ (${_F}r{_C} \cdot \hat{s}$)',...
+                   'A. Angular speed ($|\omega|_2$)',...
+                   'B. Angular velocity about the vertical axis ($\omega_Z$)'};
 
-    metricPlotHalfPlaneBox = [1,0,0,1,0,0,0,0];             
+    metricPlotHalfPlaneBox = [1,1,1,1,1,1,1,1];   
+    
+    maxFpeCopInT = max([abs(max(quietStandingData.fpeCopInT(2,:))),...
+                     abs(max(quietStandingData.fpeCopInT(3,:)))] ); 
 
-    metricAnnotationLines = [1,0,0,1,0,0,1,0];
+    maxFpeCopInS = max([abs(max(quietStandingData.fpeCopInS(2,:))),...
+                         abs(max(quietStandingData.fpeCopInS(3,:)))] );                    
+                   
+    metricPlotHalfPlaneYmax = [metricYLim(1,2),...
+                               max(quietStandingData.comCopDist(3,:)),...
+                               max(quietStandingData.comSpeed(3,:)),...
+                               metricYLim(4,2),...
+                               maxFpeCopInT,...
+                               maxFpeCopInS,...
+                               max(quietStandingData.angSpeed(3,:)),...
+                               max(quietStandingData.angZSpeed(3,:))];
+                             
+    metricPlotHalfPlaneYmin = [0,...
+                               0,...
+                               0,...
+                               0,...
+                              -maxFpeCopInT,...
+                              -maxFpeCopInS,...
+                               0,...
+                              -max(quietStandingData.angZSpeed(3,:))];
+                            
+    metricPlotHalfPlaneText = ...
+      {'${_C}r{_B} > 0\,\mathrm{cm}$',...
+       sprintf('${_C}r{_P} < %1.2f\\,\\mathrm{cm}$',max(quietStandingData.comCopDist(3,:))),...
+       sprintf('$|v{_C}|_2 < %1.2f\\,\\mathrm{cm}/\\mathrm{s}$',max(quietStandingData.comSpeed(3,:))),...
+       '${_F}r{_B} > 0$',...
+       sprintf('$|{_F}r{_C} \\cdot \\hat{t}| < %1.2f\\,\\mathrm{cm}$',maxFpeCopInT),...
+       sprintf('$|{_F}r{_C} \\cdot \\hat{s}| < %1.2f\\,\\mathrm{cm}$',maxFpeCopInS),...
+       sprintf('$|\\omega|_2 < %1.2f\\,^\\circ/s$',max(quietStandingData.angSpeed(3,:))),...
+       sprintf('$|\\omega_Z| < %1.2f\\,^\\circ/s$',max(quietStandingData.angZSpeed(3,:))),...
+      };
+
+    metricAnnotationLines = [1,0,0,1,0,0,0,1];
     
     plotConfigName = 'ComFpeBalanceMetrics';   
     
@@ -145,7 +222,9 @@ switch flag_plotConfig
                    'COM Velocity in Z'};
 
     metricPlotHalfPlaneBox = [0,0,0,0];             
-
+    metricPlotHalfPlaneYmax = [0,0,0,0];                             
+    metricPlotHalfPlaneYmin = metricYLim(:,1);    
+    
     metricAnnotationLines = [0,0,0,0];
 
     plotConfigName = 'ComVelocity';    
@@ -187,8 +266,9 @@ switch flag_plotConfig
                    'Angular Velocity about Z',...
                    'Angular Velocity about $$\hat{t}$$'};
 
-    metricPlotHalfPlaneBox = [0,0,0,0,0];             
-
+    metricPlotHalfPlaneBox  = [0,0,0,0,0];             
+    metricPlotHalfPlaneYmax = [0,0,0,0,0];                             
+    metricPlotHalfPlaneYmin = metricYLim(:,1);            
     metricAnnotationLines = [0,0,0,0,0];
 
     plotConfigName = 'ComAngularVelocity';  
@@ -219,10 +299,13 @@ switch flag_plotConfig
     metricYAxisScale = [1, 1];
     metricTitle = {'Time since max((FPE-COM).u)','Chair Fz Err at Seat-Off'};
     metricPlotHalfPlaneBox = [0,0];
+    metricPlotHalfPlaneYmax = [0,0];
+    metricPlotHalfPlaneYmin = metricYLim(:,1);    
+    
+    
     metricAnnotationLines = [0,1];
     plotConfigName = 'SwitchingConditions';
     
-
     flag_plotSubjectData = 1;
     flag_plotGroupData   = 1;
         
@@ -270,11 +353,12 @@ switch flag_plotConfig
                    'E. FPE Asmpt.: $\omega_{avg}\cdot\hat{k} \approx 0$',...
                    'F. FPE Dyn. Stab. Margin: $d_{FPE}$'};
 
-    metricPlotHalfPlaneBox = [1,0,0,...
-                              0,0,1];             
+    metricPlotHalfPlaneBox  = [1,0,0,0,0,1];             
+    metricPlotHalfPlaneYmax = [0,0,0,0,0,0];                             
+    metricPlotHalfPlaneYmin = metricYLim(:,1);    
 
-    metricAnnotationLines = [1,0,0,...
-                             0,0,1];
+                            
+    metricAnnotationLines = [1,0,0,0,0,1];
     
     plotConfigName = 'ComFpeBalanceMetricsSummary';   
        
@@ -323,9 +407,9 @@ indexGroupYoung   = 1;
 indexGroupElderly = 2;
 
 groups(indexGroupYoung  ).name  = 'Y';
-groups(indexGroupYoung  ).label = 'Young (Y)';
-groups(indexGroupElderly).name  = 'E';
-groups(indexGroupElderly).label = 'Elderly (E)';
+groups(indexGroupYoung  ).label = 'Younger Adult (Y)';
+groups(indexGroupElderly).name  = 'O';
+groups(indexGroupElderly).label = 'Older Adult (O)';
 
 colorMod = 0.66;
 
@@ -341,37 +425,10 @@ groups(indexGroupElderly).color   = [colorA;...
 
 
 
-%%
-%
-% Setup the input/output directory structure
-%
-%%
-inputDirRelative    = '../../inputData'         ;
-outputDirRelative   = '../../outputData'        ;
-frontiersPlotDir    = '../../plots/Frontiers2020Pub/' ;
-frontiersDataDir    = '../../outputData/Frontiers2020Pub/';
-
-codeDir = pwd;
-  cd(inputDirRelative);
-  inputPath = pwd;
-  processConfigCommon;  
-  cd(codeDir);
-  cd(outputDirRelative);
-  outputPath = pwd;  
-cd(codeDir);
 
 %%
-%
-% Load the data
-%
+%Generate the plots
 %%
-
-load([frontiersDataDir,'groupTrialPhaseMetricData',...
-      nameToeTag,nameExcludeE06Tag,'.mat']);
-load([frontiersDataDir,'subjectTrialPhaseMetricData',...
-      nameToeTag,nameExcludeE06Tag,'.mat']);
-
-  
 
 figPlotMatrix(length(trialsToProcess) )= struct('h',[]);
   
@@ -427,15 +484,47 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
     if(length(subPlotVec) == 4)
       subplot('Position',subPlotVec);
     end    
-    
+        
     if(metricPlotHalfPlaneBox(1,indexMetric)==1)
+      %Plot the grey background box
       x0 = -0.5;
       x1 = xPlotLim;
-      y0 = -10;
-      y1 = 0;
+      y0 = metricYLim(indexMetric,1);
+      y1 = metricYLim(indexMetric,2);
       dataBox = [x0,y0;x1,y0;x1,y1;x0,y1;x0,y0];
+      
       fill(dataBox(:,1),dataBox(:,2),[1,1,1].*0.9,'EdgeColor','none');
-      hold on;      
+      hold on;
+      
+      %Plot the stable white box
+      x0 = -0.5;
+      x1 = xPlotLim;
+      y0 = metricPlotHalfPlaneYmin(1,indexMetric);
+      y1 = metricPlotHalfPlaneYmax(1,indexMetric);
+      
+      val = metricPlotHalfPlaneYmin(1,indexMetric);
+      flag_boxUp = 1;
+      %Valid if Ymax is the same as the plot limit.
+      %Invalid if Ymin is the same as the plot limt
+      valOptionError = abs(metricPlotHalfPlaneYmin(1,indexMetric)...
+                   -metricYLim(indexMetric,1));
+      if(  valOptionError < 1e-3)
+        val = metricPlotHalfPlaneYmax(1,indexMetric);      
+        flag_boxUp=0;
+      end
+      
+      
+      dataBox = [x0,y0;x1,y0;x1,y1;x0,y1;x0,y0];
+      fill(dataBox(:,1),dataBox(:,2),[1,1,1],'EdgeColor','none');
+      hold on; 
+      dy = 0.1*(metricYLim(indexMetric,2)-metricYLim(indexMetric,1));
+      
+      
+      text(x1,y0,metricPlotHalfPlaneText{1,indexMetric},...
+           'HorizontalAlignment','right',...
+           'VerticalAlignment','bottom','FontSize',6);
+      hold on;
+
     else
       x0 = -0.5;
       x1 = xPlotLim;
@@ -482,7 +571,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
           end
         end
         
-        groupXPosition =   size(subjectData,1) + indexGroup;
+        groupXPosition =   size(subjectData,1) + indexGroup+0.25;
       end      
              
       if(flag_plotGroupData == 1)

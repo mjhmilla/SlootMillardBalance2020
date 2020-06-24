@@ -43,8 +43,8 @@ if(isempty(statsABStart)==0)
 
         xA = xPositionGroupA - startEndWidth;
         xB = xPositionGroupB - startEndWidth;
-        yA = statsStructA.start.p75 + yDelta;
-        yB = statsStructB.start.p75 + yDelta;
+        yA = statsStructA.start.p95 + yDelta;
+        yB = statsStructB.start.p95 + yDelta;
 
         xLeft = min(xA,xB);
 

@@ -43,6 +43,7 @@ omegaSmall = 0.01;
 
 startS2SComVelocityTolerance = 0.01; %m/s
 endS2SComVelocityTolerance   = 0.01; %m/s
+endS2SAngularVelocityTolerance         = 4.7*(pi/180); %deg/s
 seatOffChairForceZTolerance  = 1;    %N
 endS2SComHeightTolerance     = 0.01; %m
 
@@ -110,11 +111,11 @@ flag_writeComDataForMeshup = 1;
 
 %FPE processing
 flag_loadFpeDataFromFile   = 1;
-flag_writeFpeDataForMeshup = 0;
+flag_writeFpeDataForMeshup = 1;
 
 %Capture point processing
 flag_loadCapDataFromFile   = 1;
-flag_writeCapDataForMeshup = 0;
+flag_writeCapDataForMeshup = 1;
 
 %Calc distance between key ground points and the convex hull of the feet.
 %Here the key ground points are: CoM ground projection, CoP, Fpe, Cap
@@ -125,7 +126,7 @@ flag_loadSegmentedMotionDataFromFile = 0;
 
 %Motion sequence identification
 flag_loadMovementSequenceFromFile =0;
-flag_writeCsvSequenceFile         =0;
+flag_writeCsvSequenceFile         =1;
 
 %Plotting
 flag_visualize           = 0;
@@ -339,28 +340,25 @@ for indexSubject = 1:1:length(subjectsToProcess)
           %     2. To plot/animate the pricipal axis to give the results a check
           %%
 
-          %Only perform this check when processing the data for the first time.
-          if(flag_loadC3DMatFileData==0)
-            [ JcmEigenValuesDiag, ...
-              JcmEigenVectorsRowWise] = ...
-              decomposeInertiaMatrices(wholeBodyData(:,colJo(1,:)));  
+          [ JcmEigenValuesDiag, ...
+            JcmEigenVectorsRowWise] = ...
+            decomposeInertiaMatrices(wholeBodyData(:,colJo(1,:)));  
 
-            %For plotting/debugging purposes compute the whole-body angular velocity
-            %and the radius of gyration
+          %For plotting/debugging purposes compute the whole-body angular velocity
+          %and the radius of gyration
 
-            JcmRadiusOfGyration = sqrt(JcmEigenValuesDiag./mass);
-            WcmAngularVelocity = zeros(size(JcmEigenValuesDiag,1),3);
-            for i=1:1:size(JcmEigenValuesDiag,1)
-              JC0 = [wholeBodyData(i,colJo(1,1:3));...
-                   wholeBodyData(i,colJo(1,4:6));...
-                   wholeBodyData(i,colJo(1,7:9))];
-              HC0 = [wholeBodyData(i,colHo(1,1:3))]';
+          JcmRadiusOfGyration = sqrt(JcmEigenValuesDiag./mass);
+          WcmAngularVelocity = zeros(size(JcmEigenValuesDiag,1),3);
+          for i=1:1:size(JcmEigenValuesDiag,1)
+            JC0 = [wholeBodyData(i,colJo(1,1:3));...
+                 wholeBodyData(i,colJo(1,4:6));...
+                 wholeBodyData(i,colJo(1,7:9))];
+            HC0 = [wholeBodyData(i,colHo(1,1:3))]';
 
-              WcmAngularVelocity(i,:) = zeros(1,3).*NaN;
+            WcmAngularVelocity(i,:) = zeros(1,3).*NaN;
 
-              if( sum(sum(isnan(JC0))) == 0 && sum(isnan(HC0))==0)
-                WcmAngularVelocity(i,:) = (JC0\HC0)';
-              end
+            if( sum(sum(isnan(JC0))) == 0 && sum(isnan(HC0))==0)
+              WcmAngularVelocity(i,:) = (JC0\HC0)';
             end
           end
           %%
@@ -556,6 +554,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
                 segmentedData, segmentInfo,...
                 wholeBodyData(:,colComPos),...
                 wholeBodyData(:,colComVel),...
+                WcmAngularVelocity,...
                 c3dGrfChair, ...
                 fpeStepLength,...
                 quietDwellTime, ...
@@ -563,6 +562,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
                 seatOffChairForceZTolerance,...
                 endS2SComHeightTolerance,...
                 endS2SComVelocityTolerance,...
+                endS2SAngularVelocityTolerance,...
                 [outputTrialFolder,outputSequenceFileName],...
                 flag_rejectMovementSequencesFootGroundContactBroken,...
                 flag_loadMovementSequenceFromFile, ...
