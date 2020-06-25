@@ -9,11 +9,15 @@ if( isfield(groupMetricDataA,'phase') && isfield(groupMetricDataB,'phase'))
   if(isfield(groupMetricDataA.phase,'median') && isfield(groupMetricDataB.phase,'median'))
     dataA = [];    
     for i=1:1:length(groupMetricDataA.phase.data)
-      dataA = [dataA;groupMetricDataA.phase.data(i).y];
+      %for k=1:1:size(groupMetricDataA.phase.data(i).y,2)
+        dataA = [dataA; mean(groupMetricDataA.phase.data(i).y,2)];
+      %end
     end
     dataB = [];    
     for i=1:1:length(groupMetricDataB.phase.data)
-      dataB = [dataB;groupMetricDataB.phase.data(i).y];
+      %for k=1:1:size(groupMetricDataB.phase.data(i).y,2)
+        dataB = [dataB; mean(groupMetricDataB.phase.data(i).y,2)];
+      %end
     end
     [p,h] = ranksum(dataA,dataB);
     phaseResults.p = p;
@@ -26,11 +30,15 @@ if( isfield(groupMetricDataA,'start') && isfield(groupMetricDataB,'start'))
   if(isfield(groupMetricDataA.start,'median') && isfield(groupMetricDataB.start,'median'))
     dataA = [];    
     for i=1:1:length(groupMetricDataA.start.data)
-      dataA = [dataA;groupMetricDataA.start.data(i).y];
+      %for k=1:1:size(groupMetricDataA.start.data(i).y,2)
+        dataA = [dataA; mean(groupMetricDataA.start.data(i).y,2)];
+      %end
     end
     dataB = [];    
     for i=1:1:length(groupMetricDataB.start.data)
-      dataB = [dataB;groupMetricDataB.start.data(i).y];
+      %for k=1:1:size(groupMetricDataB.start.data(i).y,2)
+        dataB = [dataB; mean(groupMetricDataB.start.data(i).y,2)];
+      %end
     end
     [p,h] = ranksum(dataA,dataB);
     startResults.p = p;
@@ -43,11 +51,15 @@ if( isfield(groupMetricDataA,'end') && isfield(groupMetricDataB,'end'))
   if(isfield(groupMetricDataA.end,'median') && isfield(groupMetricDataB.end,'median'))
     dataA = [];    
     for i=1:1:length(groupMetricDataA.end.data)
-      dataA = [dataA;groupMetricDataA.end.data(i).y];
+      %for k=1:1:size(groupMetricDataA.end.data(i).y,2)
+        dataA = [dataA; mean(groupMetricDataA.end.data(i).y,2)];
+      %end
     end
     dataB = [];    
     for i=1:1:length(groupMetricDataB.end.data)
-      dataB = [dataB;groupMetricDataB.end.data(i).y];
+      %for k=1:1:size(groupMetricDataB.end.data(i).y,2)
+        dataB = [dataB;mean(groupMetricDataB.end.data(i).y,2)];
+      %end
     end
     [p,h] = ranksum(dataA,dataB);
     endResults.p = p;

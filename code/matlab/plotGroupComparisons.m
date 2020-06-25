@@ -25,12 +25,12 @@ yDelta  = 0.05*(yMax-yMin);
 xDelta  = yDelta;
 
 yBottom = yMin + 0.05*(yMax-yMin);
-yTop    = yMax - 0.05*(yMax-yMin);
+yTop    = yMax;% - 0.05*(yMax-yMin);
 yMiddle = 0.5*(yTop+yBottom);
 
 startEndWidth = boxWidth;
 
-xP = max(xPositionGroupA,xPositionGroupB) + boxWidth*2 ;
+xP = max(xPositionGroupA,xPositionGroupB) + boxWidth ;
 printOrder = 3;
 
 %%
@@ -43,8 +43,8 @@ if(isempty(statsABStart)==0)
 
         xA = xPositionGroupA - startEndWidth;
         xB = xPositionGroupB - startEndWidth;
-        yA = statsStructA.start.p95 + yDelta;
-        yB = statsStructB.start.p95 + yDelta;
+        yA = statsStructA.start.max + yDelta;
+        yB = statsStructB.start.max + yDelta;
 
         xLeft = min(xA,xB);
 

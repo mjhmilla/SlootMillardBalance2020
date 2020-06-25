@@ -125,7 +125,7 @@ switch flag_plotConfig
     metricNameList = {'com2edge','com2cop','comvel',...
                       'fpe2edge','fpewidth','fpelen','angvel','angvelz'};
 
-    metricYLim = [-6,15; 0,17; 0,65;...
+    metricYLim = [-6,16; 0,17; 0,65;...
                   -6,17; -3.5,3.5; -5,10.5; 0,120; -90, 60];
     
 
@@ -146,6 +146,8 @@ switch flag_plotConfig
                    'B. Angular velocity about the vertical axis ($\omega_Z$)'};
 
     metricPlotHalfPlaneBox = [1,1,1,1,1,1,1,1];   
+    
+    metricPlotZeroLine = [0,0,0,0,1,1,0,1];
     
    fpeCopInTOneSided = mean( [mean(abs(quietStandingData.fpeCopInT(3,:))), ...
                               mean(abs(quietStandingData.fpeCopInT(2,:)))]);                             
@@ -190,7 +192,7 @@ switch flag_plotConfig
        sprintf('$|\\omega_Z| < %1.1f\\,^\\circ/s$',angZSpeedOneSided),...
       };
 
-    metricAnnotationLines = [1,0,0,1,0,0,0,1];
+    metricAnnotationLines = [1,0,0,1,0,1,0,0];
     
     plotConfigName = 'ComFpeBalanceMetrics';   
     
@@ -232,6 +234,7 @@ switch flag_plotConfig
     metricPlotHalfPlaneBox = [0,0,0,0];             
     metricPlotHalfPlaneYmax = [0,0,0,0];                             
     metricPlotHalfPlaneYmin = metricYLim(:,1);    
+    metricPlotZeroLine = [0,0,0,0];
     
     metricAnnotationLines = [0,0,0,0];
 
@@ -278,7 +281,7 @@ switch flag_plotConfig
     metricPlotHalfPlaneYmax = [0,0,0,0,0];                             
     metricPlotHalfPlaneYmin = metricYLim(:,1);            
     metricAnnotationLines = [0,0,0,0,0];
-
+    metricPlotZeroLine = [0,0,0,0,0];
     plotConfigName = 'ComAngularVelocity';  
         
     flag_plotSubjectData = 1;
@@ -309,7 +312,7 @@ switch flag_plotConfig
     metricPlotHalfPlaneBox = [0,0];
     metricPlotHalfPlaneYmax = [0,0];
     metricPlotHalfPlaneYmin = metricYLim(:,1);    
-    
+    metricPlotZeroLine = [0,0];
     
     metricAnnotationLines = [0,1];
     plotConfigName = 'SwitchingConditions';
@@ -364,7 +367,7 @@ switch flag_plotConfig
     metricPlotHalfPlaneBox  = [1,0,0,0,0,1];             
     metricPlotHalfPlaneYmax = [0,0,0,0,0,0];                             
     metricPlotHalfPlaneYmin = metricYLim(:,1);    
-
+    metricPlotZeroLine = [0,0,0,0,0,0];
                             
     metricAnnotationLines = [1,0,0,0,0,1];
     
@@ -440,16 +443,23 @@ groups(indexGroupElderly).color   = [colorA;...
 
 figPlotMatrix(length(trialsToProcess) )= struct('h',[]);
   
-xDeltaSubjectGroup = 0.5; 
+xDeltaSubjectGroup = 0.25; 
 marginWidthForSignificanceStats = 2;
 
 xPlotLim = 0;
+xPlotLimSub = 0;
+xPlotLimGroup = 0;
 
 if(flag_plotSubjectData == 1 && flag_plotGroupData == 1)
   xPlotLim = size(subjectData,1) ...
            + size(groupData,1) ...
            + xDeltaSubjectGroup ...
            + marginWidthForSignificanceStats;
+  xPlotLimSub = size(subjectData,1);
+  xPlotLimGroup = size(subjectData,1) ...
+           + size(groupData,1) ...
+           + xDeltaSubjectGroup;
+         
 end
 
 if(flag_plotSubjectData == 0 && flag_plotGroupData == 1)
@@ -457,6 +467,9 @@ if(flag_plotSubjectData == 0 && flag_plotGroupData == 1)
   xPlotLim = size(groupData,1) ...
            + xDeltaSubjectGroup ...
            + marginWidthForSignificanceStats;
+  xPlotLimSub = NaN;
+  xPlotLimGroup = size(groupData,1) ...
+           + xDeltaSubjectGroup;         
 end
 
 
@@ -496,7 +509,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
     if(metricPlotHalfPlaneBox(1,indexMetric)==1)
       %Plot the grey background box
       x0 = -0.5;
-      x1 = xPlotLim;
+      x1 = xPlotLimGroup;
       y0 = metricYLim(indexMetric,1);
       y1 = metricYLim(indexMetric,2);
       dataBox = [x0,y0;x1,y0;x1,y1;x0,y1;x0,y0];
@@ -506,7 +519,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       
       %Plot the stable white box
       x0 = -0.5;
-      x1 = xPlotLim;
+      x1 = xPlotLimGroup;
       y0 = metricPlotHalfPlaneYmin(1,indexMetric);
       y1 = metricPlotHalfPlaneYmax(1,indexMetric);
       
@@ -525,11 +538,23 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       dataBox = [x0,y0;x1,y0;x1,y1;x0,y1;x0,y0];
       fill(dataBox(:,1),dataBox(:,2),[1,1,1].*0.9,'EdgeColor','none');
       hold on; 
+      
+      if(metricPlotZeroLine(1,indexMetric)==1)
+        plot([-0.5,xPlotLimGroup],[0,0],'-','Color',[1,1,1].*0.75);
+        hold on;
+      end
+      
+      
       dy = 0.1*(metricYLim(indexMetric,2)-metricYLim(indexMetric,1));
       
+      dy6pt = (0.3/(panelHeight))*(metricYLim(indexMetric,2)-metricYLim(indexMetric,1));
       
-      text(x1,y0,metricPlotHalfPlaneText{1,indexMetric},...
-           'HorizontalAlignment','right',...
+      %text(xPlotLimGroup,y0+dy6pt,'Stable:',...
+      %     'HorizontalAlignment','left',...
+      %     'VerticalAlignment','bottom','FontSize',6); 
+      %hold on;
+      text(xPlotLimGroup,y0,metricPlotHalfPlaneText{1,indexMetric},...
+           'HorizontalAlignment','left',...
            'VerticalAlignment','bottom','FontSize',6);
       hold on;
 
@@ -587,7 +612,8 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
         groups(indexGroup).x = groupXPosition;
 
         fontColor = groups(indexGroup).color(1,:);
-
+        
+        
         figH = plotMetricDistributionEventData2(figH, subPlotVec, ...
                 groupXPosition,...
                 groupData(indexGroup,indexTrial,indexPhase).(metricName),...
