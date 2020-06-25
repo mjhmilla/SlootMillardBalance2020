@@ -356,18 +356,12 @@ if(flag_loadSequenceDataFromFile == 0)
             % this sit to stand trial.
             indexStanding=indexStandingStart;
             
-            errRadius = sqrt(abs(comPosition(indexStanding,3)-medComHeight)^2 ...
-                           + comVelocity(indexStanding,3)^2);
-            errRadiusTolerance = sqrt(endS2SComHeightTolerance^2 ...
-                                    + endS2SComVelocityTolerance^2);
-                                  
+            r
             
             while(indexStanding < indexStandingEnd ...
-                  && ( comPosition(indexStanding,3) < (medComHeight-endS2SComHeightTolerance) ...
-                     || abs(comVelocity(indexStanding,3)) > endS2SComVelocityTolerance ) )
-              indexStanding = indexStanding+1;        
-              %errRadius = sqrt(abs(comPosition(indexStanding,3)-medComHeight)^2 ...
-              %             + comVelocity(indexStanding,3)^2);
+                  && ( abs(comPosition(indexStanding,3)-medComHeight) > endS2SComHeightTolerance ...
+                  ||  comVelocity(indexStanding,3) > endS2SComVelocityTolerance))
+              indexStanding = indexStanding+1;              
             end 
             
             %if(indexStanding == indexStandingEnd)

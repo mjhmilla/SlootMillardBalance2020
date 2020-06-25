@@ -4,7 +4,7 @@ clear all;
 
 %List of the subjects to process
 
-flag_NoE06 = 1;
+flag_NoE06 = 0;
 
 
 subjectsToProcess = ...
@@ -58,7 +58,7 @@ contactPlanes = [0,0,0];
 %%
 %Data Records
 %%
-dataRecord        = zeros(4,length(subjectsToProcess));
+dataRecord        = zeros(6,length(subjectsToProcess));
 
 dataStruct = struct('comSpeed',dataRecord,...
                     'angSpeed',dataRecord,...
@@ -224,11 +224,19 @@ for indexSubject = 1:1:length(subjectsToProcess)
   dataStruct.comSpeed(3,indexSubject) = max(comSpeed).*100;           
   dataStruct.comSpeed(4,indexSubject) = std(comSpeed,'omitnan').*100;           
   
+  comSpeedSorted = sort(comSpeed.*100);
+  idx25 = round(0.25*length(comSpeedSorted));
+  idx75 = round(0.75*length(comSpeedSorted));
+  dataStruct.comSpeed(5,indexSubject) = comSpeedSorted(idx25,1);
+  dataStruct.comSpeed(6,indexSubject) = comSpeedSorted(idx75,1);
+  
   fprintf('COM Velocity (cm/s)\n');
   fprintf('\t%1.3f\tmean\n',dataStruct.comSpeed(1,indexSubject));
   fprintf('\t%1.3f\tmin\n', dataStruct.comSpeed(2,indexSubject));
   fprintf('\t%1.3f\tmax\n', dataStruct.comSpeed(3,indexSubject));
   fprintf('\t%1.3f\tstd\n', dataStruct.comSpeed(4,indexSubject));
+  fprintf('\t%1.3f\t25p\n', dataStruct.comSpeed(5,indexSubject));
+  fprintf('\t%1.3f\t75p\n', dataStruct.comSpeed(6,indexSubject));
 
 
   
@@ -268,6 +276,11 @@ for indexSubject = 1:1:length(subjectsToProcess)
   dataStruct.angSpeed(3,indexSubject) = max(angularSpeed).*(180/pi);
   dataStruct.angSpeed(4,indexSubject) = std(angularSpeed,'omitnan').*(180/pi);
   
+  angSpeedSorted = sort(angularSpeed.*(180/pi));
+  idx25 = round(0.25*length(angSpeedSorted));
+  idx75 = round(0.75*length(angSpeedSorted));
+  dataStruct.angSpeed(5,indexSubject) = angSpeedSorted(idx25,1);
+  dataStruct.angSpeed(6,indexSubject) = angSpeedSorted(idx75,1);
               
 
   fprintf('Angular Speed (deg/s)\n');
@@ -275,11 +288,21 @@ for indexSubject = 1:1:length(subjectsToProcess)
   fprintf('\t%1.3f\tmin\n', dataStruct.angSpeed(2,indexSubject));
   fprintf('\t%1.3f\tmax\n', dataStruct.angSpeed(3,indexSubject));
   fprintf('\t%1.3f\tstd\n', dataStruct.angSpeed(4,indexSubject));  
+  fprintf('\t%1.3f\t25p\n', dataStruct.angSpeed(5,indexSubject));
+  fprintf('\t%1.3f\t75p\n', dataStruct.angSpeed(6,indexSubject));  
 
+  
   dataStruct.angZSpeed(1,indexSubject) = mean(abs(WcmAngularVelocity(:,3)),'omitnan').*(180/pi);
   dataStruct.angZSpeed(2,indexSubject) = min(abs(WcmAngularVelocity(:,3))).*(180/pi);
   dataStruct.angZSpeed(3,indexSubject) = max(abs(WcmAngularVelocity(:,3))).*(180/pi);
   dataStruct.angZSpeed(4,indexSubject) = std(WcmAngularVelocity(:,3),'omitnan').*(180/pi);
+
+  angZSpeedSorted = sort(WcmAngularVelocity(:,3).*(180/pi));
+  idx25 = round(0.25*length(angZSpeedSorted));
+  idx75 = round(0.75*length(angZSpeedSorted));
+  dataStruct.angZSpeed(5,indexSubject) = angZSpeedSorted(idx25,1);
+  dataStruct.angZSpeed(6,indexSubject) = angZSpeedSorted(idx75,1);
+  
   
   
   fprintf('Angular Speed Z (deg/s)\n');
@@ -287,6 +310,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
   fprintf('\t%1.3f\tmin\n', dataStruct.angZSpeed(2,indexSubject));
   fprintf('\t%1.3f\tmax\n', dataStruct.angZSpeed(3,indexSubject));
   fprintf('\t%1.3f\tstd\n', dataStruct.angZSpeed(4,indexSubject));  
+  fprintf('\t%1.3f\t25p\n', dataStruct.angZSpeed(5,indexSubject));
+  fprintf('\t%1.3f\t75p\n', dataStruct.angZSpeed(6,indexSubject));  
 
   here=1; 
   
@@ -330,12 +355,21 @@ for indexSubject = 1:1:length(subjectsToProcess)
     dataStruct.comCopDist(2,indexSubject) = min(comCopDist).*(100);
     dataStruct.comCopDist(3,indexSubject) = max(comCopDist).*(100);
     dataStruct.comCopDist(4,indexSubject) = std(comCopDist,'omitnan').*(100);                     
-                   
+
+    comCopDistSorted = sort(comCopDist.*(100));
+    idx25 = round(0.25*length(comCopDistSorted));
+    idx75 = round(0.75*length(comCopDistSorted));
+    dataStruct.comCopDist(5,indexSubject) = comCopDistSorted(idx25,1);
+    dataStruct.comCopDist(6,indexSubject) = comCopDistSorted(idx75,1);
+        
     fprintf('Com-Cop Alignment (cm)\n');
     fprintf('\t%1.3f\tmean\n', dataStruct.comCopDist(1,indexSubject));
     fprintf('\t%1.3f\tmin\n',  dataStruct.comCopDist(2,indexSubject));
     fprintf('\t%1.3f\tmax\n',  dataStruct.comCopDist(3,indexSubject));
     fprintf('\t%1.3f\tstd\n',  dataStruct.comCopDist(4,indexSubject));      
+    fprintf('\t%1.3f\t25p\n',  dataStruct.comCopDist(5,indexSubject));
+    fprintf('\t%1.3f\t75p\n',  dataStruct.comCopDist(6,indexSubject));      
+    
   end
 
 %%
@@ -363,13 +397,19 @@ for indexSubject = 1:1:length(subjectsToProcess)
   dataStruct.comBosDist(3,indexSubject) = max(comgp2FootConvexHullDist.distance.*(-1)).*(100);
   dataStruct.comBosDist(4,indexSubject) = std(comgp2FootConvexHullDist.distance.*(-1),'omitnan').*(100);                                       
                             
-  
+  comBosDistSorted = sort(comgp2FootConvexHullDist.distance.*(-100));
+  idx25 = round(0.25*length(comBosDistSorted));
+  idx75 = round(0.75*length(comBosDistSorted));
+  dataStruct.comBosDist(5,indexSubject) = comBosDistSorted(idx25,1);
+  dataStruct.comBosDist(6,indexSubject) = comBosDistSorted(idx75,1);  
   
   fprintf('Com-Bos (cm)\n');
   fprintf('\t%1.3f\tmean\n',dataStruct.comBosDist(1,indexSubject));
   fprintf('\t%1.3f\tmin\n', dataStruct.comBosDist(2,indexSubject));
   fprintf('\t%1.3f\tmax\n', dataStruct.comBosDist(3,indexSubject));
   fprintf('\t%1.3f\tstd\n', dataStruct.comBosDist(4,indexSubject));                                         
+  fprintf('\t%1.3f\t25p\n', dataStruct.comBosDist(5,indexSubject));
+  fprintf('\t%1.3f\t75p\n', dataStruct.comBosDist(6,indexSubject));                                         
 
   %%
   %
@@ -426,29 +466,47 @@ for indexSubject = 1:1:length(subjectsToProcess)
   dataStruct.fpeCopInT(3,indexSubject) = max(rFC0t).*(100);
   dataStruct.fpeCopInT(4,indexSubject) = std(rFC0t,'omitnan').*(100);                                       
 
+  rFC0tSorted = sort(rFC0t.*(100));
+  idx25 = round(0.25*length(rFC0tSorted));
+  idx75 = round(0.75*length(rFC0tSorted));
+  dataStruct.fpeCopInT(5,indexSubject) = rFC0tSorted(idx25,1);
+  dataStruct.fpeCopInT(6,indexSubject) = rFC0tSorted(idx75,1);   
+  
   fprintf('FPE-COP in t (cm)\n');
   fprintf('\t%1.3f\tmean\n',dataStruct.fpeCopInT(1,indexSubject));
   fprintf('\t%1.3f\tmin\n', dataStruct.fpeCopInT(2,indexSubject));
   fprintf('\t%1.3f\tmax\n', dataStruct.fpeCopInT(3,indexSubject));
   fprintf('\t%1.3f\tstd\n', dataStruct.fpeCopInT(4,indexSubject));   
+  fprintf('\t%1.3f\t25p\n', dataStruct.fpeCopInT(5,indexSubject));
+  fprintf('\t%1.3f\t75p\n', dataStruct.fpeCopInT(6,indexSubject));   
+  
   
   dataStruct.fpeCopInS(1,indexSubject) = mean(rFC0s,'omitnan').*(100);
   dataStruct.fpeCopInS(2,indexSubject) = min(rFC0s).*(100);
   dataStruct.fpeCopInS(3,indexSubject) = max(rFC0s).*(100);
   dataStruct.fpeCopInS(4,indexSubject) = std(rFC0s,'omitnan').*(100);                                       
 
+  rFC0sSorted = sort(rFC0s.*(100));
+  idx25 = round(0.25*length(rFC0sSorted));
+  idx75 = round(0.75*length(rFC0sSorted));
+  dataStruct.fpeCopInS(5,indexSubject) = rFC0sSorted(idx25,1);
+  dataStruct.fpeCopInS(6,indexSubject) = rFC0sSorted(idx75,1);   
+  
+  
   fprintf('FPE-COP in s (cm)\n');
   fprintf('\t%1.3f\tmean\n',dataStruct.fpeCopInS(1,indexSubject));
   fprintf('\t%1.3f\tmin\n', dataStruct.fpeCopInS(2,indexSubject));
   fprintf('\t%1.3f\tmax\n', dataStruct.fpeCopInS(3,indexSubject));
   fprintf('\t%1.3f\tstd\n', dataStruct.fpeCopInS(4,indexSubject));    
+  fprintf('\t%1.3f\t25p\n', dataStruct.fpeCopInS(5,indexSubject));
+  fprintf('\t%1.3f\t75p\n', dataStruct.fpeCopInS(6,indexSubject));    
   
   here=1;
 end        
 
 save([outputPath,'/quietStanding',E06Ending,'.mat'],'dataStruct');
 
-summaryRecord = zeros(4, 5);
+summaryRecord = zeros(4, 6);
 
 dataFields = fieldnames(dataStruct);
 
@@ -461,17 +519,20 @@ for i=1:1:length(dataFields)
   summaryRecord(2,i) = min(  dataStruct.(dataFields{i,1})(2,:) );
   summaryRecord(3,i) = max(  dataStruct.(dataFields{i,1})(3,:) );
   summaryRecord(4,i) = mean( dataStruct.(dataFields{i,1})(4,:) );
-
+  summaryRecord(5,i) = mean( dataStruct.(dataFields{i,1})(5,:) );
+  summaryRecord(6,i) = mean( dataStruct.(dataFields{i,1})(6,:) );  
+  
   disp(dataFields{i,1});
   fprintf('\t%1.2f\t mean\n', summaryRecord(1,i));
   fprintf('\t%1.2f\t min\n' , summaryRecord(2,i));  
   fprintf('\t%1.2f\t max\n' , summaryRecord(3,i));
   fprintf('\t%1.2f\t std\n' , summaryRecord(4,i));  
-
+  fprintf('\t%1.2f\t 25p\n' , summaryRecord(5,i));
+  fprintf('\t%1.2f\t 75p\n' , summaryRecord(6,i));
   
 end
 
-rowHeader = {'mean','min','max','std'};
+rowHeader = {'mean','min','max','std','25p','75p'};
 
 fid = fopen([outputPath,'/summary',E06Ending,'.csv'],'w');
 for i=1:1:length(dataFields)
