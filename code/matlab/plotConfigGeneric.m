@@ -55,6 +55,7 @@ for(ai=1:1:numberOfVerticalPlotRows)
   end
   for(aj=1:1:numberOfHorizontalPlotColumns)
       subPlotPanelIndex(ai,aj) = idx;
+      scaleHorizMargin=1;
       subPlotPanel(ai,aj,1) = topLeft(1) + plotHorizMargin...
                             + (aj-1)*(plotWidth);
       %-plotVertMargin*scaleVerticalMargin ...                             

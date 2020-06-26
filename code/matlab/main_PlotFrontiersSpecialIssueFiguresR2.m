@@ -11,7 +11,7 @@ clear all;
 
 flag_PaperPlots0Presentation1 = 0;
 
-flag_ConvexHullWithToes0Without1  = 0;
+flag_ConvexHullWithToes0Without1  = 1;
 nameToeTag = '';
 if(flag_ConvexHullWithToes0Without1 == 1)
   nameToeTag = '_NoToes';
@@ -44,7 +44,7 @@ flagPlotEnd   =1;
 
 indexPhase = indexPhaseSeatOff2Stand;
 
-trialsToProcess = {'Side'};%{'Side','Chest','Conv','Leg','Side','Rob'};
+trialsToProcess = {'Side','Chest','Conv','Leg','Side','Rob'};
 
 quietStandingFile = 'QuietStanding_SubAnalysis/quietStanding_NoE06.mat';
 
@@ -126,22 +126,22 @@ switch flag_plotConfig
                       'fpe2edge','fpewidth','fpelen','angvel','angvelz'};
 
     metricYLim = [-6,16; 0,17; 0,65;...
-                  -6,17; -3.5,3.5; -5,10.5; 0,120; -90, 60];
-    
+                  -6,17; -5,6; -5,10.5; 0,120; -90, 60];
 
-    metricYAxisLabel = {'Distance (cm)','Distance (cm)','Velocity (cm/s)',...
-                        'Distance (cm)','Distance (cm)','Distance (cm)',...
-                        'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)'};
+
+    metricYAxisLabel = {'Displacement (cm)','Distance (cm)','Speed (cm/s)',...
+                        'Displacement (cm)','Displacement (cm)','Displacement (cm)',...
+                        'Angular Speed ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)'};
 
     metricYAxisScale = [1,1,1,1,...
                          1,1,1,1];
 
-    metricTitle = {'A. COM$_{\mathrm{GP}}$ to nearest BOS edge (${_C}r{_B}$)',...
-                   'B. COM$_{\mathrm{GP}}$ to COP (${_C}r{_P}$)',...
+    metricTitle = {'A. Displacement from nearest BOS edge to COM$_{\mathrm{GP}}$ (${_B}r{_C}$)',...
+                   'B. Distance from COM$_{\mathrm{GP}}$ to COP (${_C}r{_P}$)',...
                    'C. COM Speed ($|v{_C}|_2$)',...
-                   'A. FPE to nearest BOS edge (${_F}r{_B}$)',...
-                   'B. FPE-COP in $\hat{t}$ (${_F}r{_C} \cdot \hat{t}$)',...
-                   'C. FPE-COP in $\hat{s}$ (${_F}r{_C} \cdot \hat{s}$)',...
+                   'A. Displacement from BOS edge to FPE (${_B}r{_F}$)',...
+                   'B. Displacement from COP to FPE in $\hat{t}$ (${_P}r{_F} \cdot \hat{t}$)',...
+                   'C. Displacement from COP to FPE in $\hat{s}$ (${_P}r{_F} \cdot \hat{s}$)',...
                    'A. Angular speed ($|\omega|_2$)',...
                    'B. Angular velocity about the vertical axis ($\omega_Z$)'};
 
@@ -207,7 +207,7 @@ switch flag_plotConfig
     assert(numberOfVerticalPlotRows*numberOfHorizontalPlotColumns ...
              >= numberOfFiguresPerPage);
 
-    plotHorizMarginCm = 1;
+    plotHorizMarginCm = 1.5;
     plotVertMarginCm  = 1.5;           
     pageHeight  = numberOfVerticalPlotRows*(panelHeight) + 2;
     pageWidth   = numberOfHorizontalPlotColumns*(panelWidth) + 2;           
@@ -221,7 +221,7 @@ switch flag_plotConfig
 
     metricYLim = [ 0,65; -20,65; -10,10; -40,65];
          
-
+    
     metricYAxisLabel = {'Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)'};
 
     metricYAxisScale = [1,1,1,1];
@@ -263,7 +263,7 @@ switch flag_plotConfig
     metricNameList = {'angvel','angvelx','angvely','angvelz','angveln'};
 
     metricYLim = [ 0, 120; -25,25; -40, 120; -90,60; -30, 120];
-         
+
 
     metricYAxisLabel = {'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)',...
                         'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)',...
@@ -306,6 +306,7 @@ switch flag_plotConfig
   case 3
     metricNameList = {'timemaxfpe','fzerrseatoff'};
     metricYLim = [-0.05,0.25; -5, 5];
+    metricYTickSpacing = [0.05,1];    
     metricYAxisLabel = {'Time (s)','Force (N)'};
     metricYAxisScale = [1, 1];
     metricTitle = {'Time since max((FPE-COM).u)','Chair Fz Err at Seat-Off'};
@@ -348,7 +349,6 @@ switch flag_plotConfig
 
     metricYLim = [-1,17;    0,15;  0,65;...
                   0,115; -25, 25; -1,17];
-    
 
     metricYAxisLabel = {'Distance (cm)','Distance (cm)','Velocity (cm/s)',...
                         'Angular Speed ($$^\circ$$/s)',...
@@ -400,6 +400,34 @@ switch flag_plotConfig
     
 end
     
+
+
+
+
+metricYTickSpacing(size(metricYLim,1))=struct('default',[],'custom',[]);
+for z=1:1:size(metricYLim,1)
+  dy = metricYLim(z,2)-metricYLim(z,1);
+  deltaY = floor(dy/5); 
+
+  deltaYCases = [1,5,10,20];
+  deltaYErr = Inf;
+  kBest=0;
+  for k=1:1:length(deltaYCases)
+    if(abs(deltaY-deltaYCases(1,k)) < deltaYErr)
+      deltaYErr = abs(deltaY-deltaYCases(1,k));
+      kBest=k;
+    end
+  end
+  deltaY = deltaYCases(1,kBest);
+
+  tickYN = [0];
+  if(metricYLim(z,1) < 0)
+    tickYN = [-floor( -metricYLim(z,1)/deltaY)*deltaY: deltaY: 0];
+  end
+  tickYP = [deltaY:deltaY:floor(metricYLim(z,2)/deltaY)*deltaY];
+
+  metricYTickSpacing(z).default = [tickYN,tickYP];
+end
 
 
 %%
@@ -539,10 +567,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       fill(dataBox(:,1),dataBox(:,2),[1,1,1].*0.9,'EdgeColor','none');
       hold on; 
       
-      if(metricPlotZeroLine(1,indexMetric)==1)
-        plot([-0.5,xPlotLimGroup],[0,0],'-','Color',[1,1,1].*0.75);
-        hold on;
-      end
+ 
       
       
       dy = 0.1*(metricYLim(indexMetric,2)-metricYLim(indexMetric,1));
@@ -557,11 +582,97 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
            'HorizontalAlignment','left',...
            'VerticalAlignment','bottom','FontSize',6);
       hold on;
+      
+      %Get the group summary statistics to generate the custom y ticks
+      [phaseResults, startResults, endResults] = ...
+        calcGroupComparison(...
+        groupData(indexGroupYoung,indexTrial,indexPhase).(metricName),...
+        groupData(indexGroupElderly,indexTrial,indexPhase).(metricName));
+   
+      medY = groupData(indexGroupYoung,indexTrial,indexPhase).(metricName).start.median;      
+      medE = groupData(indexGroupElderly,indexTrial,indexPhase).(metricName).start.median;
+      
+      minY = groupData(indexGroupYoung,indexTrial,indexPhase).(metricName).start.min;      
+      minE = groupData(indexGroupElderly,indexTrial,indexPhase).(metricName).start.min;
+      
+      maxY = groupData(indexGroupYoung,indexTrial,indexPhase).(metricName).start.max;      
+      maxE = groupData(indexGroupElderly,indexTrial,indexPhase).(metricName).start.max;
+      
+      minYE = min([minY,minE]);
+      maxYE = max([maxY,maxE]);
+      medYE = 0.5*(medY+medE);
 
+      %metricYTickSpacing(indexMetric).custom = sort([minY,medY,maxY,minE,medE,maxE]);
+      metricYTickSpacing(indexMetric).custom = sort([minYE,medYE,maxYE]);
+      ySpan = metricYLim(indexMetric,2)-metricYLim(indexMetric,1);
+
+%       for z=2:1:(length(metricYTickSpacing(indexMetric).custom)-1)
+%         dL = metricYTickSpacing(indexMetric).custom(1,z) ...
+%            - metricYTickSpacing(indexMetric).custom(1,z-1);
+%         dR = metricYTickSpacing(indexMetric).custom(1,z+1) ...
+%            - metricYTickSpacing(indexMetric).custom(1,z);
+% 
+%         if(dL/ySpan < 0.05 && dR/ySpan < 0.05)
+%           metricYTickSpacing(indexMetric).custom(1,z-1) = NaN;
+%           metricYTickSpacing(indexMetric).custom(1,z+1) = NaN;
+%         end
+%         if(dL/ySpan < 0.05 && dR/ySpan > 0.05)
+%           metricYTickSpacing(indexMetric).custom(1,z-1) = NaN;
+%         end
+%         if(dL/ySpan > 0.05 && dR/ySpan < 0.05)
+%           metricYTickSpacing(indexMetric).custom(1,z+1) = NaN;
+%         end
+%          
+%       end      
+
+      isValueCloseToZero = 0;
+      for z=1:1:length(metricYTickSpacing(indexMetric).custom)
+        if( abs(metricYTickSpacing(indexMetric).custom(1,z)/ySpan) < 0.05)
+          %metricYTickSpacing(indexMetric).custom(1,z) = NaN;
+          isValueCloseToZero = 1;
+        end                  
+      end
+      if(isValueCloseToZero == 0)
+        metricYTickSpacing(indexMetric).custom = ...
+          sort([0,metricYTickSpacing(indexMetric).custom]);
+      end
+      
+      idx = find( isnan(metricYTickSpacing(indexMetric).custom) == 0) ;
+      metricYTickSpacing(indexMetric).custom = ...
+        metricYTickSpacing(indexMetric).custom(idx);
+
+      %metricYTickSpacing(indexMetric).custom;
+
+      
+      
+      for z=1:1:length(metricYTickSpacing(indexMetric).custom)
+        l0 = metricYTickSpacing(indexMetric).custom(1,z);
+        lineColor = [1,1,1].*0.85;
+        if(l0 >= y0 && l0 <= y1)
+          lineColor = [1,1,1].*0.75;
+        end
+        
+        lineWidth = 0.1;
+        lineStyle = '-';
+        if( abs(l0-medYE) < 1e-3)
+          lineWidth = 0.5;
+          lineStyle = '-';
+        end
+        
+        
+        plot([-0.5,xPlotLimGroup],[l0,l0],lineStyle,'Color',lineColor,...
+             'LineWidth',lineWidth);
+        hold on;
+      end
+
+      metricYTickSpacing(indexMetric).custom = ...
+        round(metricYTickSpacing(indexMetric).custom,2,'significant');      
+      yticks([metricYTickSpacing(indexMetric).custom]);
+      
     else
       x0 = -0.5;
       x1 = xPlotLim;
-      plot([x0;x1],[0;0],'Color',[1,1,1].*0.75,'LineWidth',0.5);
+      plot([x0;x1],[0;0],'Color',[1,1,1].*0.9,'LineWidth',0.5);
       hold on;
     end
     
@@ -576,6 +687,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
                   
       if(flag_plotSubjectData == 1)
         subjectsInGroup = groupData(indexGroup,indexTrial,indexPhase).subjectIndex;
+                
         for indexGroupMember=1:1:length(subjectsInGroup)
           indexSubject = subjectsInGroup(1,indexGroupMember);
 
@@ -593,7 +705,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
 
             fontColor = groups(indexGroup).color(1,:);
 
-            figH = plotMetricDistributionEventData2(figH, subPlotVec, indexSubject,...
+            [figH] = plotMetricDistributionEventData2(figH, subPlotVec, indexSubject,...
                   subjectData(indexSubject,indexTrial,indexPhase).(metricName),...
                   metricYAxisScale(1,indexMetric),...
                   subjectId, groups(indexGroup).color, axisLimits, ...
@@ -601,6 +713,8 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
                   flagPlotStart,flagPlotPhase,flagPlotEnd);
             hold on;
 
+            
+            
           end
         end
         
@@ -611,8 +725,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       
         groups(indexGroup).x = groupXPosition;
 
-        fontColor = groups(indexGroup).color(1,:);
-        
+        fontColor = groups(indexGroup).color(1,:);        
         
         figH = plotMetricDistributionEventData2(figH, subPlotVec, ...
                 groupXPosition,...
@@ -664,7 +777,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
         hold on;
 
         maxSubject = size(subjectData,1);
-        x0 = maxSubject+xDeltaSubjectGroup;
+        x0 = maxSubject+xDeltaSubjectGroup*2;
         y0 = axisLimitsScaled(1,3);
         y1 = axisLimitsScaled(1,4);
         dy =y1-y0;
@@ -673,6 +786,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
         hold on;
       end      
       
+
       set(gca,'TickLength',[0 0]);
       set(gca,'XTickLabel',[]); 
       box off;
