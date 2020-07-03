@@ -4,7 +4,7 @@ close all;
 clear all;
 
 
-flag_includeTrialsWithoutGrf = 1;
+flag_includeTrialsWithoutGrf = 0;
 
 flag_loadPrecomputedSubjectStatistics = 0;
 flag_loadPrecomputedGroupStatistics   = 0;
@@ -90,14 +90,14 @@ flag_printGroupSummaryStats = 1;
 subjectsToProcess =  ...
   {'configH01','configH02','configH03','configH04','configH05',...
    'configH06','configH07','configH08','configH09','configH10',...
-   'configE01','configE02','configE03','configE04','configE05',...
+   'configE01','configE02','configE03','configE05',...
    'configE06','configE07','configE08','configE09'};
  
 if(flag_excludeE06==1)
 subjectsToProcess =  ...
   {'configH01','configH02','configH03','configH04','configH05',...
    'configH06','configH07','configH08','configH09','configH10',...
-   'configE01','configE02','configE03','configE04','configE05',...
+   'configE01','configE02','configE03','configE05',...
    'configE07','configE08','configE09'};  
 end
  
@@ -115,9 +115,9 @@ groups(indexGroupYoung  ).index = [1,2,3,4,5,6,7,8,9,10];
 groups(indexGroupYoung  ).name = 'Y';
 groups(indexGroupYoung  ).label = 'Young (Y)';
 
-indexElderly = [11,12,13,14,15, 16,17,18,19];
+indexElderly = [11,12,13,14,15, 16,17,18];
 if(flag_excludeE06==1)
-  indexElderly = [11,12,13,14,15,16,17,18];
+  indexElderly = [11,12,13,14,15,16,17];
 end
 groups(indexGroupElderly).index = indexElderly;
 

@@ -4,11 +4,12 @@ clear all;
 
 %List of the subjects to process
 
-subjectsToProcess = ...
- {'configE01','configE02','configE03','configE04','configE05', ...
-  'configE06','configE07','configE08','configE09',...
-  'configH01','configH02','configH03','configH04','configH05',...
-  'configH06','configH07','configH08','configH09','configH10'}; 
+subjectsToProcess = {'configH05'};
+%subjectsToProcess = ...
+% {'configE01','configE02','configE03','configE04','configE05', ...
+%  'configE06','configE07','configE08','configE09',...
+%  'configH01','configH02','configH03','configH04','configH05',...
+%  'configH06','configH07','configH08','configH09','configH10'}; 
 
 pathToBTK='/home/mjhmilla/dev/BTKRoot/BTKCore-install/share/btk-0.3dev/Wrapping/Matlab/btk/';
 addpath(pathToBTK);
@@ -103,7 +104,7 @@ c3dPlanarProjection = struct('normal',[0,1,0]);
 
 
 %Preprocessing of C3D data
-flag_loadC3DMatFileData         = 1;
+flag_loadC3DMatFileData         = 0;
 flag_useMetersRadiansInC3DData  = 1;
 flag_writeC3DDataForMeshup      = 1;
 flag_verbose                    = 0;
@@ -112,16 +113,16 @@ flag_verbose                    = 0;
 flag_writeComDataForMeshup = 1;
 
 %FPE processing
-flag_loadFpeDataFromFile   = 1;
+flag_loadFpeDataFromFile   = 0;
 flag_writeFpeDataForMeshup = 1;
 
 %Capture point processing
-flag_loadCapDataFromFile   = 1;
+flag_loadCapDataFromFile   = 0;
 flag_writeCapDataForMeshup = 1;
 
 %Calc distance between key ground points and the convex hull of the feet.
 %Here the key ground points are: CoM ground projection, CoP, Fpe, Cap
-flag_loadKeyPointDistanceToFootConvexHull = 1;
+flag_loadKeyPointDistanceToFootConvexHull = 0;
 
 %Motion segmentation
 flag_loadSegmentedMotionDataFromFile = 0;

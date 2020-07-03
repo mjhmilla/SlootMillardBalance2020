@@ -40,7 +40,7 @@ phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
 flagPlotStart =1;
 flagPlotPhase =1;
 flagPlotEnd   =1;
-
+flag_useCustomYTicks = 0;
 
 indexPhase = indexPhaseSeatOff2Stand;
 
@@ -115,6 +115,12 @@ switch(flag_PaperPlots0Presentation1)
 end    
 
 
+metricYTick = [];
+metricOrder = [];
+
+metricUpperLeftNotes = {};
+metricLowerLeftNotes = {};
+
 switch flag_plotConfig
   case 0
     
@@ -122,13 +128,19 @@ switch flag_plotConfig
       panelHeight = panelHeight*0.5;
     end
         
+    metricOrder = [1,2,3,7, 8,4,5,6];
+    
     metricNameList = {'com2edge','com2cop','comvel',...
                       'fpe2edge','fpewidth','fpelen','angvel','angvelz'};
 
-    metricYLim = [-6,16; 0,17; 0,65;...
-                  -6,17; -5,6; -5,10.5; 0,120; -90, 60];
+    metricYLim = [-6,16; 0,15.1; 0,65;...
+                  -2.,15.5; -3.6,3.6; -4,11;...
+                  0,102; -35, 35];
 
-
+    metricYTick = [5;3;10; ...
+                   3;1;3;...
+                   20;10];
+                
     metricYAxisLabel = {'Displacement (cm)','Distance (cm)','Speed (cm/s)',...
                         'Displacement (cm)','Displacement (cm)','Displacement (cm)',...
                         'Angular Speed ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)'};
@@ -136,14 +148,16 @@ switch flag_plotConfig
     metricYAxisScale = [1,1,1,1,...
                          1,1,1,1];
 
+
+                       
     metricTitle = {'A. Displacement from nearest BOS edge to COM$_{\mathrm{GP}}$ (${_B}r{_C}$)',...
-                   'B. Distance from COM$_{\mathrm{GP}}$ to COP (${_C}r{_P}$)',...
+                   'B. Distance from COM$_{\mathrm{GP}}$ to COP ($|{_C}r{_P}|_2$)',...
                    'C. COM Speed ($|v{_C}|_2$)',...
-                   'A. Displacement from BOS edge to FPE (${_B}r{_F}$)',...
-                   'B. Displacement from COP to FPE in $\hat{t}$ (${_P}r{_F} \cdot \hat{t}$)',...
-                   'C. Displacement from COP to FPE in $\hat{s}$ (${_P}r{_F} \cdot \hat{s}$)',...
-                   'A. Angular speed ($|\omega|_2$)',...
-                   'B. Angular velocity about the vertical axis ($\omega_Z$)'};
+                   'B. Displacement from BOS edge to FPE (${_B}r{_F}$)',...
+                   'C. Displacement from COP to FPE in $\hat{t}$ (${_P}r{_F} \cdot \hat{t}$)',...
+                   'D. Displacement from COP to FPE in $\hat{s}$ (${_P}r{_F} \cdot \hat{s}$)',...
+                   'D. Angular speed ($|\omega|_2$)',...
+                   'A. Angular velocity about the vertical axis ($\omega_Z$)'};
 
     metricPlotHalfPlaneBox = [1,1,1,1,1,1,1,1];   
     
@@ -177,22 +191,30 @@ switch flag_plotConfig
                                -angZSpeedOneSided];
                             
                              
-                
+    metricUpperLeftNotes = {'(+) Inside BOS','','',...
+                            '(+) Inside BOS','(+) Left turn','(+) Accelerate Forwards',...
+                            '','(+) CCW'};
+    metricLowerLeftNotes = {'(-) Outside BOS','','',...
+                            '(-) Outside BOS','(-) Right turn','(-) Accelerate Backwards',...
+                            '','(-) CW'};
+
                             
     metricPlotHalfPlaneText = ...
-      {'${_C}r{_B} > 0\,\mathrm{cm}$',...
-       sprintf('${_C}r{_P} < %1.1f\\,\\mathrm{cm}$',...
-                 mean(quietStandingData.comCopDist(3,:))),...
-       sprintf('$|v{_C}|_2 < %1.1f\\,\\mathrm{cm}/\\mathrm{s}$',...
-                 mean(quietStandingData.comSpeed(3,:))),...
-       '${_F}r{_B} > 0$',...
-       sprintf('$|{_F}r{_C} \\cdot \\hat{t}| < %1.1f\\,\\mathrm{cm}$', fpeCopInTOneSided),...
-       sprintf('$|{_F}r{_C} \\cdot \\hat{s}| < %1.1f\\,\\mathrm{cm}$', fpeCopInSOneSided),...
-       sprintf('$|\\omega|_2 < %1.1f\\,^\\circ/s$',mean(quietStandingData.angSpeed(3,:))),...
-       sprintf('$|\\omega_Z| < %1.1f\\,^\\circ/s$',angZSpeedOneSided),...
+      {'Stat. Balanced:',...
+         '${_C}r{_B} > 0\,\mathrm{cm}$';...
+       'Quiet standing:', ...
+          sprintf('$|{_C}r{_P}|_2 < %1.1f\\,\\mathrm{cm}$',mean(quietStandingData.comCopDist(3,:)));...
+       'Quiet standing:', ...
+          sprintf('$|v{_C}|_2 < %1.1f\\,\\mathrm{cm}/\\mathrm{s}$',...
+                 mean(quietStandingData.comSpeed(3,:)));...
+       'Dyn. Balanced','${_F}r{_B} > 0$';...
+       'Quiet standing:',sprintf('$|{_F}r{_C} \\cdot \\hat{t}| < %1.1f\\,\\mathrm{cm}$', fpeCopInTOneSided);...
+       'Quiet standing:',sprintf('$|{_F}r{_C} \\cdot \\hat{s}| < %1.1f\\,\\mathrm{cm}$', fpeCopInSOneSided);...
+       'Quiet standing:',sprintf('$|\\omega|_2 < %1.1f\\,^\\circ/s$',mean(quietStandingData.angSpeed(3,:)));...
+       'Quiet standing:',sprintf('$|\\omega_Z| < %1.1f\\,^\\circ/s$',angZSpeedOneSided),...
       };
 
-    metricAnnotationLines = [1,0,0,1,0,1,0,0];
+    metricAnnotationLines = [0,0,0,0,0,0,0,0];
     
     plotConfigName = 'ComFpeBalanceMetrics';   
     
@@ -412,14 +434,19 @@ for z=1:1:size(metricYLim,1)
   deltaYCases = [1,5,10,20];
   deltaYErr = Inf;
   kBest=0;
-  for k=1:1:length(deltaYCases)
-    if(abs(deltaY-deltaYCases(1,k)) < deltaYErr)
-      deltaYErr = abs(deltaY-deltaYCases(1,k));
-      kBest=k;
+  deltaY = 0;
+  if(isempty(metricYTick)==1)
+    for k=1:1:length(deltaYCases)
+      if(abs(deltaY-deltaYCases(1,k)) < deltaYErr)
+        deltaYErr = abs(deltaY-deltaYCases(1,k));
+        kBest=k;
+      end
     end
+    deltaY = deltaYCases(1,kBest);
+  else
+    deltaY = metricYTick(z,1);
   end
-  deltaY = deltaYCases(1,kBest);
-
+ 
   tickYN = [0];
   if(metricYLim(z,1) < 0)
     tickYN = [-floor( -metricYLim(z,1)/deltaY)*deltaY: deltaY: 0];
@@ -471,7 +498,7 @@ groups(indexGroupElderly).color   = [colorA;...
 
 figPlotMatrix(length(trialsToProcess) )= struct('h',[]);
   
-xDeltaSubjectGroup = 0.25; 
+xDeltaSubjectGroup = 0.5; 
 marginWidthForSignificanceStats = 2;
 
 xPlotLim = 0;
@@ -520,10 +547,15 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
   figH = figPlotMatrix(indexTrialsToProcess).h;
   figure(figPlotMatrix(indexTrialsToProcess).h);  
   
-  for indexMetric =1:1:length(metricNameList)
+  for indexMetricCount =1:1:length(metricNameList)
+    indexMetric = indexMetricCount;
+    if(isempty(metricOrder)==0)
+      indexMetric = metricOrder(1,indexMetricCount);
+    end
+    
     metricName = metricNameList{indexMetric};
 
-    [row,col] = find(subPlotPanelIndex==indexMetric);          
+    [row,col] = find(subPlotPanelIndex==indexMetricCount);          
     subPlotVec = reshape(subPlotPanel(row,col,:),1,4);    
     
     figure(figH);
@@ -578,9 +610,22 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       %     'HorizontalAlignment','left',...
       %     'VerticalAlignment','bottom','FontSize',6); 
       %hold on;
-      text(xPlotLimGroup,y0,metricPlotHalfPlaneText{1,indexMetric},...
+      
+      ly1 = y0+dy;
+      ly0 = ly1;
+      
+      if( ly0 > metricPlotHalfPlaneYmax(1,indexMetric))
+        ly0 = metricPlotHalfPlaneYmax(1,indexMetric);
+      end
+      
+      plot([x1;(x1+0.25)],[ly0;ly1],'-','LineWidth',1.,'Color',[1,1,1].*0.9);
+      hold on;
+      text(xPlotLimGroup+0.25,y0,...
+            {metricPlotHalfPlaneText{indexMetric,1},...
+             metricPlotHalfPlaneText{indexMetric,2}},...
            'HorizontalAlignment','left',...
-           'VerticalAlignment','bottom','FontSize',6);
+           'VerticalAlignment','bottom','FontSize',6,...
+           'interpreter','latex');
       hold on;
       
       %Get the group summary statistics to generate the custom y ticks
@@ -644,30 +689,37 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       %metricYTickSpacing(indexMetric).custom;
 
       
-      
-      for z=1:1:length(metricYTickSpacing(indexMetric).custom)
-        l0 = metricYTickSpacing(indexMetric).custom(1,z);
-        lineColor = [1,1,1].*0.85;
-        if(l0 >= y0 && l0 <= y1)
-          lineColor = [1,1,1].*0.75;
-        end
-        
-        lineWidth = 0.1;
-        lineStyle = '-';
-        if( abs(l0-medYE) < 1e-3)
-          lineWidth = 0.5;
+      if(flag_useCustomYTicks == 1)
+        for z=1:1:length(metricYTickSpacing(indexMetric).custom)
+          l0 = metricYTickSpacing(indexMetric).custom(1,z);
+          lineColor = [1,1,1].*0.85;
+          if(l0 >= y0 && l0 <= y1)
+            lineColor = [1,1,1].*0.75;
+          end
+
+          lineWidth = 0.1;
           lineStyle = '-';
+          if( abs(l0-medYE) < 1e-3)
+            lineWidth = 0.5;
+            lineStyle = '-';
+          end
+
+
+          plot([-0.5,xPlotLimGroup],[l0,l0],lineStyle,'Color',lineColor,...
+               'LineWidth',lineWidth);
+          hold on;
         end
-        
-        
-        plot([-0.5,xPlotLimGroup],[l0,l0],lineStyle,'Color',lineColor,...
-             'LineWidth',lineWidth);
-        hold on;
       end
 
-      metricYTickSpacing(indexMetric).custom = ...
-        round(metricYTickSpacing(indexMetric).custom,2,'significant');      
-      yticks([metricYTickSpacing(indexMetric).custom]);
+      if(flag_useCustomYTicks == 1)
+        metricYTickSpacing(indexMetric).custom = ...
+          round(metricYTickSpacing(indexMetric).custom,2,'significant');      
+        yticks([metricYTickSpacing(indexMetric).custom]);
+      else
+        metricYTickSpacing(indexMetric).default = ...
+          round(metricYTickSpacing(indexMetric).default,2,'significant');      
+        yticks([metricYTickSpacing(indexMetric).default]);
+      end
       
     else
       x0 = -0.5;
@@ -705,12 +757,14 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
 
             fontColor = groups(indexGroup).color(1,:);
 
+            flagEnableMinMaxLabels=1;
             [figH] = plotMetricDistributionEventData2(figH, subPlotVec, indexSubject,...
                   subjectData(indexSubject,indexTrial,indexPhase).(metricName),...
                   metricYAxisScale(1,indexMetric),...
                   subjectId, groups(indexGroup).color, axisLimits, ...
                   boxWidth, lineWidth, plotFontName, fontColor,...
-                  flagPlotStart,flagPlotPhase,flagPlotEnd);
+                  flagPlotStart,flagPlotPhase,flagPlotEnd,...
+                  flagEnableMinMaxLabels);
             hold on;
 
             
@@ -718,7 +772,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
           end
         end
         
-        groupXPosition =   size(subjectData,1) + indexGroup+0.25;
+        groupXPosition =   size(subjectData,1) + indexGroup+xDeltaSubjectGroup;
       end      
              
       if(flag_plotGroupData == 1)
@@ -726,14 +780,14 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
         groups(indexGroup).x = groupXPosition;
 
         fontColor = groups(indexGroup).color(1,:);        
-        
+        flagEnableMinMaxLabels = 0;
         figH = plotMetricDistributionEventData2(figH, subPlotVec, ...
                 groupXPosition,...
                 groupData(indexGroup,indexTrial,indexPhase).(metricName),...
                 metricYAxisScale(1,indexMetric),...
                 groups(indexGroup).name, groups(indexGroup).color, ...
                 axisLimits,boxWidth,lineWidth,plotFontName,fontColor,...
-                flagPlotStart,flagPlotPhase*0,flagPlotEnd*0);
+                flagPlotStart,flagPlotPhase*0,flagPlotEnd*0,flagEnableMinMaxLabels);
           hold on;
 
         %Compute the Wilcoxin rank sum test  
@@ -744,6 +798,14 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
             groupData(indexGroupYoung,indexTrial,indexPhase).(metricName),...
             groupData(indexGroupElderly,indexTrial,indexPhase).(metricName));
 
+          %disp(metricName);
+          %disp(startResults);
+          %disp('Young');
+          %disp(groupData(indexGroupYoung,indexTrial,indexPhase).(metricName).start)
+          %disp('Elderly');          
+          %disp(groupData(indexGroupElderly,indexTrial,indexPhase).(metricName).start)
+          
+          
           fontColor = [0,0,0];
           figH = plotGroupComparisons(figH, subPlotVec,...
                    groups(1).x, groupData(1,indexTrial,indexPhase).(metricName),...
@@ -777,18 +839,47 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
         hold on;
 
         maxSubject = size(subjectData,1);
-        x0 = maxSubject+xDeltaSubjectGroup*2;
+        x0 = maxSubject+xDeltaSubjectGroup*1.5;
         y0 = axisLimitsScaled(1,3);
         y1 = axisLimitsScaled(1,4);
         dy =y1-y0;
-        plot([x0;x0],[(y0+0.05*dy);(y1-0.05*dy)],...
-             '-','Color',[1,1,1].*0.5,'LineWidth',0.5)
+        plot([x0;x0],[(y0-0.05*dy);(y1+0.05*dy)],...
+             '-','Color',[1,1,1],'LineWidth',2);
         hold on;
+        
+        plot([x0;x0],[(y0-0.05*dy);(y1+0.05*dy)],...
+             '-','Color',[1,1,1].*0.5,'LineWidth',0.5);
+        hold on;
+        
+        if(isempty(metricUpperLeftNotes)==0)
+          text(0.125, y1, metricUpperLeftNotes{1,indexMetric},...
+               'FontSize',6,...
+                'VerticalAlignment','top',...
+                'HorizontalAlignment','left',...
+                'interpreter','latex');        
+          hold on;
+        end
+        if(isempty(metricLowerLeftNotes)==0)        
+          text(0.125, y0, metricLowerLeftNotes{1,indexMetric},...
+                'FontSize',6,...
+                'VerticalAlignment','bottom',...
+                'HorizontalAlignment','left',...
+                'interpreter','latex');
+          hold on;
+        end
       end      
       
 
-      set(gca,'TickLength',[0 0]);
+      axisLimits = [0,xPlotLim, ...
+                    metricYLim(indexMetric,1),...
+                    metricYLim(indexMetric,2)]; 
+                  
+      axis(axisLimits);
+      
+      tickLength = get(gca,'TickLength');
+      set(gca,'TickLength',tickLength.*0.5);
       set(gca,'XTickLabel',[]); 
+      set(gca, 'XTick',[]);
       box off;
       
     end 

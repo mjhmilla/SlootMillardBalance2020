@@ -22,10 +22,10 @@ yMin = axisLim(1,3);
 yMax = axisLim(1,4);
 
 yDelta  = 0.05*(yMax-yMin);
-xDelta  = yDelta;
+
 
 yBottom = yMin + 0.05*(yMax-yMin);
-yTop    = yMax;% - 0.05*(yMax-yMin);
+yTop    = yMax - 0.05*(yMax-yMin);
 yMiddle = 0.5*(yTop+yBottom);
 
 startEndWidth = boxWidth;
@@ -43,17 +43,25 @@ if(isempty(statsABStart)==0)
 
         xA = xPositionGroupA - startEndWidth;
         xB = xPositionGroupB - startEndWidth;
-        yA = statsStructA.start.max + yDelta;
-        yB = statsStructB.start.max + yDelta;
+        yA = statsStructA.start.max;% + yDelta;
+        yB = statsStructB.start.max;% + yDelta;
 
         xLeft = min(xA,xB);
-
+        xRight = max(xA,xB);
+        
+        xDelta  = (xRight-xLeft)/10;
+        
         if(flag_drawAnnotationLines==1)
-          plot([xA;xA],[yTop;yA],'-','Color',[0,0,0],'LineWidth',0.5);
+          %plot([xA;xA],[yTop;yA],'-','Color',[0,0,0],'LineWidth',0.5);
+          %hold on;
+          %plot([xB;xB],[yTop;yB],'-','Color',[0,0,0],'LineWidth',0.5);
+          %hold on;
+          plot([xLeft+xDelta;xRight-xDelta],[max(yA,yB);max(yA,yB)],...
+                '-','Color',[0,0,0],'LineWidth',0.5);
           hold on;
-          plot([xB;xB],[yTop;yB],'-','Color',[0,0,0],'LineWidth',0.5);
-          hold on;
-          plot([xLeft;xP],[yTop;yTop],'-','Color',[0,0,0],'LineWidth',0.5);
+          plot([mean([xA,xB]),mean([xA,xB])],...
+               [max(yA,yB),max(yA,yB)+0.25*yDelta],...
+                '-','Color',[0,0,0],'LineWidth',0.5);
           hold on;
         end
 
@@ -70,9 +78,11 @@ if(isempty(statsABStart)==0)
           statsText = sprintf('%s:\n%sp = %1.2e',startLabel,starText,statsABStart.p);
         end
 
-        text( xP,yTop,statsText,...
+
+        
+        text( xA-boxWidth*0.5,yMax,statsText,...
             'FontSize',6,'HorizontalAlignment','left',...
-            'VerticalAlignment','cap',...
+            'VerticalAlignment','top',...
             'fontname',plotFontName);
           hold on;   
 
