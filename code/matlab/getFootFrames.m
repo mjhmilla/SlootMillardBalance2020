@@ -1,4 +1,4 @@
-function [frameLeft, frameRight]=getFootFrames(index, mkrPos, mkrNames,...
+function [frameLeft, frameRight]= getFootFrames(index, mkrPos, mkrNames,...
                                         frameLeftOffset, frameRightOffset)
 
 
@@ -23,17 +23,17 @@ ez = cross(ex,ey);
 assert(ex*ey' < 1e-6);
 assert(ex*ez' < 1e-6);
 
-
+%Offset
 frameRight.E = frameRightOffset.E*[ex', ey', ez'];
 
 frameRight.r = frameRight.r + frameRight.E*frameRightOffset.r;
 
 
+
 frameLeft.r = (1/2).*(...%mkrPos.('L_FCC')(index,:)'...
                      + mkrPos.('L_FAL')(index,:)'...
                      + mkrPos.('L_TAM')(index,:)');
-
-
+                   
 
 ey = 0.5.*(mkrPos.('L_FM1')(index,:)+mkrPos.('L_FM5')(index,:)) ...
         - mkrPos.('L_FCC')(index,:); 
@@ -49,7 +49,9 @@ assert(ex*ey' < 1e-6);
 assert(ex*ez' < 1e-6);
 
 frameLeft.E = frameLeftOffset.E*[ex', ey', ez'];
-
 frameLeft.r = frameLeft.r + frameLeft.E*frameLeftOffset.r;
+
+
+
 
 

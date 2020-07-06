@@ -6,7 +6,6 @@ clear all;
 
 flag_NoE06 = 0;
 
-
 subjectsToProcess = ...
  {'configE01','configE02','configE06','configE07','configE09',...
 'configH01','configH02','configH06'}; 

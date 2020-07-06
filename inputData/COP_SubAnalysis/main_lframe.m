@@ -2,11 +2,11 @@ clc;
 close all;
 clear all;
  
-filesToProcess = {'test_Lframe_0002'};
+filesToProcess = {'test_Lframe_20001'};
 
 flag_plotScene = 0;
 flag_printError = 0;
-
+flag_estimateErrorAtAvgBW = 0;
  
 data =load([filesToProcess{1},'.mat']);
 data =data.(filesToProcess{1});
@@ -282,7 +282,7 @@ for idxTime=1:dTime:size(data.Trajectories.Unidentified.Data,3)
       %end
 
       %Get the error
-      copErr = copOptical - data.Force(idxFP).COP(:,idxFpSample)';
+      copErr = data.Force(idxFP).COP(:,idxFpSample)' - copOptical ;
 
       %if(flag_printError==1)
       %  fprintf('\t%1.3f mm\tCop Error\n',norm(copErr));
@@ -326,13 +326,20 @@ for idxTime=1:dTime:size(data.Trajectories.Unidentified.Data,3)
 
 end
 
-%Get rid of small blocks
+%Get rid of small blocks, make note of the start and end of each block
+%index
 minBlockLength = 10;
+blocks(length(data.Force)) = struct('start',[],'end',[]);
 for idxFP = 1:1:length(data.Force)
   blockCount = 0;
+  blockStart = 0;
+  blockEnd = 0;
   for idxTime = 1:1:(length(copErrorRecord(idxFP).isValid))
     if( copErrorRecord(idxFP).isValid(idxTime,1)==1)
       blockCount = blockCount+1;
+      if(blockCount == 1)
+        blocks(idxFP).start = [blocks(idxFP).start(:);idxTime];
+      end
     else
       %We've gotten to the end of a block: zero it out if its less than
       %the min length
@@ -340,14 +347,67 @@ for idxFP = 1:1:length(data.Force)
         idxEnd = idxTime-1;
         idxStart= max([1,(idxTime-blockCount-1)]);
         copErrorRecord(idxFP).isValid([idxStart:1:idxEnd],1) = 0;
-      end
-      
+        blocks(idxFP).start = blocks(idxFP).start(1:1:(end-1),1);
+      elseif(blockCount >= minBlockLength && blockCount > 0)
+        blocks(idxFP).end = [blocks(idxFP).end;(idxTime-1)];
+      end      
       blockCount = 0;
     end
     
     
   end
 end
+
+%For each block evaluate how the cop error in the x and y directions
+%varies with force.
+
+%German average mass of an adult
+%https://en.wikipedia.org/wiki/Human_body_weight
+
+maleMass   = 82.4;
+femaleMass = 67.5;
+avgBW = -(maleMass+femaleMass)*0.5*9.81;
+
+errorXY = zeros(blockCount,2);
+errorXYatBW = zeros(blockCount,2);
+
+cumFz =[];
+cumErrX = [];
+cumErrY = [];
+
+for i=1:1:length(blocks(idxActiveForcePlate).start)
+  idx0 = blocks(idxActiveForcePlate).start(i,1);
+  idx1 = blocks(idxActiveForcePlate).end(i,1);
+  
+  fz   = copErrorRecord(idxActiveForcePlate).force(idx0:1:idx1,3);
+  errx = copErrorRecord(idxActiveForcePlate).errorCop(idx0:1:idx1,1);
+  erry = copErrorRecord(idxActiveForcePlate).errorCop(idx0:1:idx1,2);
+
+  cumFz = [cumFz;fz];
+  cumErrX = [cumErrX;errx];
+  cumErrY = [cumErrY;erry];
+  
+  %Error extrapolated to BW assuming it varies with Fz
+  [px,Sx,mux] = polyfit(fz,errx,1);
+  [py,Sy,muy] = polyfit(fz,erry,1);
+
+  argX = (avgBW-mux(1))/mux(2);  
+  errorXYatBW(i,1) = px(1)*argX +px(2);
+
+  argY = (avgBW-muy(1))/muy(2);  
+  errorXYatBW(i,2) = py(1)*argY +py(2);
+
+  %Simple average
+  errorXY(i,1) = mean(errx);
+  errorXY(i,2) = mean(erry);
+end
+
+
+
+%Error extrapolated to BW assuming it varies with Fz
+[px,Sx,mux] = polyfit(cumFz,cumErrX,1);
+[py,Sy,muy] = polyfit(cumFz,cumErrY,1);
+
 
 
 timeVec = [1:1:data.Frames];%.*(1./data.FrameRate);
@@ -478,6 +538,12 @@ subplot('Position',subPlotVec);
 
   flag_newValidData=1;
   newValidDataCount = 1;
+  
+  errorPlot = errorXY;
+  if(flag_estimateErrorAtAvgBW==1)
+    errorPlot = errorXYatBW;
+  end
+  
   for i=1:1:data.Frames
 
     if(copErrorRecord(idxActiveForcePlate).isValid(i) == 1)    
@@ -494,6 +560,14 @@ subplot('Position',subPlotVec);
 
       if(flag_newValidData==1)
         text(ptA(1,1)+10,ptA(1,2)+10,num2str(newValidDataCount));
+        hold on;
+        
+        text(ptA(1,1)+10,ptA(1,2)-10,...
+             sprintf('(%1.1f mm,\n %1.1f mm)',...
+                        errorPlot(newValidDataCount,1),...
+                        errorPlot(newValidDataCount,2)));
+        hold on;
+        
         newValidDataCount = newValidDataCount+1;
         flag_newValidData = 0;
       end
@@ -503,6 +577,22 @@ subplot('Position',subPlotVec);
 
   end
 
+  fpCenter = ...
+    [ mean( data.Force(idxActiveForcePlate).ForcePlateLocation(:,1)),...
+      mean( data.Force(idxActiveForcePlate).ForcePlateLocation(:,2)) ];
+
+  errorMethod = 'Avg';
+  if(flag_estimateErrorAtAvgBW==1)
+    errorMethod = sprintf('%1.1f N',avgBW);
+  end
+    
+  text(fpCenter(1,1),fpCenter(1,2)-10,...
+       sprintf('(%1.1f mm\n %1.1f mm) : %s',...
+                  mean(errorPlot(:,1)),...
+                  mean(errorPlot(:,2)),...
+                  errorMethod));
+  
+  
   %axis equal;
   grid on;
   box off;
@@ -511,10 +601,44 @@ subplot('Position',subPlotVec);
   ylabel('Y (mm)');
   title('Vector from optical (.) to force-plate COP (x10 mag)');
 
+  
+%%
+%Export the data
+%%
+errorStruct = struct('corners',zeros(4,3),'name','','error',[0,0], ...
+                     'errorBW',[0,0],...
+                     'px',[],'Sx',[],'mux',[],...
+                     'py',[],'Sy',[],'muy',[]);
+errorStruct.corners = data.Force(idxActiveForcePlate).ForcePlateLocation;
+errorStruct.name    = data.Force(idxActiveForcePlate).ForcePlateName;
+
+errorStruct.error   = [mean(errorXY(:,1)),mean(errorXY(:,2))];
+errorStruct.errorBW = [mean(errorXYatBW(:,1)),mean(errorXYatBW(:,2))];
+
+errorStruct.px = px;
+errorStruct.py = py;
+
+errorStruct.Sx = Sx;
+errorStruct.Sy = Sy;
+
+errorStruct.mux = mux;
+errorStruct.muy = muy;
+
+
+save( ['errorForcePlateAtIndex',num2str(idxActiveForcePlate),'.mat'],...
+      'errorStruct');
+
+%%
+%Export the plot
+%%
+
 figure(figCopError);  
 configPlotExporter;
 
+errorTag = '_AvgError';
+if(flag_estimateErrorAtAvgBW==1)
+  errorTag = '_BWError';
+end
 
-
-print('-dpdf',[filesToProcess{1},'.pdf']);  
+print('-dpdf',[filesToProcess{1},errorTag,'.pdf']);  
 
