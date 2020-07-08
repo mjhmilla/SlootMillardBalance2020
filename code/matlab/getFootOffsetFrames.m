@@ -24,17 +24,30 @@ ez = cross(ex,ey);
 assert(ex*ey' < 1e-6);
 assert(ex*ez' < 1e-6);
 
+assert( abs(ex*ex'-1) < 1e-6);
+assert( abs(ey*ey'-1) < 1e-6);
+assert( abs(ez*ez'-1) < 1e-6);
 
 %Right frame desired orientation
-exD = ex;
-exD(1,3) = 0;
-exD = exD./norm(exD);
 
 eyD = ey;
 eyD(1,3) = 0;
 eyD = eyD./norm(eyD);
 
+exD = ex;
+exD(1,3) = 0;
+exD = exD - (exD*eyD')*eyD;
+exD = exD./norm(exD);
+
+
 ezD = cross(exD,eyD);
+
+assert(exD*eyD' < 1e-6);
+assert(exD*ezD' < 1e-6);
+
+assert( abs(exD*exD'-1) < 1e-6);
+assert( abs(eyD*eyD'-1) < 1e-6);
+assert( abs(ezD*ezD'-1) < 1e-6);
 
 %Offset
 frameRightOffset.E = [exD',eyD',ezD']*([ex',ey',ez']');
@@ -59,17 +72,31 @@ ez = cross(ex,ey);
 assert(ex*ey' < 1e-6);
 assert(ex*ez' < 1e-6);
 
+assert( abs(ex*ex'-1) < 1e-6);
+assert( abs(ey*ey'-1) < 1e-6);
+assert( abs(ez*ez'-1) < 1e-6);
 
 %Left frame desired orientation
-exD = ex;
-exD(1,3) = 0;
-exD = exD./norm(exD);
-
 eyD = ey;
 eyD(1,3) = 0;
 eyD = eyD./norm(eyD);
 
+exD = ex;
+exD(1,3) = 0;
+exD = exD - (exD*eyD')*eyD;
+exD = exD./norm(exD);
+
+
 ezD = cross(exD,eyD);
+
+assert(exD*eyD' < 1e-6);
+assert(exD*ezD' < 1e-6);
+
+assert( abs(exD*exD'-1) < 1e-6);
+assert( abs(eyD*eyD'-1) < 1e-6);
+assert( abs(ezD*ezD'-1) < 1e-6);
+
+
 frameLeftOffset.E = [exD',eyD',ezD']*([ex',ey',ez']');
 frameLeftOffset.r = [0;0;-r(3,1)];
 

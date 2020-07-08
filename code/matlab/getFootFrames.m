@@ -18,10 +18,15 @@ ex = mkrPos.('R_FAL')(index,:) - mkrPos.('R_TAM')(index,:);
 ex = ex - sum(ey.*ex).*ey;
 ex = ex./norm(ex);
 
+
 ez = cross(ex,ey);
 
 assert(ex*ey' < 1e-6);
 assert(ex*ez' < 1e-6);
+
+assert( abs(ex*ex'-1) < 1e-6);
+assert( abs(ey*ey'-1) < 1e-6);
+assert( abs(ez*ez'-1) < 1e-6);
 
 %Offset
 frameRight.E = frameRightOffset.E*[ex', ey', ez'];
@@ -47,6 +52,10 @@ ez = cross(ex,ey);
 
 assert(ex*ey' < 1e-6);
 assert(ex*ez' < 1e-6);
+
+assert( abs(ex*ex'-1) < 1e-6);
+assert( abs(ey*ey'-1) < 1e-6);
+assert( abs(ez*ez'-1) < 1e-6);
 
 frameLeft.E = frameLeftOffset.E*[ex', ey', ez'];
 frameLeft.r = frameLeft.r + frameLeft.E*frameLeftOffset.r;

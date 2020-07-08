@@ -48,6 +48,8 @@ oTmRef =      4.548369119558601e-03;
 delta = 0.005;
 
 %Reference Cop Movement
+flag_bareFoot = 0;
+
 lHCopRef = 0.03136+2*delta;
 wHaCopRef = 0.004+delta;
 wHbCopRef = 0.008;
@@ -62,16 +64,15 @@ w2aCopRef = 0.02705+delta*3;
 l2aCopRef = 0.1492 +delta*5;
 
 w2bCopRef = 0.01806 - 2*delta;
-l2bCopRef = 0.1492  + 2*delta ;
+l2bCopRef = 0.1492  + 4*delta ;
 
 w5aCopRef =  0.02052;
-l5aCopRef =  0.111;
+l5aCopRef =  0.111 + 2*delta;
 
 w5bCopRef =  0.02816+delta;
 l5bCopRef =  0.09321-delta;
 
 falCopRef = 0.01603+delta*2;
-
 
 
 fcca= [ (wHaCopRef/wARef)*wA, -(lHCopRef/lHRef)*lH,0];
