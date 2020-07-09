@@ -35,10 +35,10 @@ fpAtIndex2ErrorStruct = tmp.errorStruct;
 %%
 %Plot settings
 %%
-lineWidth  = 0.75;
-boxWidth   = 0.33;
-panelHeight = 20;
+lineWidth   = 0.75;
+boxWidth    = 0.33;
 panelWidth  = 10;
+panelHeight = 20;
 
 numberOfFiguresPerPage        = 2;
 numberOfVerticalPlotRows      = 1;
@@ -72,7 +72,11 @@ cd(codeDir);
 
 figureBare = figure;
 figureShod = figure;
-normFootAxis = [-0.8,0.8,-0.4,0.9];
+figFootware = figure;
+
+normFootAxis = [-0.7,0.7,-0.4,0.9];
+normXTicks = [ normFootAxis(1,1):0.1:normFootAxis(1,2)];
+normYTicks = [ normFootAxis(1,3):0.1:normFootAxis(1,4)];
 
 indexRightFoot = 2;
 footType = {'leftFoot','rightFoot'};
@@ -81,6 +85,7 @@ footwareType = {'shod','bare'};
 indexBare = 2;
 
 dataStruct = struct('convhull',[],'convhullNorm',[],'markers',[],'markersNorm',[],'x0',[],'y0',[]);
+dataStructNorm=struct('convhullNorm',[],'markersNorm',[]);
 
 footStruct = struct('leftFoot',dataStruct,'rightFoot',dataStruct);
 
@@ -95,8 +100,8 @@ subjectData(length(subjectsToProcess)) = struct('shod',footStruct, ...
 groupData = struct('shod',footStruct,...
                    'bare',footStruct);
 
-footData = struct('shod',dataStruct,...
-                  'bare',dataStruct);
+footData = struct('shod',dataStructNorm,...
+                  'bare',dataStructNorm);
                  
                                               
 for indexSubject=1:1:length(subjectsToProcess)
@@ -106,8 +111,8 @@ end
            
 groupData.shod = footStruct;
 groupData.bare = footStruct;
-footData.shod = dataStruct;
-footData.bare = dataStruct;
+footData.shod = dataStructNorm;
+footData.bare = dataStructNorm;
 
 gorgeousGreen       = [102 204 0]./255; 
 bellaBlue           = [51 153 255]./255; 
@@ -134,7 +139,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
   
   for indexTrial = 1:1:length(trialData)
     if(trialData(indexTrial).isValid==1)
-      
+      footware = '';
       for indexFoot = 1:1:length(footType)
         footware = 'bare';
         if(withShoes(indexTrial,1)==1)
@@ -328,6 +333,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
 
  %Update the figure
+ footware = '';
  for indexFoot = 1:1:length(footType)    
     for indexFootware = 1:1:length(footwareType)  
       if(indexFootware==1)        
@@ -362,59 +368,6 @@ for indexSubject = 1:1:length(subjectsToProcess)
     end    
  end
 
-%Get the average convex hull across all subjects
-%  Do this by interpolating using polar coordinates and averaging
-%  across the r's
-
-
-
-     
-
-%  for indexFoot = 1:1:length(footType)
-
-%     
-%     for indexFootware = 1:1:length(footwareType)
-%       
-%       xSign=1;
-%       if(indexRightFoot==indexFoot)
-%         xSign=-1;
-%       end
-%       
-%       [row,col] = find(subPlotPanelIndex==indexFootware);          
-%           subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
-%           subplot('Position',subPlotVec);      
-%           
-%       lineColor = subjectColor(indexSubject,:);
-%       lineType  = footTypeLineType{1,indexFoot};
-%       lineWidth = footwareLineWidth(1,indexFootware);
-%       
-%       plot( xSign.*subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,1),...
-%             subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,2),...
-%             lineType,'Color',lineColor,'LineWidth',lineWidth);
-%       hold on;
-%       
-%       markerColor = lineColor;
-%       if(indexRightFoot==indexFoot)
-%         markerColor = markerColor.*0.5 + [1,1,1].*0.5;
-%       end
-%       
-%       markerNames = fields(subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm);
-% 
-% %       for indexMarker=1:1:length(markerNames)
-% %         plot( subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm.(markerNames{indexMarker})(:,1),...
-% %                 subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm.(markerNames{indexMarker})(:,2),...
-% %                 lineType,'Color',markerColor','LineWidth',lineWidth);
-% %         hold on;
-% %         if(flag_markersLabelled(1,indexFootware) == 0)
-% %           xloc = mean(subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm.(markerNames{indexMarker})(:,1));
-% %           yloc = mean(subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm.(markerNames{indexMarker})(:,2));
-% %           text(xloc,yloc,markerNames{indexMarker});
-% %         end
-% %       end
-%       flag_markersLabelled(1,indexFootware)=1;
-%                  
-%     end
-%   end
   
 end
 
@@ -425,7 +378,7 @@ if(flag_debugGroup==1)
   figDebugGroup = figure;
 end
 
-
+footware = '';
 for indexFoot = 1:1:length(footType)    
   for indexFootware = 1:1:length(footwareType) 
     angles = [-0.5:0.01:0.5]'.*(2*pi);
@@ -437,7 +390,7 @@ for indexFoot = 1:1:length(footType)
     bosCenterX = zeros(1,length(subjectsToProcess));
     bosCenterY = zeros(1,length(subjectsToProcess));
 
-    markersNorm = subjectData(1).(footware).(footType{indexFoot}).markersNorm;
+    markersNorm = subjectData(1).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm;
     markerFields = fields(markersNorm);
     for z=1:1:length(markerFields)
       markersNorm.(markerFields{z}) = zeros(length(subjectsToProcess),4);
@@ -446,10 +399,10 @@ for indexFoot = 1:1:length(footType)
     for indexSubject = 1:1:length(subjectsToProcess)
       
       for z=1:1:length(markerFields)
-        x    = mean(subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));
-        xStd = std(subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));        
-        y    = mean(subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
-        yStd = std(subjectData(indexSubject).(footware).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
+        x    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));
+        xStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));        
+        y    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
+        yStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
         
         markersNorm.(markerFields{z})(indexSubject,:) = [x,y,xStd,yStd];
       end
@@ -522,13 +475,12 @@ for indexFoot = 1:1:length(footType)
         mean(markersNorm.(markerFields{z}),1) ;
     end    
     
-    markersNorm.(markerFields{z})(indexSubject,:)
+
     here=1;
   end
 end
    
-figFootware = figure;
-   
+figure(figFootware);   
 for indexFootware = 1:1:length(footwareType)
   
   angles = [-0.5:0.01:0.5]'.*(2*pi);
@@ -543,7 +495,7 @@ for indexFootware = 1:1:length(footwareType)
   xSign(1,indexRightFoot)=-1;
   
   markerSummary = struct('FAL',[],'TAM',[],'FCC',[],'FM1',[],'FM2',[],'FM5',[]);
-  
+  markerSummaryFields = fields(markerSummary);
   
   for indexFoot = 1:1:length(footType)    
        
@@ -573,23 +525,36 @@ for indexFootware = 1:1:length(footwareType)
     hold on;    
     
     markerFields = fields(groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm);
-    
-    for z=1:1:length(markerFields)
+       
+    for idxMarker=1:1:length(markerFields)           
       
-      
-      
-      markerInfo = groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z});
+      markerInfo = groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{idxMarker});
       x0 = markerInfo(1,1).*xSign(1,indexFoot);
       y0 = markerInfo(1,2);
       xStd = markerInfo(1,3);
       yStd = markerInfo(1,4);
       
-      mkrEllipse = getEllipse([x0,y0],[xStd,yStd],20);
+      %mkrEllipse = getEllipse([x0,y0],[xStd,yStd],20);
                 
-      fill( mkrEllipse(:,1),...
-            mkrEllipse(:,2),...
-            [1,1,1].*0.75,'EdgeColor',[1,1,1].*0.5);
-      hold on;
+      %fill( mkrEllipse(:,1),...
+      %      mkrEllipse(:,2),...
+      %      [1,1,1].*0.75,'EdgeColor',[1,1,1].*0.5);
+      %hold on;
+            
+      found = 0;
+      for z=1:1:length(markerSummaryFields)
+        if(contains(markerFields{idxMarker},markerSummaryFields{z}))
+          assert(found==0);
+          found = 1;
+          if(isempty(markerSummary.(markerSummaryFields{z}))==1)
+            markerSummary.(markerSummaryFields{z}) = [x0,y0,xStd,yStd];
+          else
+            markerSummary.(markerSummaryFields{z}) = ...
+              [markerSummary.(markerSummaryFields{z})(:,:);...
+                x0,y0,xStd,yStd];            
+          end
+        end
+      end
       
     end  
   end
@@ -606,6 +571,37 @@ for indexFootware = 1:1:length(footwareType)
     subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
     subplot('Position',subPlotVec);
 
+    footData.(footwareType{indexFootware}).markersNorm=markerSummary;
+    
+  for z=1:1:length(markerSummaryFields)
+    x0    = mean(markerSummary.(markerSummaryFields{z})(:,1));
+    y0    = mean(markerSummary.(markerSummaryFields{z})(:,2));    
+    xStd  = mean(markerSummary.(markerSummaryFields{z})(:,3));
+    yStd  = mean(markerSummary.(markerSummaryFields{z})(:,4));    
+    
+    footData.(footwareType{indexFootware}).markersNorm.(markerSummaryFields{z}) = [x0,y0,xStd,yStd];
+    
+    mkrEllipse = getEllipse([x0,y0],[xStd,yStd],20);
+                
+    fill( mkrEllipse(:,1),...
+          mkrEllipse(:,2),...
+          [1,1,1].*0.75,'EdgeColor',[1,1,1].*0.5);
+    hold on;
+    
+    vAlign = 'bottom';
+    hAlign = 'center';
+    dy = 0.05;   
+    if(y0<0)
+      dy = dy*-1.;
+      vAlign = 'top';
+    end
+    
+    text(x0,y0+dy,markerSummaryFields{z},...
+          'VerticalAlignment',vAlign,...
+          'HorizontalAlignment',hAlign);
+    hold on;
+    
+  end
     
     
   plot(footData.(footwareType{indexFootware}).convhullNorm(:,1),...
@@ -613,14 +609,21 @@ for indexFootware = 1:1:length(footwareType)
        '-','Color',[0,0,0],'LineWidth',2);
   hold on;
   
+  
+  
+  
   xlabel('Norm. Width');
   ylabel('Norm. Length');
   title(['Norm Bos Template: ',footwareType{indexFootware}]);
     
   box off;
   axis(normFootAxis);
+  xticks(normXTicks);
+  yticks(normYTicks);
+  grid on;
 end
 
+save([outputPath,'/normBosModel.mat'],'footData');
     
 
 for indexFoot = 1:1:length(footType)    
@@ -644,6 +647,9 @@ for indexFoot = 1:1:length(footType)
          '-','Color',[1,1,1].*0,'LineWidth',2);
     hold on;
     axis(normFootAxis);
+    xticks(normXTicks);
+    yticks(normYTicks);
+    grid on;    
   end  
 end
 

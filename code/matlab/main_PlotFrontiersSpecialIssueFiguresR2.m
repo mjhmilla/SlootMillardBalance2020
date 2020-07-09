@@ -11,7 +11,7 @@ clear all;
 
 flag_PaperPlots0Presentation1 = 0;
 
-flag_ConvexHullWithToes0Without1  = 1;
+flag_ConvexHullWithToes0Without1  = 0;
 nameToeTag = '';
 if(flag_ConvexHullWithToes0Without1 == 1)
   nameToeTag = '_NoToes';
