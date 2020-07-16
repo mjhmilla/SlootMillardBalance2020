@@ -4,6 +4,7 @@ close all;
 clear all;
 
 
+
 flag_includeTrialsWithoutGrf = 0;
 
 flag_loadPrecomputedSubjectStatistics = 0;
@@ -14,6 +15,12 @@ flag_writeCSVGroupTables              = 1;
 % Constants
 %
 %%
+flag_useBasicBosModel = 0;
+bosModelTag = '';
+if(flag_useBasicBosModel == 1)
+  bosModelTag = '_SimpleBos';  
+end
+
 flag_ConvexHullWithToes0Without1  = 0;
 nameToeTag = '';
 if(flag_ConvexHullWithToes0Without1 == 1)
@@ -32,7 +39,8 @@ metricNameList = {'duration',...
                   'comvelx','comvely','comvelz',...
                   'angvel','angvelx','angvely','angvelz','angveln',...
                   'fpe2edge','fpewidth','fpelen','fpeasmhkz','timemaxfpe',...
-                  'fzerrseatoff'};
+                  'fzerrseatoff','comHeight'};
+metricNameEntireMotionList = {'duration'};                
                 
 % duration: the time taken to complete the phase
 %
@@ -166,7 +174,8 @@ subjectData(length(subjectsToProcess),length(trialsToProcess),numberOfPhases) =.
                    'fpewidth'      ,phaseStatsStruct,...
                    'fpeasmhkz'     ,phaseStatsStruct,...
                    'timemaxfpe'    ,phaseStatsStruct,...
-                   'fzerrseatoff'  ,phaseStatsStruct); 
+                   'fzerrseatoff'  ,phaseStatsStruct,...
+                   'comHeight'     ,phaseStatsStruct); 
               
 groupData(length(groups),length(trialsToProcess),numberOfPhases) = ...
       struct(  'name','',...
@@ -192,8 +201,19 @@ groupData(length(groups),length(trialsToProcess),numberOfPhases) = ...
                'fpewidth'      ,phaseStatsStruct,...
                'fpeasmhkz'     ,phaseStatsStruct,...
                'timemaxfpe'    ,phaseStatsStruct,...
-               'fzerrseatoff'  ,phaseStatsStruct);
+               'fzerrseatoff'  ,phaseStatsStruct,...
+               'comHeight'     ,phaseStatsStruct);
 
+groupDataEntireMotion(length(groups),length(trialsToProcess)) = ...
+      struct(  'name','',...
+               'label','',...
+               'subjectId',{''},...
+               'subjectIndex',[0],...
+               'trialId','',...
+               'trialTypeIndex',0,...
+               'duration'      ,phaseStatsStruct);
+
+             
 %%
 %
 % Setup the input/output directory structure
@@ -312,35 +332,57 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
           capFileName       = outputCapFileNames{indexTrial};  
           load([trialFolder,capFileName]);
 
-          outputFpeToFootHullDistanceFileName ...
-            = outputFpeToFootHullDistanceFileNames{indexTrial}   ;
-          outputCapToFootHullDistanceFileName ...
-            = outputCapToFootHullDistanceFileNames{indexTrial}   ;
-          outputComGPToFootHullDistanceFileName ...
-            = outputComGPToFootHullDistanceFileNames{indexTrial} ;
-          outputCopToFootHullDistanceFileName ...
-            = outputCopToFootHullDistanceFileNames{indexTrial}   ;    
+  
+          fpeBosFileName = '';
+          capBosFileName = '';
+          comBosFileName = '';            
+          copBosFileName = '';   
 
+          outputFpeToFootHullDistanceFileName = ...
+            outputFpeToFootHullDistanceFileNames{indexTrial};
+          outputCapToFootHullDistanceFileName = ...
+            outputCapToFootHullDistanceFileNames{indexTrial};
+          outputComGPToFootHullDistanceFileName = ...
+            outputComGPToFootHullDistanceFileNames{indexTrial};            
+          outputCopToFootHullDistanceFileName = ...
+            outputCopToFootHullDistanceFileNames{indexTrial};           
+          
 
-          if( flag_ConvexHullWithToes0Without1==0)
-            load([trialFolder, outputFpeToFootHullDistanceFileName ]);
-            %fpe2FootConvexHullDist
-            load([trialFolder, outputCapToFootHullDistanceFileName]);
-            %cap2FootConvexHullDist
-            load([trialFolder, outputComGPToFootHullDistanceFileName]);
-            %comgp2FootConvexHullDist
-            load([trialFolder, outputCopToFootHullDistanceFileName]);       
-            %cop2FootConvexHullDist
+          if(flag_useBasicBosModel==1 && flag_ConvexHullWithToes0Without1==0)
+            fpeBosFileName = ...
+              [outputFpeToFootHullDistanceFileName(1:1:(end-4)),'_SimpleBos.mat'];
+            capBosFileName = ...
+              [outputCapToFootHullDistanceFileName(1:1:(end-4)),'_SimpleBos.mat'];
+            comBosFileName = ...
+              [outputComGPToFootHullDistanceFileName(1:1:(end-4)),'_SimpleBos.mat'];            
+            copBosFileName = ...
+              [outputCopToFootHullDistanceFileName(1:1:(end-4)),'_SimpleBos.mat'];
+          elseif(flag_useBasicBosModel==1 && flag_ConvexHullWithToes0Without1==1)
+            fpeBosFileName = ...
+              [outputFpeToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat'];
+            capBosFileName = ...
+              [outputCapToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat'];
+            comBosFileName = ...
+              [outputComGPToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat'];            
+            copBosFileName = ...
+              [outputCopToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat'];
+          elseif(flag_useBasicBosModel == 0 && flag_ConvexHullWithToes0Without1==0)
+            fpeBosFileName = outputFpeToFootHullDistanceFileNames{indexTrial};
+            capBosFileName = outputCapToFootHullDistanceFileNames{indexTrial};
+            comBosFileName = outputComGPToFootHullDistanceFileNames{indexTrial};            
+            copBosFileName = outputCopToFootHullDistanceFileNames{indexTrial};            
           else
-            load([trialFolder, outputFpeToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat' ]);
-            %fpe2FootConvexHullDist
-            load([trialFolder, outputCapToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat' ]);
-            %cap2FootConvexHullDist
-            load([trialFolder, outputComGPToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat' ]);
-            %comgp2FootConvexHullDist
-            load([trialFolder, outputCopToFootHullDistanceFileName(1:1:(end-4)),'_NoToes.mat' ]);       
-            %cop2FootConvexHullDist        
+            assert(0,'The scalable BOS model cannot be used without toes');
           end
+          
+          load([trialFolder, fpeBosFileName ]);
+          %fpe2FootConvexHullDist
+          load([trialFolder, capBosFileName]);
+          %cap2FootConvexHullDist
+          load([trialFolder, comBosFileName]);
+          %comgp2FootConvexHullDist
+          load([trialFolder, copBosFileName]);       
+          %cop2FootConvexHullDist
 
           segmentFileName    = outputSegmentationFileNames{indexTrial};
           load([trialFolder,segmentFileName]);
@@ -730,6 +772,21 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
               end
             end
             
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            % COM Height
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            data        = wholeBodyData(:,colComPos(1,3));
+            scaleData   = scaleDistance;
+            [phaseStats, timingStats] = ...
+              calcMovementSequenceDataSummary(movementSequence, ...
+                  c3dTime, data, scaleData,numberOfPhases,...
+                  numberOfInterpolationPoints); 
+
+            for p=1:1:numberOfPhases
+              subjectData(indexSubject,indexTrialsToProcess,p).comHeight = phaseStats(p);    
+            end
+            
+            
           end
   
         end
@@ -742,11 +799,11 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
   end
   
 
-  save([frontiersDataDir,'subjectTrialPhaseMetricData',nameToeTag,...
+  save([frontiersDataDir,'subjectTrialPhaseMetricData',bosModelTag,nameToeTag,...
         nameExcludeE06Tag,'.mat'],'subjectData');
 else
   load([frontiersDataDir,'subjectTrialPhaseMetricData',...
-        nameToeTag,nameExcludeE06Tag,'.mat']);
+        bosModelTag,nameToeTag,nameExcludeE06Tag,'.mat']);
 end
 
 if(flag_loadPrecomputedGroupStatistics == 0)
@@ -781,6 +838,19 @@ if(flag_loadPrecomputedGroupStatistics == 0)
           groupData(indexGroup,indexTrialsToProcess,indexPhase).trialTypeIndex ...
            = indexTrial;
 
+
+          groupDataEntireMotion(indexGroup,indexTrialsToProcess).name ...
+            = groups(indexGroup).name;
+          groupDataEntireMotion(indexGroup,indexTrialsToProcess).label ...
+            = groups(indexGroup).label;
+          groupDataEntireMotion(indexGroup,indexTrialsToProcess).subjectIndex ...
+            = groups(indexGroup).index;
+          groupDataEntireMotion(indexGroup,indexTrialsToProcess).trialId ...
+           = trialTypeNames{indexTrial};
+          groupDataEntireMotion(indexGroup,indexTrialsToProcess).trialTypeIndex ...
+           = indexTrial;
+         
+         
           for indexMetric = 1:1:length(metricNameList)
 
             
@@ -799,19 +869,160 @@ if(flag_loadPrecomputedGroupStatistics == 0)
                   groupData(indexGroup,indexTrialsToProcess,indexPhase),...
                   flag_verbose);       
             here=1;
+            
+            if(contains(metricNameList{indexMetric},'duration') )
+              if(isempty( groupDataEntireMotion(indexGroup,indexTrialsToProcess).duration))
+                groupDataEntireMotion(indexGroup,indexTrialsToProcess).duration = phaseStatsStruct;
+                groupDataEntireMotion(indexGroup,indexTrialsToProcess).duration.phase.data = ...
+                groupData(indexGroup,indexTrialsToProcess,indexPhase).duration.phase.data;
+              else
+                for z=1:1:length(groupDataEntireMotion(indexGroup,indexTrialsToProcess).duration.phase.data)
+                  groupDataEntireMotion(indexGroup,indexTrialsToProcess).duration.phase.data(z).y = ...
+                    groupDataEntireMotion(indexGroup,indexTrialsToProcess).duration.phase.data(z).y ...
+                    + groupData(indexGroup,indexTrialsToProcess,indexPhase).duration.phase.data(z).y;
+                end
+                assert(numberOfPhases==2);              
+              end
+            end
+            
+            
           end
         end
 
       end
 
+      %%
+      %Duration analysis: separate phases
+      %%
+      for indexPhase = 1:1:numberOfPhases        
+        dataY1 = zeros(length(groupData(1,indexTrialsToProcess,indexPhase).('duration').phase.data),1);      
+        dataY2 = zeros(length(groupData(2,indexTrialsToProcess,indexPhase).('duration').phase.data),1);      
+        
+        fprintf('  Phase %i rank-sum-test: %s\n',indexPhase,'duration');        
+        
+        for z=1:1:size(dataY1,1)
+          dataY1(z,1) = groupData(1,indexTrialsToProcess,indexPhase).('duration').phase.data(z).y;
+        end
+
+        if(sum(sum(isnan(dataY1)))==0 && size(dataY1,1) > 0)
+          dataYSorted = sort(dataY1);
+          idx25 = max([1,round(0.25*size(dataY1,1))]);
+          idx75 = round(0.75*size(dataY1,1));
+
+          fprintf('\n  %s\n',groups(1).label);          
+          fprintf('    %1.3f\t median\n',median(dataY1(:,1)));
+          fprintf('    %1.3f\t 25p-75p\n',dataYSorted(idx75,1)-dataYSorted(idx25,1));
+          fprintf('    %1.3f\t 25p\n',dataYSorted(idx25,1));
+          fprintf('    %1.3f\t 75p\n',dataYSorted(idx75,1));
+
+          fprintf('    %1.3f\t min\n',min(dataY1(:,1)));
+          fprintf('    %1.3f\t max\n',max(dataY1(:,1)));
+        end
+
+        for z=1:1:size(dataY2,1)
+          dataY2(z,1) = groupData(2,indexTrialsToProcess,indexPhase).('duration').phase.data(z).y;
+        end
+
+        if(sum(sum(isnan(dataY2)))==0 && size(dataY2,1) > 0)
+          dataYSorted = sort(dataY2);
+          idx25 = max([1,round(0.25*size(dataY2,1))]);
+          idx75 = round(0.75*size(dataY2,1));
+
+          fprintf('\n  %s\n',groups(2).label);
+          fprintf('    %1.3f\t median\n',median(dataY2(:,1)));
+          fprintf('    %1.3f\t 25p-75p\n',dataYSorted(idx75,1)-dataYSorted(idx25,1));
+          fprintf('    %1.3f\t 25p\n',dataYSorted(idx25,1));
+          fprintf('    %1.3f\t 75p\n',dataYSorted(idx75,1));
+
+          fprintf('    %1.3f\t min\n',min(dataY2(:,1)));
+          fprintf('    %1.3f\t max\n',max(dataY2(:,1)));
+        end
+        
+        assert(length(groups)==2);
+
+        if(  sum(sum(isnan(dataY1)))==0 && size(dataY1,1) > 0 ...
+          && sum(sum(isnan(dataY2)))==0 && size(dataY2,1) > 0)
+          [p,h] = ranksum(dataY1(:,1),dataY2(:,1));
+          disp('  Difference across groups?');
+          fprintf('    %1.3f : p \n',p);
+          fprintf('    %1.3f : h \n',h);        
+        end        
+        
+      end
+      
+      
+      %%
+      %Duration analysis: entire motion
+      %%
+      dataY1 = [];      
+      dataY2 = [];      
+
+      fprintf('  Entire motion rank-sum-test: %s\n',...
+                'duration');
+
+      fprintf('  %i : group\n',indexGroup);
+      dataY1 = zeros(length(groupDataEntireMotion(1,indexTrialsToProcess).('duration').phase.data),1);
+      dataY2 = zeros(length(groupDataEntireMotion(2,indexTrialsToProcess).('duration').phase.data),1);
+
+      for z=1:1:size(dataY1,1)
+        dataY1(z,1) = groupDataEntireMotion(1,indexTrialsToProcess).('duration').phase.data(z).y;
+      end
+      
+      if(sum(sum(isnan(dataY1)))==0 && size(dataY1,1) > 0)
+        dataYSorted = sort(dataY1);
+        idx25 = max([1,round(0.25*size(dataY1,1))]);
+        idx75 = round(0.75*size(dataY1,1));
+
+        fprintf('\n  %s\n',groups(1).label);
+        fprintf('    %1.3f\t median\n',median(dataY1(:,1)));
+        fprintf('    %1.3f\t 25p-75p\n',dataYSorted(idx75,1)-dataYSorted(idx25,1));
+        fprintf('    %1.3f\t 25p\n',dataYSorted(idx25,1));
+        fprintf('    %1.3f\t 75p\n',dataYSorted(idx75,1));
+
+        fprintf('    %1.3f\t min\n',min(dataY1(:,1)));
+        fprintf('    %1.3f\t max\n',max(dataY1(:,1)));
+      end
+      
+      for z=1:1:size(dataY2,1)
+        dataY2(z,1) = groupDataEntireMotion(2,indexTrialsToProcess).('duration').phase.data(z).y;
+      end
+
+      if(sum(sum(isnan(dataY2)))==0 && size(dataY2,1) > 0)
+        dataYSorted = sort(dataY2);
+        idx25 = max([1,round(0.25*size(dataY2,1))]);
+        idx75 = round(0.75*size(dataY2,1));
+
+        fprintf('\n  %s\n',groups(2).label);
+        fprintf('    %1.3f\t median\n',median(dataY2(:,1)));
+        fprintf('    %1.3f\t 25p-75p\n',dataYSorted(idx75,1)-dataYSorted(idx25,1));
+        fprintf('    %1.3f\t 25p\n',dataYSorted(idx25,1));
+        fprintf('    %1.3f\t 75p\n',dataYSorted(idx75,1));
+
+        fprintf('    %1.3f\t min\n',min(dataY2(:,1)));
+        fprintf('    %1.3f\t max\n',max(dataY2(:,1)));
+      end
+
+
+      assert(length(groups)==2);
+
+      if(  sum(sum(isnan(dataY1)))==0 && size(dataY1,1) > 0 ...
+        && sum(sum(isnan(dataY2)))==0 && size(dataY2,1) > 0)
+        [p,h] = ranksum(dataY1(:,1),dataY2(:,1));
+        disp('  Difference across groups?');
+        fprintf('    %1.3f : p \n',p);
+        fprintf('    %1.3f : h \n',h);        
+      end
+        
+       
+      
     end
   end
   
   save([frontiersDataDir,'groupTrialPhaseMetricData',...
-        nameToeTag,nameExcludeE06Tag,'.mat'],'groupData');
+        bosModelTag,nameToeTag,nameExcludeE06Tag,'.mat'],'groupData');
 else
   load([frontiersDataDir,'groupTrialPhaseMetricData',...
-        nameToeTag,nameExcludeE06Tag,'.mat']);  
+        bosModelTag,nameToeTag,nameExcludeE06Tag,'.mat']);  
 end
 
 
@@ -820,11 +1031,11 @@ if(flag_writeCSVGroupTables==1)
   success = writeGroupMetricTable(tableFolderName, groupData, groups, ...
                                   metricNameList, metricSubFields,...
                                   trialsToProcess, trialTypeNames,...
-                                  phaseNames,[nameToeTag,nameExcludeE06Tag]);
+                                  phaseNames,[bosModelTag,nameToeTag,nameExcludeE06Tag]);
                                 
   success = writeParticipantMetricTable(tableFolderName, subjectData, ...
                                   metricNameList, metricSubFields,...
                                   trialsToProcess, trialTypeNames,...
-                                  phaseNames,[nameToeTag,nameExcludeE06Tag]);                                
+                                  phaseNames,[bosModelTag,nameToeTag,nameExcludeE06Tag]);                                
 end                              
 
