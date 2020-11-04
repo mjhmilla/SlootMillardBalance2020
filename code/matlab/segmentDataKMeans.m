@@ -242,9 +242,7 @@ if(flag_loadTimingDataFromFile == 0)
     %rCF0 = r0F0(1,1:2) - convexHullCenter;
     
     %footMarkersCentered = footMarkers(indexCH,1:2) - convexHullCenter;
-    
-    
-    
+        
     distanceToConvexHull = calcDistanceToConvexHull(r0F0(1,1:2), ...
                             footMarkers(indexCH,1:2));
     

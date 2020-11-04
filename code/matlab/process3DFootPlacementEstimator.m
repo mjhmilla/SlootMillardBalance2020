@@ -1,4 +1,5 @@
 function fpeData = process3DFootPlacementEstimator(...
+  timeVector,...
   mass,...
   wholeBodyData,...
   columnCenterOfMassPosition,...
@@ -40,13 +41,48 @@ if(flag_loadFromFile==0)
                  'v0C0k'           ,  zeros(npts,1),...
                  'J'               ,  zeros(npts,1),...                 
                  'Df_Dphi'         ,  zeros(npts,1),...
-                 'Df_Domega'       ,  zeros(npts,1),...
+                 'Df_Dw0C0n'       ,  zeros(npts,1),...
                  'Df_Dh'           ,  zeros(npts,1),...
-                 'Df_Dvx'          ,  zeros(npts,1),...
-                 'Df_Dvy'          ,  zeros(npts,1),...
+                 'Df_Dv0C0u'       ,  zeros(npts,1),...
+                 'Df_Dv0C0k'       ,  zeros(npts,1),...
                  'Df_DJ'           ,  zeros(npts,1),...
                  'Df_Dm'           ,  zeros(npts,1),...
-                 'Df_Dg'           ,  zeros(npts,1));
+                 'Df_Dg'           ,  zeros(npts,1),...
+                 'Ds_Dl'           ,  zeros(npts,1),...
+                 'Ds_DJ'           ,  zeros(npts,1),...
+                 'Ds_DE'           ,  zeros(npts,1),...
+                 'Ds_Dv0C0u'       ,  zeros(npts,1),...
+                 'Ds_Dv0C0k'       ,  zeros(npts,1),...
+                 'Ds_Dw0C0n'       ,  zeros(npts,1),...   
+                 'Dphi_Dl'           ,  zeros(npts,1),...
+                 'Dphi_DJ'           ,  zeros(npts,1),...
+                 'Dphi_DE'           ,  zeros(npts,1),...
+                 'Dphi_Dv0C0u'       ,  zeros(npts,1),...
+                 'Dphi_Dv0C0k'       ,  zeros(npts,1),...
+                 'Dphi_Dw0C0n'       ,  zeros(npts,1),...                    
+                 'lDot'            ,  zeros(npts,1),...
+                 'JDot'            ,  zeros(npts,1),...
+                 'EDot'            ,  zeros(npts,1),...
+                 'v0C0uDot'        ,  zeros(npts,1),...
+                 'v0C0kDot'        ,  zeros(npts,1),...
+                 'w0C0nDot'        ,  zeros(npts,1),...                 
+                 'l'               ,  zeros(npts,1),...
+                 'E'               ,  zeros(npts,1),...
+                 'dsdt_J'          ,  zeros(npts,1),...
+                 'dsdt_l'          ,  zeros(npts,1),...                 
+                 'dsdt_E'          ,  zeros(npts,1),...
+                 'dsdt_v0C0u'      ,  zeros(npts,1),...
+                 'dsdt_v0C0k'      ,  zeros(npts,1),...
+                 'dsdt_w0C0n'      ,  zeros(npts,1),...
+                 'dphidt_J'          ,  zeros(npts,1),...
+                 'dphidt_l'          ,  zeros(npts,1),...                 
+                 'dphidt_E'          ,  zeros(npts,1),...
+                 'dphidt_v0C0u'      ,  zeros(npts,1),...
+                 'dphidt_v0C0k'      ,  zeros(npts,1),...
+                 'dphidt_w0C0n'      ,  zeros(npts,1),...                 
+                 'v0G0'            ,  zeros(npts,3),...
+                 'dsdt_err'        ,  zeros(npts,1),...
+                 'dphidt_err'        ,  zeros(npts,1));
   else
     fpeData(nPlanes) = ...
           struct('f'               ,  zeros(npts,1),...
@@ -82,7 +118,7 @@ if(flag_loadFromFile==0)
       %To dos:
       % - Update the projection error and w0G0 to be on the
       %   post contact angular velocity
-      fpeInfo = calc3DFootPlacementEstimatorInfo(mass,...
+     fpeInfo = calc3DFootPlacementEstimatorInfo(mass,...
                                               r0C0,...
                                               v0C0,...                                                    
                                               JC0,...                                                    
@@ -115,19 +151,182 @@ if(flag_loadFromFile==0)
 
 
       if(flag_fpeEvaluateDerivatives==1)
-        fpeData(j).Df_Dphi(i,1)    = fpeInfo.Df_Dphi  ;  
-        fpeData(j).Df_Dwn(i,1)     = fpeInfo.Df_Dwn   ;  
-        fpeData(j).Df_Dh(i,1)      = fpeInfo.Df_Dh    ;  
-        fpeData(j).Df_Dvu(i,1)     = fpeInfo.Df_Dvu   ;  
-        fpeData(j).Df_Dvk(i,1)     = fpeInfo.Df_Dvk   ;  
+        
+        fpeData(j).Df_Dphi(i,1)    = fpeInfo.Df_Dphi     ;  
+        fpeData(j).Df_Dw0C0n(i,1)  = fpeInfo.Df_Dw0C0n   ;  
+        fpeData(j).Df_Dh(i,1)      = fpeInfo.Df_Dh       ;  
+        fpeData(j).Df_Dv0C0u(i,1)  = fpeInfo.Df_Dv0C0u   ;  
+        fpeData(j).Df_Dv0C0k(i,1)  = fpeInfo.Df_Dv0C0k   ;  
         fpeData(j).Df_DJ(i,1)      = fpeInfo.Df_DJ    ;           
         fpeData(j).Df_Dm(i,1)      = fpeInfo.Df_Dm    ;           
-        fpeData(j).Df_Dg(i,1)      = fpeInfo.Df_Dg    ;           
+        fpeData(j).Df_Dg(i,1)      = fpeInfo.Df_Dg    ;    
+        
+        fpeData(j).Ds_DJ(i,1)      = fpeInfo.Ds_DJ    ;           
+        fpeData(j).Ds_Dl(i,1)      = fpeInfo.Ds_Dl    ;           
+        fpeData(j).Ds_DE(i,1)      = fpeInfo.Ds_DE    ;           
+        fpeData(j).Ds_Dv0C0u(i,1)      = fpeInfo.Ds_Dv0C0u    ;           
+        fpeData(j).Ds_Dv0C0k(i,1)      = fpeInfo.Ds_Dv0C0k    ;           
+        fpeData(j).Ds_Dw0C0n(i,1)      = fpeInfo.Ds_Dw0C0n    ;           
+        
+        fpeData(j).Dphi_DJ(i,1)      = fpeInfo.Dphi_DJ    ;           
+        fpeData(j).Dphi_Dl(i,1)      = fpeInfo.Dphi_Dl    ;           
+        fpeData(j).Dphi_DE(i,1)      = fpeInfo.Dphi_DE    ;           
+        fpeData(j).Dphi_Dv0C0u(i,1)  = fpeInfo.Dphi_Dv0C0u    ;           
+        fpeData(j).Dphi_Dv0C0k(i,1)  = fpeInfo.Dphi_Dv0C0k    ;           
+        fpeData(j).Dphi_Dw0C0n(i,1)  = fpeInfo.Dphi_Dw0C0n    ; 
+        
+        fpeData(j).l(i,1) = fpeInfo.h/cos(fpeInfo.phi);
+        fpeData(j).E(i,1) = fpeInfo.E;
+        fpeData(j).v0G0(i,:)=fpeInfo.v0G0';
+        
       end
     end
   end  
   
+  for j=1:1:size(contactPlanes,1)
+    fpeData(j).lDot     = calcCentralDifference(timeVector, fpeData(j).l);
+    fpeData(j).JDot     = calcCentralDifference(timeVector, fpeData(j).J);
+    fpeData(j).EDot     = calcCentralDifference(timeVector, fpeData(j).E);    
+    fpeData(j).v0C0uDot = calcCentralDifference(timeVector, fpeData(j).v0C0u);
+    fpeData(j).v0C0kDot = calcCentralDifference(timeVector, fpeData(j).v0C0k);
+    fpeData(j).w0C0nDot = calcCentralDifference(timeVector, fpeData(j).w0C0n);
 
+    
+    fpeData(j).dsdt_l = fpeData(j).lDot.*fpeData(j).Ds_Dl(:,1);
+    fpeData(j).dsdt_J = fpeData(j).JDot.*fpeData(j).Ds_DJ(:,1);
+    fpeData(j).dsdt_E = fpeData(j).EDot.*fpeData(j).Ds_DE(:,1);    
+    
+    fpeData(j).dsdt_v0C0u = fpeData(j).v0C0uDot.*fpeData(j).Ds_Dv0C0u(:,1);
+    fpeData(j).dsdt_v0C0k = fpeData(j).v0C0kDot.*fpeData(j).Ds_Dv0C0k(:,1);
+    fpeData(j).dsdt_w0C0n = fpeData(j).w0C0nDot.*fpeData(j).Ds_Dw0C0n(:,1);
+
+    fpeData(j).dphidt_l = fpeData(j).lDot.*fpeData(j).Dphi_Dl(:,1);
+    fpeData(j).dphidt_J = fpeData(j).JDot.*fpeData(j).Dphi_DJ(:,1);
+    fpeData(j).dphidt_E = fpeData(j).EDot.*fpeData(j).Dphi_DE(:,1);    
+    
+    fpeData(j).dphidt_v0C0u = fpeData(j).v0C0uDot.*fpeData(j).Dphi_Dv0C0u(:,1);
+    fpeData(j).dphidt_v0C0k = fpeData(j).v0C0kDot.*fpeData(j).Dphi_Dv0C0k(:,1);
+    fpeData(j).dphidt_w0C0n = fpeData(j).w0C0nDot.*fpeData(j).Dphi_Dw0C0n(:,1);
+    
+    fpeData(j).dphidt_err = ...
+      + fpeData(j).dphidt_E ...
+      + fpeData(j).dphidt_l ...
+      + fpeData(j).dphidt_J;
+
+    fpeData(j).dsdt_err = ...
+      + fpeData(j).dsdt_E ...
+      + fpeData(j).dsdt_l ...
+      + fpeData(j).dsdt_J;
+
+    %fpeData(j).dsdt_err = fpeData(j).v0C0u ...
+    %  + fpeData(j).dsdt_v0C0u ...
+    %  + fpeData(j).dsdt_v0C0k ...
+    %  + fpeData(j).dsdt_E ...
+    %  + fpeData(j).dsdt_l ...
+    %  + fpeData(j).dsdt_J;
+    
+  end
+  
+  flag_debugDerivatives=0;
+  if(flag_debugDerivatives==1)
+    figDer = figure;
+    idx=1;
+    subplot(6,3,1);
+      plot(timeVector,fpeData(idx).Ds_Dl(:,1),'k');
+      xlabel('Time (s)');
+      ylabel('Ds/Dl');
+    subplot(6,3,2);
+      plot(timeVector,fpeData(idx).lDot(:,1),'k');
+      xlabel('Time (s)');
+      ylabel('lDot');
+    subplot(6,3,3);
+      plot(timeVector,fpeData(idx).dsdt_l,'k');
+      xlabel('Time (s)');
+      ylabel('s err (l)');      
+      
+    subplot(6,3,4);
+      plot(timeVector,fpeData(idx).Ds_DJ(:,1),'r');
+      xlabel('Time (s)');
+      ylabel('Ds/DJ');
+    subplot(6,3,5);
+      plot(timeVector,fpeData(idx).JDot(:,1),'r');
+      xlabel('Time (s)');
+      ylabel('JDot');
+    subplot(6,3,6);
+      plot(timeVector,fpeData(idx).dsdt_J,'r');
+      xlabel('Time (s)');
+      ylabel('s err (J)');
+
+    subplot(6,3,7);
+      plot(timeVector,fpeData(idx).Ds_DE(:,1),'r');
+      xlabel('Time (s)');
+      ylabel('Ds/DE');
+    subplot(6,3,8);
+      plot(timeVector,fpeData(idx).EDot(:,1),'r');
+      xlabel('Time (s)');
+      ylabel('EDot');
+    subplot(6,3,9);
+      plot(timeVector,fpeData(idx).dsdt_E,'r');
+      xlabel('Time (s)');
+      ylabel('s err (E)');      
+%     subplot(6,3,7);
+%       plot(timeVector,fpeData(idx).Ds_Dv0C0u(:,1),'b');
+%       xlabel('Time (s)');
+%       ylabel('Ds/Dvx');
+%     subplot(6,3,8);
+%       plot(timeVector,fpeData(idx).v0C0uDot(:,1),'b');
+%       xlabel('Time (s)');
+%       ylabel('vxDot');      
+%     subplot(6,3,9);
+%       plot(timeVector,fpeData(idx).dsdt_v0C0u,'b');
+%       xlabel('Time (s)');
+%       ylabel('s err (vx)');            
+%       
+%     subplot(6,3,10);
+%       plot(timeVector,fpeData(idx).Ds_Dv0C0k(:,1),'m');
+%       xlabel('Time (s)');
+%       ylabel('Ds/Dvk');
+%     subplot(6,3,11);
+%       plot(timeVector,fpeData(idx).v0C0kDot(:,1),'m');
+%       xlabel('Time (s)');
+%       ylabel('vkDot');      
+%     subplot(6,3,12);
+%       plot(timeVector,fpeData(idx).dsdt_v0C0k,'m');
+%       xlabel('Time (s)');
+%       ylabel('s err (vk)');                 
+% 
+%     subplot(6,3,13);
+%       plot(timeVector,fpeData(idx).Ds_Dw0C0n(:,1),'g');
+%       xlabel('Time (s)');
+%       ylabel('Ds/Dwn');
+%     subplot(6,3,14);
+%       plot(timeVector,fpeData(idx).w0C0nDot(:,1),'g');
+%       xlabel('Time (s)');
+%       ylabel('wnDot');      
+%     subplot(6,3,15);
+%       plot(timeVector,fpeData(idx).dsdt_w0C0n,'g');
+%       xlabel('Time (s)');
+%       ylabel('s err (wn)');                 
+      
+    figTotalErr=figure;
+      plot(timeVector, fpeData(idx).dsdt_err,'Color',[1,1,1].*0.5,'LineWidth',2);
+      hold on;
+      plot(timeVector,fpeData(idx).dsdt_l,'k');
+      hold on;
+      plot(timeVector,fpeData(idx).dsdt_J,'r');
+      hold on;
+      plot(timeVector,fpeData(idx).dsdt_E,'g');
+      hold on;      
+%       plot(timeVector,fpeData(idx).dsdt_v0C0u,'b');
+%       hold on;
+%       plot(timeVector,fpeData(idx).dsdt_v0C0k,'m');
+%       hold on;
+%       plot(timeVector,fpeData(idx).dsdt_w0C0n,'g');
+      xlabel('Time (sec)');
+      ylabel('Distance Error Along S');
+      here=1;
+  end
+  
   
   save(fpeFileName,...
       'fpeData');    

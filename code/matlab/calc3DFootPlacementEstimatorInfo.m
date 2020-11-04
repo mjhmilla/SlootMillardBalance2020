@@ -176,6 +176,7 @@ function fpeInfo = calc3DFootPlacementEstimatorInfo(m,...
 fpeInfo = struct('f'               ,  zeros(1,1).*NaN,...
                  'phi'             ,  zeros(1,1).*NaN,...
                  'r0F0'            ,  zeros(3,1).*NaN,...
+                 'v0F0'            ,  zeros(3,1).*NaN,... 
                  'projectionError' ,  zeros(1,1).*NaN,...
                  'n'               ,  zeros(3,1).*NaN,...
                  'u'               ,  zeros(3,1).*NaN,...
@@ -187,6 +188,7 @@ fpeInfo = struct('f'               ,  zeros(1,1).*NaN,...
                  'h'               ,  zeros(1,1).*NaN,...
                  'v0C0u'           ,  zeros(1,1).*NaN,...
                  'v0C0k'           ,  zeros(1,1).*NaN,...
+                 'v0G0'            ,  zeros(3,1).*NaN,...
                  'J'               ,  zeros(1,1).*NaN,...                 
                  'Df_Dphi'         ,  zeros(1,1).*NaN,...
                  'Df_Dw0C0n'       ,  zeros(1,1).*NaN,...
@@ -195,7 +197,21 @@ fpeInfo = struct('f'               ,  zeros(1,1).*NaN,...
                  'Df_Dv0C0k'       ,  zeros(1,1).*NaN,...
                  'Df_DJ'           ,  zeros(1,1).*NaN,...
                  'Df_Dm'           ,  zeros(1,1).*NaN,...
-                 'Df_Dg'           ,  zeros(1,1).*NaN);
+                 'Df_Dg'           ,  zeros(1,1).*NaN,...
+                   'Ds_Dl'           ,  zeros(1,1).*NaN,...
+                   'Ds_DJ'           ,  zeros(1,1).*NaN,...
+                   'Ds_DE'           ,  zeros(1,1).*NaN,... 
+                   'Ds_Dv0C0u'       ,  zeros(1,1).*NaN,...
+                   'Ds_Dv0C0k'       ,  zeros(1,1).*NaN,...
+                   'Ds_Dw0C0n'       ,  zeros(1,1).*NaN,...   
+                 'Dphi_Dl'           ,  zeros(1,1).*NaN,...
+                 'Dphi_DJ'           ,  zeros(1,1).*NaN,...
+                 'Dphi_DE'           ,  zeros(1,1).*NaN,... 
+                 'Dphi_Dv0C0u'       ,  zeros(1,1).*NaN,...
+                 'Dphi_Dv0C0k'       ,  zeros(1,1).*NaN,...
+                 'Dphi_Dw0C0n'       ,  zeros(1,1).*NaN,...                      
+                   'l'               ,  zeros(1,1).*NaN,...
+                   'E'               ,  zeros(1,1).*NaN);
 
 
 %===============================================================================
@@ -447,7 +463,7 @@ if(flag_validInputs==1)
     if(abs( deltaPhi ) > maxStep)
        deltaPhi = maxStep*sign(deltaPhi); 
     end
-    if(isnan(deltaPhi) == 0)
+    if(isnan(deltaPhi) == 0 && abs(f) > numericTolerance)
       phi = phi + deltaPhi;
     end
 
@@ -459,23 +475,87 @@ if(flag_validInputs==1)
   end
   assert(abs(f) <= numericTolerance);  
   assert(phi >= -numericTolerance);   %Else we found the (non-physical negative root)
-
-  rGF0    = h*tan(phi)*eu0;
+  
+  tanphi = tan(phi);
+  rGF0    = h*tanphi*eu0;
   r0F0    = r0G0 + rGF0;
 
+
+  
   fpeInfo.f  = f;
   fpeInfo.phi= phi;
   fpeInfo.r0F0 = r0F0;
 
   if(flag_evaluateDerivatives==1)
-    fpeInfo.Df_Dphi    = (2*cosphi*sinphi*J*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)/(cos2phi*J+h2*m)^2+(2*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))*((-2*cosphi*w0C0n*sinphi*J)-h*m*sinphi*(sinphi*v0C0k+cosphi*v0C0u)+cosphi*h*m*(cosphi*v0C0k-sinphi*v0C0u)))/(cos2phi*J+h2*m)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
-    fpeInfo.Df_Dw0C0n  = (2*cos2phi*J*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m);
-    fpeInfo.Df_Dh      = (-(2*h*m*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*m*(sinphi*v0C0k+cosphi*v0C0u)*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*m;
-    fpeInfo.Df_Dv0C0u     = (2*cos2phi*h*m*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m);
-    fpeInfo.Df_Dv0C0k     = (2*cosphi*h*m*sinphi*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m);
-    fpeInfo.Df_DJ      = (2*cos2phi*w0C0n*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m)-(cos2phi*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)/(cos2phi*J+h2*m)^2;
-    fpeInfo.Df_Dm      = (-(h2*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))^2)/(cos2phi*J+h2*m)^2)+(2*cosphi*h*(sinphi*v0C0k+cosphi*v0C0u)*(cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)))/(cos2phi*J+h2*m)+2*(cosphi-1)*cosphi*g*h;
-    fpeInfo.Df_Dg      = 2*(cosphi-1)*cosphi*h*m;                
+    fpeInfo.Df_Dphi    = (2*J*cosphi*sinphi*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)^2)/(h2*m+J*cos2phi)^2+(2*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)*((-h*m*sinphi*(sinphi*v0C0k+cosphi*v0C0u))+cosphi*h*m*(cosphi*v0C0k-sinphi*v0C0u)-2*J*cosphi*w0C0n*sinphi))/(h2*m+J*cos2phi)-2*cosphi*g*h*m*sinphi-2*(cosphi-1)*g*h*m*sinphi;
+    fpeInfo.Df_Dw0C0n  = (2*J*cos2phi*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n))/(h2*m+J*cos2phi);
+    fpeInfo.Df_Dh      = (-(2*h*m*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)^2)/(h2*m+J*cos2phi)^2)+(2*cosphi*m*(sinphi*v0C0k+cosphi*v0C0u)*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n))/(h2*m+J*cos2phi)+2*(cosphi-1)*cosphi*g*m;
+                                
+    fpeInfo.Df_Dv0C0u     = (2*cos2phi*h*m*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n))/(h2*m+J*cos2phi);
+    fpeInfo.Df_Dv0C0k     = (2*cosphi*h*m*sinphi*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n))/(h2*m+J*cos2phi);
+    fpeInfo.Df_DJ      = (2*cos2phi*w0C0n*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n))/(h2*m+J*cos2phi)-(cos2phi*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)^2)/(h2*m+J*cos2phi)^2;
+    fpeInfo.Df_Dm      = (-(h2*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)^2)/(h2*m+J*cos2phi)^2)+(2*cosphi*h*(sinphi*v0C0k+cosphi*v0C0u)*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n))/(h2*m+J*cos2phi)+2*(cosphi-1)*cosphi*g*h;
+    fpeInfo.Df_Dg      = 2*(cosphi-1)*cosphi*h*m;               
+    
+    Ds_Dphi = h*(1+tanphi*tanphi);
+    
+    
+    
+    %l = h/cos(phi)
+    %h = l*cos(phi)
+    %dh/dl = cos(phi)
+    dh_dl = cosphi;
+    % f = fo + (Df/Dphi)Dphi + (Df/DJ)*dJ. 
+    % f = fo = 0
+    % Dphi/DJ = -(Df/DJ)/(Df/Dphi)
+    
+    fpeInfo.Dphi_Dl = (-1/fpeInfo.Df_Dphi)*(fpeInfo.Df_Dh)*dh_dl;
+    fpeInfo.Ds_Dl = (Ds_Dphi)*fpeInfo.Dphi_Dl;
+    
+    fpeInfo.Dphi_DJ = (-1/fpeInfo.Df_Dphi)*(fpeInfo.Df_DJ);
+    fpeInfo.Ds_DJ = (Ds_Dphi)*fpeInfo.Dphi_DJ;
+
+    omegaPlusTest = (cos2phi*w0C0n*J+cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u))/(cos2phi*J+h2*m);
+    omegaPlus=(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)/(h2*m+J*cos2phi);
+    DomegaPlusDphi=((-h*m*sinphi*(sinphi*v0C0k+cosphi*v0C0u))+cosphi*h*m*(cosphi*v0C0k-sinphi*v0C0u)-2*J*cosphi*w0C0n*sinphi)/(h2*m+J*cos2phi)+(2*J*cosphi*sinphi*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n))/(h2*m+J*cos2phi)^2;
+    tv=((1/2)*((h2*m)/cos2phi+J)*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)^2)/(h2*m+J*cos2phi)^2+g*h*m;
+    DtvDphi=(2*(1/2)*h2*m*sinphi*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)^2)/(cosphi^3*(h2*m+J*cos2phi)^2)+(4*(1/2)*J*cosphi*((h2*m)/cos2phi+J)*sinphi*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)^2)/(h2*m+J*cos2phi)^3+(2*(1/2)*((h2*m)/cos2phi+J)*(cosphi*h*m*(sinphi*v0C0k+cosphi*v0C0u)+J*cos2phi*w0C0n)*((-h*m*sinphi*(sinphi*v0C0k+cosphi*v0C0u))+cosphi*h*m*(cosphi*v0C0k-sinphi*v0C0u)-2*J*cosphi*w0C0n*sinphi))/(h2*m+J*cos2phi)^2;    
+        
+    
+    v0G0 = omegaPlus*(h/cosphi).*(eu0+ev0+en0);
+    
+    Ea = m*g*h/cosphi;
+    Eb = 0.5*(J + m*(h/cosphi)^2)*omegaPlus^2 +m*g*h;
+    if(abs(Ea-Eb) > 1e-3)
+      fprintf('%1.6f\n',abs(Ea-Eb));
+    end
+    
+    %  l = h/cosphi;
+    %
+    Dl_Dphi = h*sinphi/(cos2phi);
+    Dphi_Dl = (1/Dl_Dphi);
+    %cosphi=h/l
+    
+    %E = mgl
+    Dl_DE = 1/(m*g);    
+    fpeInfo.Dphi_DE = (Dphi_Dl*Dl_DE);
+    fpeInfo.Ds_DE = (Ds_Dphi)*(Dphi_Dl*Dl_DE);
+    fpeInfo.E = Eb;
+    
+    %Angular momentum = r x mv + Jw
+    %The sensitivity of the foot placement to the input momentum under
+    %th assumption that m, r, and J are constant is just the sensitivity
+    %of the foot placement location to the input velocities v0C0u, vz and w
+    %
+    fpeInfo.Dphi_Dv0C0u = (-1/fpeInfo.Df_Dphi)*fpeInfo.Df_Dv0C0u;
+    fpeInfo.Ds_Dv0C0u = (Ds_Dphi)*fpeInfo.Dphi_Dv0C0u;
+    
+    fpeInfo.Dphi_Dv0C0k = (-1/fpeInfo.Df_Dphi)*fpeInfo.Df_Dv0C0k;
+    fpeInfo.Ds_Dv0C0k = (Ds_Dphi)*fpeInfo.Dphi_Dv0C0k;
+    
+    fpeInfo.Dphi_Dw0C0n = (-1/fpeInfo.Df_Dphi)*fpeInfo.Df_Dw0C0n;
+    fpeInfo.Ds_Dw0C0n = (Ds_Dphi)*fpeInfo.Dphi_Dw0C0n;
+    here=1;
   end
 end
 

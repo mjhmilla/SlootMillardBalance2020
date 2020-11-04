@@ -435,11 +435,11 @@ for indexSubject = 1:1:length(subjectsToProcess)
       
       if( sum(c3dGrf(idxFpRight).force(:,3)>forceLowerBound*bodyWeight) > 0 )
         trialData(indexTrial).rightFoot.isValid = 1;
-        trialData(indexTrial).rightFoot.r0F0   = r0R0;
-        trialData(indexTrial).rightFoot.ea321 = ea321R;
-        trialData(indexTrial).rightFoot.rFCF   = rCopR;
-        trialData(indexTrial).rightFoot.f0    = c3dGrf(idxFpRight).force;
-        trialData(indexTrial).rightFoot.bos   = functionalBosRight;
+        trialData(indexTrial).rightFoot.r0F0    = r0R0;
+        trialData(indexTrial).rightFoot.ea321   = ea321R;
+        trialData(indexTrial).rightFoot.rFCF    = rCopR;
+        trialData(indexTrial).rightFoot.f0      = c3dGrf(idxFpRight).force;
+        trialData(indexTrial).rightFoot.bos     = functionalBosRight;
 
     
         for m=1:1:length(c3dMarkerNames)
