@@ -9,7 +9,7 @@ clear all;
 %
 %%
 
-flag_PaperPlots0Presentation1 = 1;
+flag_PaperPlots0Presentation1 = 0;
 
 flag_useBasicBosModel = 0;
 bosModelTag = '';
@@ -30,11 +30,37 @@ if(flag_excludeE06 == 1)
   nameExcludeE06Tag = '_NoE06';
 end
 
-
 numberOfPhases = 2;
-indexPhaseStart2SeatOff=1;
-indexPhaseSeatOff2Stand=2;
-phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
+indexPhaseToAnalyze=NaN;
+phaseNames = {''};
+
+flag_motionSequence = 1; %0. Sit to stand
+                         %1. Stand to sit
+motionSequenceTag = '';
+outputPlotFolder  = '';
+outputDataFolder  = '';
+
+switch (flag_motionSequence)
+  case 0
+    motionSequenceTag = '_sit2Stand';
+    outputPlotFolder='../../plots/Frontiers2020Pub/';
+    outputDataFolder='../../outputData/Frontiers2020Pub/';
+    phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
+    numberOfPhases = length(phaseNames);
+    indexPhaseToAnalyze=2;
+  case 1
+    motionSequenceTag = '_stand2Sit';    
+    outputPlotFolder='../../plots/StandToSitPub/';  
+    outputDataFolder='../../outputData/StandToSitPub/'; 
+    phaseNames = {'Phase1Stand2SeatOn','Phase2SeatOn2Sit'};
+    numberOfPhases = length(phaseNames);
+    indexPhaseToAnalyze=2;
+    
+  otherwise
+    assert(0);
+end
+
+
 % 1st phase: start to seatoff
 % 2nd phase: seatoff to standing;
 
@@ -48,7 +74,7 @@ flagPlotPhase =1;
 flagPlotEnd   =1;
 flag_useCustomYTicks = 0;
 
-indexPhase = indexPhaseSeatOff2Stand;
+indexPhase = indexPhaseToAnalyze;
 
 trialsToProcess = {'Side'};% {'Side','Chest','Conv','Leg','Side','Rob'};
 
@@ -62,8 +88,8 @@ quietStandingFile = 'QuietStanding_SubAnalysis/quietStanding_NoE06.mat';
 %%
 inputDirRelative    = '../../inputData'         ;
 outputDirRelative   = '../../outputData'        ;
-frontiersPlotDir    = '../../plots/Frontiers2020Pub/' ;
-frontiersDataDir    = '../../outputData/Frontiers2020Pub/';
+%frontiersPlotDir    = '../../plots/Frontiers2020Pub/' ;
+%frontiersDataDir    = '../../outputData/Frontiers2020Pub/';
 
 codeDir = pwd;
   cd(inputDirRelative);
@@ -84,10 +110,12 @@ cd(codeDir);
 tmp = load(quietStandingFilePath);
 quietStandingData = tmp.dataStruct;
 
-load([frontiersDataDir,'groupTrialPhaseMetricData',...
-      bosModelTag,nameToeTag,nameExcludeE06Tag,'.mat']);
-load([frontiersDataDir,'subjectTrialPhaseMetricData',...
-      bosModelTag,nameToeTag,nameExcludeE06Tag,'.mat']);
+load([outputDataFolder,'groupTrialPhaseMetricData',...
+      bosModelTag,nameToeTag,nameExcludeE06Tag,...
+      motionSequenceTag,'.mat']);
+load([outputDataFolder,'subjectTrialPhaseMetricData',...
+      bosModelTag,nameToeTag,nameExcludeE06Tag,...
+      motionSequenceTag,'.mat']);
 
 fpeCopInTOneSided = mean( [mean(abs(quietStandingData.fpeCopInT(3,:))), ...
                           mean(abs(quietStandingData.fpeCopInT(2,:)))]);                             
@@ -101,7 +129,7 @@ angZSpeedOneSided = mean( [abs(mean(quietStandingData.angZSpeed(3,:))),...
 % Configure the plots
 %%
 
-flag_plotConfig = 4; 
+flag_plotConfig = 0; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
 % 2. Com angular velocity
@@ -149,10 +177,27 @@ switch flag_plotConfig
     %metricYLim = [-9,12; 0,15.1; 0,65;...
     %              -2.,12.0; -3.6,3.6; -4,11;...
     %              0,102; -35, 35];
-    metricYLim = [-11,11; 0,15.1; 0,65;...
-                  -2.,12.0; -3.6,3.6; -8,10.1;...
-                  0,102; -35, 35];
+    metricYLim = [ -11, 11;...
+                   0.0, 15.1; ...
+                   0.0, 65;...
+                  -2.0, 12.0; ...
+                  -3.6,  3.6;...
+                    -8, 10.1;...
+                     0,102;...
+                   -35, 35];
 
+         
+    if(flag_motionSequence==1)
+      metricYLim = [ -27, 11;...
+                     0.0, 36; ...
+                     0.0, 65;...
+                    -30.0, 30.0; ...
+                    -3.6,  3.6;...
+                      -10, 37.;...
+                       0,130;...
+                     -51, 51];
+    end                
+                
                 
     metricYTick = [5;3;10; ...
                    3;1;3;...
@@ -254,6 +299,9 @@ switch flag_plotConfig
 
     metricYLim = [ 0,65; -20,65; -10,10; -40,65];
          
+    if(flag_motionSequence==1)
+      metricYLim(2,:) =[-50,5];
+    end
     
     metricYAxisLabel = {'Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)'};
 
@@ -297,6 +345,9 @@ switch flag_plotConfig
 
     metricYLim = [ 0, 120; -25,25; -40, 120; -90,60; -30, 120];
 
+    if(flag_motionSequence==1)
+      metricYLim(3,:) =[-120,20];
+    end
 
     metricYAxisLabel = {'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)',...
                         'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)',...
@@ -970,11 +1021,12 @@ for indexTrialsToProcess=1:1:length(trialsToProcess)
   
   figure(figPlotMatrix(indexTrialsToProcess).h);  
   configPlotExporter;
-  print('-dpdf',['../../plots/Frontiers2020Pub/fig2_Results',...
+  print('-dpdf',[outputPlotFolder,'fig2_Results',...
                   formatTag,...
                   trialsToProcess{indexTrialsToProcess},...
                   plotConfigName,... 
-                  bosModelTag,nameToeTag,nameExcludeE06Tag,'.pdf']);  
+                  bosModelTag,nameToeTag,nameExcludeE06Tag,...
+                  motionSequenceTag,'.pdf']);  
 end  
   
         

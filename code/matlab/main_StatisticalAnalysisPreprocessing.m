@@ -4,6 +4,25 @@ close all;
 clear all;
 
 
+flag_motionSequence = 1; %0. Sit to stand
+                         %1. Stand to sit
+motionSequenceTag = '';
+outputPlotFolder  = '';
+outputDataFolder  = '';
+
+switch (flag_motionSequence)
+  case 0
+    motionSequenceTag = '_sit2Stand';
+    outputPlotFolder='../../plots/Frontiers2020Pub/';
+    outputDataFolder='../../outputData/Frontiers2020Pub/';
+  case 1
+    motionSequenceTag = '_stand2Sit';    
+    outputPlotFolder='../../plots/StandToSitPub/';  
+    outputDataFolder='../../outputData/StandToSitPub/'; 
+  otherwise
+    assert(0);
+end
+                         
 
 flag_includeTrialsWithoutGrf = 0;
 
@@ -282,8 +301,8 @@ groupDataEntireMotion(length(groups),length(trialsToProcess)) = ...
 %%
 inputDirRelative    = '../../inputData'         ;
 outputDirRelative   = '../../outputData'        ;
-frontiersPlotDir    = '../../plots/Frontiers2020Pub/' ;
-frontiersDataDir    = '../../outputData/Frontiers2020Pub/';
+%frontiersPlotDir    = '../../plots/Frontiers2020Pub/' ;
+%frontiersDataDir    = '../../outputData/Frontiers2020Pub/';
 
 codeDir = pwd;
   cd(inputDirRelative);
@@ -449,6 +468,8 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
           load([trialFolder,segmentFileName]);
 
           movementSequenceFileName = outputMovementSequenceFileNames{indexTrial};
+          
+         
           load([trialFolder,movementSequenceFileName]);
 
           indexSittingStatic      = 0;
@@ -514,8 +535,18 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
           %Movement Sequence
           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-          movementSequence = sitToStandSequence;
-          movementSequenceName = 'Sit2Stand';
+          movementSequence = [];
+          switch(flag_motionSequence)
+            case 0
+              movementSequence = sitToStandQuietSequence;
+              movementSequenceName = 'Sit2Stand';              
+            case 1
+              movementSequence = standToSitQuietSequence;
+              movementSequenceName = 'Stand2Sit';              
+            otherwise
+              assert(0);
+          end
+          
 
 
           timeLabel     = 'Time (s)';
@@ -1116,11 +1147,11 @@ if(flag_loadPrecomputedSubjectStatistics == 0)
   end
   
 
-  save([frontiersDataDir,'subjectTrialPhaseMetricData',bosModelTag,nameToeTag,...
-        nameExcludeE06Tag,'.mat'],'subjectData');
+  save([outputDataFolder,'subjectTrialPhaseMetricData',bosModelTag,nameToeTag,...
+        nameExcludeE06Tag,motionSequenceTag,'.mat'],'subjectData');
 else
-  load([frontiersDataDir,'subjectTrialPhaseMetricData',...
-        bosModelTag,nameToeTag,nameExcludeE06Tag,'.mat']);
+  load([outputDataFolder,'subjectTrialPhaseMetricData',...
+        bosModelTag,nameToeTag,nameExcludeE06Tag,motionSequenceTag,'.mat']);
 end
 
 if(flag_loadPrecomputedGroupStatistics == 0)
@@ -1335,31 +1366,32 @@ if(flag_loadPrecomputedGroupStatistics == 0)
     end
   end
   
-  save([frontiersDataDir,'groupTrialPhaseMetricData',...
-        bosModelTag,nameToeTag,nameExcludeE06Tag,'.mat'],'groupData');
+  save([outputDataFolder,'groupTrialPhaseMetricData',...
+        bosModelTag,nameToeTag,nameExcludeE06Tag,motionSequenceTag,...
+        '.mat'],'groupData');
 else
-  load([frontiersDataDir,'groupTrialPhaseMetricData',...
-        bosModelTag,nameToeTag,nameExcludeE06Tag,'.mat']);  
+  load([outputDataFolder,'groupTrialPhaseMetricData',...
+        bosModelTag,nameToeTag,nameExcludeE06Tag,motionSequenceTag,'.mat']);  
 end
 
 
 if(flag_writeCSVGroupTables==1)
   tableFolderName = ['../../outputData/Frontiers2020Pub/'];
   success = writeGroupMetricTable(tableFolderName, groupData, groups, ...
-                                  metricNameList, metricSubFields,...
-                                  trialsToProcess, trialTypeNames,...
-                                  phaseNames,[bosModelTag,nameToeTag,nameExcludeE06Tag]);
+              metricNameList, metricSubFields,...
+              trialsToProcess, trialTypeNames,...
+              phaseNames,[bosModelTag,nameToeTag,nameExcludeE06Tag,motionSequenceTag]);
                                 
   success = writeParticipantMetricTable(tableFolderName, subjectData, ...
-                                  metricNameList, metricSubFields,...
-                                  trialsToProcess, trialTypeNames,...
-                                  phaseNames,[bosModelTag,nameToeTag,nameExcludeE06Tag]); 
+              metricNameList, metricSubFields,...
+              trialsToProcess, trialTypeNames,...
+              phaseNames,[bosModelTag,nameToeTag,nameExcludeE06Tag,motionSequenceTag]); 
                                 
   fpeSensitivityMetrics = {'phiDotJ','phiDotl','phiDotE','fpePhiErrDot','fpePhiErr'};
   fpeSensitivityMetricSubfields = {'start'};
   success = writeFPESensitivityTable(tableFolderName, groupData, groups, ...
-                                  fpeSensitivityMetrics, fpeSensitivityMetricSubfields,...
-                                  trialsToProcess, trialTypeNames,...
-                                  phaseNames,[bosModelTag,nameToeTag,nameExcludeE06Tag]);                                
+              fpeSensitivityMetrics, fpeSensitivityMetricSubfields,...
+              trialsToProcess, trialTypeNames,...
+              phaseNames,[bosModelTag,nameToeTag,nameExcludeE06Tag,motionSequenceTag]);                                
 end                              
 
