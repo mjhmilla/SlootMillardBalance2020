@@ -30,7 +30,7 @@ yMiddle = 0.5*(yTop+yBottom);
 
 startEndWidth = boxWidth;
 
-xP = max(xPositionGroupA,xPositionGroupB) + boxWidth ;
+xP = max(xPositionGroupA,xPositionGroupB) + startEndWidth + boxWidth ;
 printOrder = 3;
 
 %%
@@ -127,9 +127,16 @@ if(isempty(statsABEnd)==0)
           statsText = sprintf('%s:\n%sp = %1.2e',endLabel,starText,statsABEnd.p);
         end
 
-        text( xP,yBottom,statsText,...
+        yPosition = yBottom;
+        vAlignment = 'bottom';
+        if(isempty(statsABPhase)==1 && isempty(statsABStart)==1)
+          yPosition = yMiddle;
+          vAlignment = 'middle';
+        end
+        
+        text( xP,yPosition,statsText,...
             'FontSize',6,'HorizontalAlignment','left',...
-            'VerticalAlignment','bottom',...
+            'VerticalAlignment',vAlignment,...
             'fontname',plotFontName);
           hold on;   
       end

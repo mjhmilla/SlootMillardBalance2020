@@ -36,10 +36,16 @@ phaseNames = {''};
 
 flag_motionSequence = 1; %0. Sit to stand
                          %1. Stand to sit
+                         
+flag_motionSegmentEmphasis = NaN;
+%0. Start
+%1. Whole-movement
+%2. End
+                         
 motionSequenceTag = '';
 outputPlotFolder  = '';
 outputDataFolder  = '';
-
+phaseLabels = {};
 switch (flag_motionSequence)
   case 0
     motionSequenceTag = '_sit2Stand';
@@ -48,14 +54,17 @@ switch (flag_motionSequence)
     phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
     numberOfPhases = length(phaseNames);
     indexPhaseToAnalyze=2;
+    flag_motionSegmentEmphasis = 0;
+    phaseLabels = {'seat-off','sit-to-stand','standing'};
   case 1
     motionSequenceTag = '_stand2Sit';    
     outputPlotFolder='../../plots/StandToSitPub/';  
     outputDataFolder='../../outputData/StandToSitPub/'; 
     phaseNames = {'Phase1Stand2SeatOn','Phase2SeatOn2Sit'};
     numberOfPhases = length(phaseNames);
-    indexPhaseToAnalyze=2;
-    
+    indexPhaseToAnalyze=1;
+    flag_motionSegmentEmphasis = 2;
+    phaseLabels = {'standing','stand-to-sit','seat-on'};
   otherwise
     assert(0);
 end
@@ -76,7 +85,7 @@ flag_useCustomYTicks = 0;
 
 indexPhase = indexPhaseToAnalyze;
 
-trialsToProcess = {'Side'};% {'Side','Chest','Conv','Leg','Side','Rob'};
+trialsToProcess = {'Side','Chest','Conv','Leg','Side','Rob'};
 
 quietStandingFile = 'QuietStanding_SubAnalysis/quietStanding_NoE06.mat';
 
@@ -129,7 +138,7 @@ angZSpeedOneSided = mean( [abs(mean(quietStandingData.angZSpeed(3,:))),...
 % Configure the plots
 %%
 
-flag_plotConfig = 0; 
+flag_plotConfig = 3; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
 % 2. Com angular velocity
@@ -188,14 +197,14 @@ switch flag_plotConfig
 
          
     if(flag_motionSequence==1)
-      metricYLim = [ -27, 11;...
-                     0.0, 36; ...
+      metricYLim = [ -11, 11;...
+                     0.0, 15.1; ...
                      0.0, 65;...
-                    -30.0, 30.0; ...
+                    -20.0, 10.0; ...
                     -3.6,  3.6;...
-                      -10, 37.;...
+                      -5.1, 30.;...
                        0,130;...
-                     -51, 51];
+                     -40.5, 15];
     end                
                 
                 
@@ -301,6 +310,7 @@ switch flag_plotConfig
          
     if(flag_motionSequence==1)
       metricYLim(2,:) =[-50,5];
+      metricYLim(4,:) =[-50,5];
     end
     
     metricYAxisLabel = {'Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)','Velocity (cm/s)'};
@@ -346,7 +356,8 @@ switch flag_plotConfig
     metricYLim = [ 0, 120; -25,25; -40, 120; -90,60; -30, 120];
 
     if(flag_motionSequence==1)
-      metricYLim(3,:) =[-120,20];
+      metricYLim(3,:) =[-130,20];
+      metricYLim(5,:) =[-30,130];
     end
 
     metricYAxisLabel = {'Angular Velocity ($$^\circ$$/s)','Angular Velocity ($$^\circ$$/s)',...
@@ -390,6 +401,13 @@ switch flag_plotConfig
   case 3
     metricNameList = {'timemaxfpe','fzerrseatoff'};
     metricYLim = [-0.05,0.25; -5, 5];
+    
+    
+    if(flag_motionSequence==1)
+      metricNameList = {'timemaxfpe','fzerrseatoff'};
+      metricYLim = [-1,0; 0, 85];      
+    end
+    
     metricYTickSpacing = [0.05,1];    
     metricYAxisLabel = {'Time (s)','Force (N)'};
     metricYAxisScale = [1, 1];
@@ -431,9 +449,22 @@ switch flag_plotConfig
     metricNameList = {'com2edge','com2cop','comvel',...
                       'angvel','angvelz','fpe2edge'};
 
-    metricYLim = [-10.1,7.1;    0,15.1;  0,50.1;...
-                  0,85; -20, 25; -1,12.1];
+    metricYLim = [-10.1,7.1;...
+                   0,15.1; ...
+                   0,50.1;...
+                  0,85; ...
+                  -20, 25; ...
+                  -1,12.1];
 
+    if(flag_motionSequence==1)
+      metricYLim = [-10.1,7.1;...
+                     0,15.1; ...
+                     0,50.1;...
+                    0,110; ...
+                    -30, 10; ...
+                    -18.1,10.1];
+    end
+                
     metricYAxisLabel = {'Displacement (cm)','Distance (cm)','Speed (cm/s)',...
                         'Angular Speed ($$^\circ$$/s)',...
                         'Angular Velocity ($$^\circ$$/s)','Displacement (cm)'};
@@ -647,6 +678,9 @@ if(flag_plotSubjectData == 0 && flag_plotGroupData == 1)
            + xDeltaSubjectGroup;         
 end
 
+if(flag_motionSequence==1)
+  xPlotLimGroup = xPlotLimGroup+xDeltaSubjectGroup;
+end
 
 
 
@@ -731,7 +765,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       %     'VerticalAlignment','bottom','FontSize',6); 
       %hold on;
       
-      ly1 = y0+dy;
+      ly1 = y1;
       ly0 = ly1;
       
       if( ly0 > metricPlotHalfPlaneYmax(1,indexMetric))
@@ -740,16 +774,16 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
       
       plot([x1;(x1+0.25)],[ly0;ly1],'-','LineWidth',1.,'Color',[1,1,1].*0.9);
       hold on;
-      text(xPlotLimGroup+0.25,y0+dy*0.75,...
+      text(xPlotLimGroup+0.25,y1+dy*0.5,...
             metricPlotHalfPlaneText{indexMetric,1},...
            'HorizontalAlignment','left',...
-           'VerticalAlignment','bottom','FontSize',6,...
+           'VerticalAlignment','top','FontSize',6,...
            'interpreter','latex');
       hold on;
-      text(xPlotLimGroup+0.25,y0,...
+      text(xPlotLimGroup+0.25,y1,...
             metricPlotHalfPlaneText{indexMetric,2},...
            'HorizontalAlignment','left',...
-           'VerticalAlignment','bottom','FontSize',6,...
+           'VerticalAlignment','top','FontSize',6,...
            'interpreter','latex');
       hold on;
       
@@ -889,6 +923,7 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
                   subjectId, groups(indexGroup).color, axisLimits, ...
                   boxWidth, lineWidth, plotFontName, fontColor,...
                   flagPlotStart,flagPlotPhase,flagPlotEnd,...
+                  flag_motionSegmentEmphasis,...
                   flagEnableMinMaxLabels);
             hold on;
 
@@ -906,13 +941,20 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
 
         fontColor = groups(indexGroup).color(1,:);        
         flagEnableMinMaxLabels = 0;
+        
+        flagPlotStartTemp = flag_motionSegmentEmphasis == 0;
+        flagPlotPhaseTemp = flag_motionSegmentEmphasis == 1;
+        flagPlotEndTemp   = flag_motionSegmentEmphasis == 2;
+        
         figH = plotMetricDistributionEventData2(figH, subPlotVec, ...
                 groupXPosition,...
                 groupData(indexGroup,indexTrial,indexPhase).(metricName),...
                 metricYAxisScale(1,indexMetric),...
                 groups(indexGroup).name, groups(indexGroup).color, ...
                 axisLimits,boxWidth,lineWidth,plotFontName,fontColor,...
-                flagPlotStart,flagPlotPhase*0,flagPlotEnd*0,flagEnableMinMaxLabels);
+                flagPlotStartTemp,flagPlotPhaseTemp,flagPlotEndTemp,...
+                flag_motionSegmentEmphasis,...
+                flagEnableMinMaxLabels);
           hold on;
 
         %Compute the Wilcoxin rank sum test  
@@ -930,15 +972,29 @@ for indexTrialsToProcess = 1:1:length(trialsToProcess)
           %disp('Elderly');          
           %disp(groupData(indexGroupElderly,indexTrial,indexPhase).(metricName).start)
           
+          startResultsPlot  = [];
+          phaseResultsPlot  = [];
+          endResultsPlot    = [];
           
           fontColor = [0,0,0];
+          switch(flag_motionSegmentEmphasis)
+            case 0
+              startResultsPlot = startResults;
+            case 1
+              phaseResultsPlot = phaseResults;
+            case 2
+              endResultsPlot = endResults;
+            otherwise
+              assert(0);
+          end
+          
           figH = plotGroupComparisons(figH, subPlotVec,...
                    groups(1).x, groupData(1,indexTrial,indexPhase).(metricName),...
                    groups(2).x, groupData(2,indexTrial,indexPhase).(metricName),...
-                   [], startResults, [],...
-                   'all', 'seat-off', 'standing',...
+                   phaseResultsPlot, startResultsPlot, endResultsPlot,...
+                   phaseLabels{2}, phaseLabels{1}, phaseLabels{3},...
                    metricAnnotationLines(1,indexMetric),boxWidth,...
-                   plotFontName,fontColor);
+                   plotFontName,fontColor);          
 
         end
       end

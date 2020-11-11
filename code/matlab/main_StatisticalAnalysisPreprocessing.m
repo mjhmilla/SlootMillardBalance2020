@@ -108,10 +108,20 @@ metricNameEntireMotionList = {'duration'};
 
 metricSubFields =  {'phase','start','end'};
 
-numberOfPhases = 2;
-indexPhaseStart2SeatOff=1;
-indexPhaseSeatOff2Stand=2;
-phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};
+
+
+switch(flag_motionSequence)
+  case 0
+    numberOfPhases = 2;
+    phaseNames = {'Phase1Sit2SeatOff','Phase2SeatOff2Stand'};    
+  case 1
+    numberOfPhases = 2;
+    phaseNames = {'Phase1Stand2SeatOn','Phase2SeatOn2Sit'};
+  otherwise 
+    assert(0)
+    
+end
+    
 
 % 1st phase: start to seatoff
 % 2nd phase: seatoff to standing;
@@ -1202,12 +1212,7 @@ if(flag_loadPrecomputedGroupStatistics == 0)
           for indexMetric = 1:1:length(metricNameList)
 
             
-            if(indexTrialsToProcess == 4 ...
-                && indexGroup == indexGroupElderly ...
-                && indexPhase == indexPhaseSeatOff2Stand ...
-                && indexMetric == length(metricNameList))
-              here=1;
-            end
+
 
             flag_verbose=1;
             groupData(indexGroup,indexTrialsToProcess,indexPhase) ...
@@ -1376,7 +1381,7 @@ end
 
 
 if(flag_writeCSVGroupTables==1)
-  tableFolderName = ['../../outputData/Frontiers2020Pub/'];
+  tableFolderName = outputDataFolder;
   success = writeGroupMetricTable(tableFolderName, groupData, groups, ...
               metricNameList, metricSubFields,...
               trialsToProcess, trialTypeNames,...

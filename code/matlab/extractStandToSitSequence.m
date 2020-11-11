@@ -281,7 +281,7 @@ if(isempty(indexListStableStanding)==0)
             end
             assert(idxSeg < idxSegMax);
             indexSeatOn = indexStandingEnd+idxSeg-1;
-            valueSeatOn = fzChairSeated(idxSeg)-seatOnForce;
+            valueSeatOn = fzChairSeated(idxSeg-1)-seatOnForce;
           else
 
             %Seatoff occurs very close to the maximum whole body
