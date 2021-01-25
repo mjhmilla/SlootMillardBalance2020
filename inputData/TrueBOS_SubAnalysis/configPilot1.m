@@ -34,7 +34,16 @@ inputC3DFiles = { 'test0001_done.c3d',...
                 
 withShoes = zeros(length(inputC3DFiles),1);
 withShoes(13:end,1)=1;                
-                
+%0: no shoes
+%1: flexible soled shoes - running shoes
+%2: stiff soled shoes - hiking shoes
+
+indexLeftForcePlate  = ones(length(inputC3DFiles),1).*2;
+indexRightForcePlate = ones(length(inputC3DFiles),1).*1;
+
+
+
+
 trialIsValid = ones(length(inputC3DFiles),1);
 trialIsValid(18,1)=0;
 trialIsValid(19,1)=0;

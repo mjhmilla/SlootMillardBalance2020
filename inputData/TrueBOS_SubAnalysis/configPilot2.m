@@ -43,23 +43,35 @@ inputC3DFiles = { 'test0001_done.c3d',...
 
 withShoes = zeros(length(inputC3DFiles),1);
 withShoes(1:12,1)=1;                
-                
+%0: no shoes
+%1: flexible soled shoes - running shoes
+%2: stiff soled shoes - hiking shoes              
+
+
 trialIsValid = ones(length(inputC3DFiles),1);
 trialIsValid(9,1)=0;  %10
+
+trialIsValid(12,1)=0; %10
+trialIsValid(13,1)=0; %10
+trialIsValid(14,1)=0; %10
+
 trialIsValid(18,1)=0; %19
 trialIsValid(19,1)=0; %20
-trialIsValid(21,1)=0; %23
-trialIsValid(22,1)=0; %24
-trialIsValid(24:end,1)=0; %35-
+
+trialIsValid(21:end,1)=0; %35-
 
 updateFootFrames = zeros(length(inputC3DFiles),3);
 % update flag (0/1), index of c3d file to use, index of time sample to use
 updateFootFrames(1,:)  = [1,2,round(1.3*150)];
 updateFootFrames(13,:) = [1,13,546];
 
-inputC3DOffsetFile   = 'test0014_done.c3d';
-inputOffsetTimeIndex = 546;
+%inputC3DOffsetFile   = 'test0014_done.c3d';
+%inputOffsetTimeIndex = 546;
 
+indexLeftForcePlate  = ones(length(inputC3DFiles),1).*2;
+indexRightForcePlate = ones(length(inputC3DFiles),1).*1;
 
+indexLeftForcePlate(11,1)=1;
+indexRightForcePlate(11,1)=2;
 
 processedOutliers = [7,10,11];

@@ -7,16 +7,39 @@ flag_plotFootPrintCopPortrait  = 1;
 flag_plotConvexHullOfAllTrials = 1;
 
 forceLowerBound = 0.5; %As in half body weight
-barefootPadCompressionMax = 0.5*(25*0.5/1000 + 15*0.5/1000);  
+barefootPadCompressionMax = (2.0*max(25*0.5/1000,15*0.5/1000)); %A high limit to detect clear lift off
 shodPadCompressionMax     = barefootPadCompressionMax+5/1000;  
 
+flag_limitFootAngle = 1;
+
+lowPassFilterFrequencyHz = 10; %as in 10 Hz
+
+minimumNumberOfPoints = 150;
+
+%Accept 95% of the points, reject the 5% that are outliers
+fractionOfPointsToAccept = 0.95; 
+
+                       
 inputDirRelative = '../../inputData/TrueBOS_SubAnalysis';
 outputDirRelative = '../../outputData/TrueBOS_SubAnalysis';
 
 pathToBTK='/home/mjhmilla/dev/BTKRoot/BTKCore-install/share/btk-0.3dev/Wrapping/Matlab/btk/';
 addpath(pathToBTK);
 
-subjectsToProcess = {'configPilot1','configPilot2'}; %'configPilot1'
+
+subjectsToProcess = { 'configPilot1',...
+                      'configPilot2',...
+                      'configP01',...
+                      'configP02',...
+                      'configP03',...
+                      'configP04',...
+                      'configP05',...
+                      'configP06',...
+                      'configP07',...
+                      'configP08',...
+                      'configP09',...
+                      'configP10'};
+ 
 
 %From inputData/COP_SubAnalysis/main_lframe.m : avg
 tmp = load(['../../inputData/COP_SubAnalysis/',...
@@ -68,14 +91,19 @@ figFootPrint = figure;
 
 
 
+ 
 
 for indexSubject = 1:1:length(subjectsToProcess)
-
-  copLeftWithShoes = [];
-  copRightWithShoes = [];
   
-  copRightBarefoot = [];
-  copLeftBarefoot = [];
+  copRightBarefoot        = [];%withShoes == 0
+  copLeftBarefoot         = [];
+  
+  copLeftWithShoes        = [];%withShoes == 1
+  copRightWithShoes       = [];
+  
+  copLeftWithHikingShoes  = [];%withShoes == 2
+  copRightWithHikingShoes = [];
+  
   
 
   
@@ -136,6 +164,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
             preprocessC3DData(  c3dFileNameAndPathRef, ...
                             fpAtIndex1ErrorStruct,...
                             fpAtIndex2ErrorStruct,...
+                            lowPassFilterFrequencyHz,...
                             flag_createC3DFilesForRBDLRef,...
                             c3dRbdlPlanarSettingsRef, c3dRbdlPathRef,...                       
                             flag_MetersRadiansRef, flag_grfDataRecordedRef,...
@@ -193,16 +222,26 @@ for indexSubject = 1:1:length(subjectsToProcess)
          footWidth  = 0.5*(footWidthL+footWidthR);
       
          footCompressionMax = 0;
-         if(withShoes(indexTrial,1)==1)
-           footCompressionMax = shodPadCompressionMax;
-         else
-           footCompressionMax = barefootPadCompressionMax;
+         switch(withShoes(indexTrial,1))
+           case 0
+            footCompressionMax = barefootPadCompressionMax;
+           case 1
+            footCompressionMax = shodPadCompressionMax;
+           case 2
+             footCompressionMax = shodPadCompressionMax;
+           otherwise
+             assert(0)            
          end
          
          %Doubled to allow for foot flexibility
-         angleXUB = 2*atan2(footCompressionMax,midFootLength);
-         angleYUB = 2*atan2(footCompressionMax,footWidth);
+         angleXUB = atan2(footCompressionMax,midFootLength);
+         angleYUB = atan2(footCompressionMax,footWidth);
 
+         if(flag_limitFootAngle == 0)
+           footCompressionMax = Inf;
+           angleXUB = Inf;
+           angleYUB = Inf;
+         end
          
       end
       
@@ -215,9 +254,9 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
       c3dFileNameAndPath = [inputPath,'/',inputFolder,'/',inputC3DFiles{indexTrial}];
       fname = inputC3DFiles{indexTrial};
-      idx = strfind(fname,'.c3d');
+      idx = strfind(fname,'.c3d')-1;
       pname = fname;
-      pname = ['fig_',fname(1:1:idx),'pdf'];  
+      pname = ['fig_',fname(1:1:idx)];  
       plotNameAndPath = [outputPath,'/',outputFolder,'/',pname];
 
       flag_createC3DFilesForRBDL = 0;
@@ -232,14 +271,15 @@ for indexSubject = 1:1:length(subjectsToProcess)
           preprocessC3DData(  c3dFileNameAndPath, ...
                           fpAtIndex1ErrorStruct,...
                           fpAtIndex2ErrorStruct,...
+                          lowPassFilterFrequencyHz,...
                           flag_createC3DFilesForRBDL,...
                           c3dRbdlPlanarSettings, c3dRbdlPath,...                       
                           flag_MetersRadians, flag_grfDataRecorded,...
                           flag_verbose );
 
 
-      idxFpLeft = 1;
-      idxFpRight = 2;
+      idxFpLeft   = indexLeftForcePlate(indexTrial,1);
+      idxFpRight  = indexRightForcePlate(indexTrial,1);
 
       rFootL = zeros(1,3);
       rFootR = zeros(1,3);
@@ -265,12 +305,12 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
       rFpCenter = mean(c3dForcePlates(idxFpLeft).corners,2);
 
-      if(    norm(rFpCenter'-rFootL) ...
-          >  norm(rFpCenter'-rFootR))
-        tmp = idxFpLeft;
-        idxFpLeft = idxFpRight;
-        idxFpRight=tmp;
-      end          
+%       if(    norm(rFpCenter'-rFootL) ...
+%           >  norm(rFpCenter'-rFootR))
+%         tmp = idxFpLeft;
+%         idxFpLeft = idxFpRight;
+%         idxFpRight=tmp;
+%       end          
 
 
       if(flag_plotFootPrintCopPortrait == 1)
@@ -324,7 +364,10 @@ for indexSubject = 1:1:length(subjectsToProcess)
             fR(k,:) = ( E*(c3dGrf(idxFpRight).force(k,:)') )';
 
           else
-            assert('Marker naming convention broken');
+            if(k==1)
+              disp(['Warning, extra marker: ', c3dMarkerNames{m}]);             
+            end
+            %assert('Marker naming convention broken');
           end
 
           c3dMarkersInFootFrame.(c3dMarkerNames{m})(k,:) = ...
@@ -366,29 +409,50 @@ for indexSubject = 1:1:length(subjectsToProcess)
                   & abs(ea321L(:,3)) < angleXUB ...
                   & abs(ea321L(:,2)) < angleYUB);      
       
-      if(length(idxL)>0)
+      if(length(idxL)>minimumNumberOfPoints)
             
-        chL = convhull(rCopL(idxL(:),1), rCopL(idxL(:),2));  
+        %Remove the 5% least dense points
+        [idxLCH,idxLEx] = removeCenterOfPressureOutliers( rCopL(idxL,1:2)./[footWidth footLength],...
+                                                 fractionOfPointsToAccept);
+        
+                                               
+        idxLAll = idxL;
+        
+        idxLMain = idxL(idxLCH);
+        idxLEx   = idxL(idxLEx);
+        idxL     = idxLMain;
+                                                     
+        chL = convhull(rCopL(idxL,1), rCopL(idxL,2));  
         if(flag_plotFootPrintCopPortrait == 1)
           fill(functionalBosLeft(:,1),functionalBosLeft(:,2),[1,1,1].*0.75,...
                'EdgeColor','none');
           hold on;          
 
-          plot(rCopL(idxL,1), rCopL(idxL,2), 'b');
+          plot(rCopL(idxLAll,1), rCopL(idxLAll,2), 'b');
           hold on;      
 
+          plot(rCopL(idxLEx,1),rCopL(idxLEx,2),'oc');
+          hold on;           
                   
-          plot(rCopL(idxL(chL),1),rCopL(idxL(chL),2),'k');
-          hold on;            
+          plot(rCopL(idxL(chL),1),rCopL(idxL(chL),2),'k','LineWidth',2);
+          hold on;       
+               
+          
         end
 
         if(    min(rCopL(idxL(chL),1)) > -0.10 && max(rCopL(idxL(chL),1))< 0.10 ...
             && min(rCopL(idxL(chL),2)) > -0.15 && max(rCopL(idxL(chL),2))< 0.25)
-          if(withShoes(indexTrial,1)==1)            
-            copLeftWithShoes  = [copLeftWithShoes;rCopL(idxL(chL),:)];
-          else
-            copLeftBarefoot  = [copLeftBarefoot;rCopL(idxL(chL),:)];   
-          end          
+          
+          switch (withShoes(indexTrial,1))            
+            case 0
+              copLeftBarefoot         = [copLeftBarefoot;rCopL(idxL(chL),:)];
+            case 1
+              copLeftWithShoes        = [copLeftWithShoes;rCopL(idxL(chL),:)];
+            case 2
+              copLeftWithHikingShoes  = [copLeftWithHikingShoes;rCopL(idxL(chL),:)];
+            otherwise
+              assert(0);
+          end
         end
 
         if(flag_plotFootPrintCopPortrait == 1)
@@ -453,31 +517,44 @@ for indexSubject = 1:1:length(subjectsToProcess)
       idxR = find(c3dGrf(idxFpRight).force(:,3)>forceLowerBound*bodyWeight ...
                   & abs(ea321R(:,3)) < angleXUB ...
                   & abs(ea321R(:,2)) < angleYUB);          
-      if(length(idxR)>0)
-
-  
-
-        chR = convhull(rCopR(idxR(:),1), rCopR(idxR(:),2));  
+                
+      if(length(idxR)>minimumNumberOfPoints)
+        [idxRCH,idxRex] = removeCenterOfPressureOutliers(rCopR(idxR,1:2)./[footWidth footLength],...
+                                                fractionOfPointsToAccept);
+        idxRAll  = idxR;
+        idxRMain = idxR(idxRCH);
+        idxREx   = idxR(idxRex);
+        idxR     = idxRMain;
+                                                     
+        chR = convhull(rCopR(idxR,1), rCopR(idxR,2));  
         if(flag_plotFootPrintCopPortrait == 1)
           fill(functionalBosRight(:,1),functionalBosRight(:,2),[1,1,1].*0.75,...
                'EdgeColor','none');
           hold on;                     
-          plot(rCopR(idxR,1), rCopR(idxR,2), 'r');
+          plot(rCopR(idxRAll,1), rCopR(idxRAll,2), 'r');
           hold on;
-
-                  
-          plot(rCopR(idxR(chR),1),rCopR(idxR(chR),2),'k');
+                           
+          plot(rCopR(idxREx,1),rCopR(idxREx,2),'oc');
+          hold on;
+          
+          plot(rCopR(idxR(chR),1),rCopR(idxR(chR),2),'k','LineWidth',2);
           hold on;
         end
 
         if(    min(rCopR(idxR(chR),1)) > -0.10 && max(rCopR(idxR(chR),1))< 0.10 ...
             && min(rCopR(idxR(chR),2)) > -0.15 && max(rCopR(idxR(chR),2))< 0.25)
 
-          if(withShoes(indexTrial,1)==1)
-            copRightWithShoes  = [copRightWithShoes;rCopR(idxR(chR),:)];
-          else
-            copRightBarefoot  = [copRightBarefoot;rCopR(idxR(chR),:)];   
-          end           
+          switch (withShoes(indexTrial,1))            
+            case 0
+              copRightBarefoot         = [copRightBarefoot;rCopR(idxR(chR),:)];
+            case 1
+              copRightWithShoes        = [copRightWithShoes;rCopR(idxR(chR),:)];
+            case 2
+              copRightWithHikingShoes  = [copRightWithHikingShoes;rCopR(idxR(chR),:)];
+            otherwise
+              assert(0);
+          end
+                  
         end          
 
         if(flag_plotFootPrintCopPortrait == 1)
@@ -537,11 +614,11 @@ for indexSubject = 1:1:length(subjectsToProcess)
           yMarkLabels{1,i} = sprintf('%d',round(yMarks(1,i)*100));
         end
 
-        if(sum(isnan(markerExtents))>0)
-          markerExtents = [-0.1,0.1,-0.1,0.2];
-        end
+        %if(sum(isnan(markerExtents))>0)
+        %  markerExtents = [-0.1,0.1,-0.1,0.2];
+        %end
 
-        axis(markerExtents);
+        %axis(markerExtents);
 
 
         xticks(xMarks);
@@ -555,7 +632,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
         subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
         subplot('Position',subPlotVec);
 
-        axis(markerExtents);
+        %axis(markerExtents);
 
         xticks(xMarks);
         xticklabels(xMarkLabels);
@@ -565,7 +642,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
 
         configPlotExporter;
-        print('-dpdf',plotNameAndPath);  
+        print('-djpeg',[plotNameAndPath,'.jpeg']);  
       end
 
       %%
@@ -656,6 +733,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
     
     end
 
+    here=1;
 
   end
   
@@ -663,6 +741,9 @@ for indexSubject = 1:1:length(subjectsToProcess)
   subjectDataFile =[outputPath,'/',outputFolder,'/data',subjectId,'.mat'];
   save( subjectDataFile, 'trialData' );
 
+  assert(length(trialData) <= length(withShoes));
+  clear('trialData');
+  
   if(flag_plotConvexHullOfAllTrials==1)
     figBos = figure;
 
@@ -670,12 +751,22 @@ for indexSubject = 1:1:length(subjectsToProcess)
     subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
     subplot('Position',subPlotVec);  
 
+    if(isempty(copLeftWithHikingShoes)==0)
+      hL  = convhull(copLeftWithHikingShoes(:,1),copLeftWithHikingShoes(:,2));      
+    end
     sL  = convhull(copLeftWithShoes(:,1),copLeftWithShoes(:,2));  
     bL  = convhull(copLeftBarefoot(:,1),copLeftBarefoot(:,2));
 
-    plot(copLeftWithShoes(sL,1),copLeftWithShoes(sL,2),'Color',[1,1,1].*0.5);
+    if(isempty(copLeftWithHikingShoes)==0)
+      plot(copLeftWithHikingShoes(hL,1),copLeftWithHikingShoes(hL,2),...
+        'Color',[1,1,1].*0.75,'LineWidth',2);
+      hold on;    
+    end
+    plot(copLeftWithShoes(sL,1),copLeftWithShoes(sL,2),...
+      'Color',[1,1,1].*0.5);
     hold on;
-    plot(copLeftBarefoot(bL,1),copLeftBarefoot(bL,2),'Color',[1,1,1].*0.);
+    plot(copLeftBarefoot(bL,1),copLeftBarefoot(bL,2),...
+      'Color',[1,1,1].*0.);
     hold on;
 
     markerExtents = [-0.05,0.05,-0.05,0.18]; 
@@ -715,7 +806,11 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
     box off;
     axis equal;
-    legend('Shoes','Barefoot');
+    if(isempty(copLeftWithHikingShoes)==0)
+      legend('Hiking shoes','Running shoes','Barefoot');
+    else
+      legend('Running shoes','Barefoot');      
+    end
 
     xlabel('X (m)');
     ylabel('Y (m)');
@@ -725,12 +820,22 @@ for indexSubject = 1:1:length(subjectsToProcess)
     subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
     subplot('Position',subPlotVec);  
 
+    if(isempty(copRightWithHikingShoes)==0)
+      hR  = convhull(copRightWithHikingShoes(:,1),copRightWithHikingShoes(:,2));      
+    end
     sR  = convhull(copRightWithShoes(:,1),copRightWithShoes(:,2));  
     bR  = convhull(copRightBarefoot(:,1),copRightBarefoot(:,2));
 
-    plot(copRightWithShoes(sR,1),copRightWithShoes(sR,2),'Color',[1,1,1].*0.5);
+    if(isempty(copRightWithHikingShoes)==0)
+      plot(copRightWithHikingShoes(hR,1),copRightWithHikingShoes(hR,2),...
+        'Color',[1,1,1].*0.75,'LineWidth',2);
+      hold on;    
+    end
+    plot(copRightWithShoes(sR,1),copRightWithShoes(sR,2),...
+      'Color',[1,1,1].*0.5);
     hold on;
-    plot(copRightBarefoot(bR,1),copRightBarefoot(bR,2),'Color',[1,1,1].*0.);
+    plot(copRightBarefoot(bR,1),copRightBarefoot(bR,2),...
+      'Color',[1,1,1].*0.);
     hold on;
 
     axis(markerExtents);
@@ -744,17 +849,24 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
     box off;
     axis equal;
-    legend('Shoes','Barefoot');
+    if(isempty(copRightWithHikingShoes)==0)
+      legend('Hiking shoes','Running shoes','Barefoot');
+    else
+      legend('Running shoes','Barefoot');      
+    end
+    
+    
+    legend('Hiking Shoes','Running Shoes','Barefoot');
 
     xlabel('X (m)');
     ylabel('Y (m)');
     title('Right Foot');
 
-    netBosPlot=[outputPath,'/',outputFolder,'/bosBarefootShoes.pdf'];
+    netBosPlot=[outputPath,'/',outputFolder,'/bosBarefootShoes'];
 
 
     configPlotExporter;
-    print('-dpdf',netBosPlot);    
+    print('-djpeg',[netBosPlot,'.jpeg']);    
   end
   
 end

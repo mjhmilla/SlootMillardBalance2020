@@ -40,7 +40,7 @@ function fpeInfo = calc3DFootPlacementEstimatorInfo(m,...
 %   g : gravity
 %
 % Single Point/Body Descriptors 
-%
+
 %   e  : unit vector
 %   rm : rotation matrix
 %   K  : a frame: consists of a point in space and a rotation matrix

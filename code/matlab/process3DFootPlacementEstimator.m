@@ -14,7 +14,8 @@ function fpeData = process3DFootPlacementEstimator(...
   flag_fpeEvaluateDerivatives,...
   flag_fpeVerbose,...
   fpeFileName,...
-  flag_loadFromFile)
+  flag_loadFromFile,...
+  flag_writeFirstCompleteFPESolutionToFile)
 
 
 
@@ -180,6 +181,33 @@ if(flag_loadFromFile==0)
         fpeData(j).v0G0(i,:)=fpeInfo.v0G0';
         
       end
+      
+      flag_solutionComplete = 0;
+      if(  sum(isnan(r0C0))==0 && sum(isnan(v0C0))==0 ...
+        && sum(sum(isnan(JC0)))==0 && sum(isnan(HC0))==0)
+       flag_solutionComplete = 1;
+      end
+      if(flag_writeFirstCompleteFPESolutionToFile==1 ...
+          && flag_solutionComplete==1 ...
+          && norm(v0C0) > 0.30)
+        
+        
+        fid = fopen('../../numericalFpeSolution.txt','w');
+        fid = writeNameDataToFile(fid,'time',timeVector(i,1));
+        fid = writeNameDataToFile(fid,'gravityVector',gravityVector);
+        fid = writeNameDataToFile(fid,'mass',mass);
+        fid = writeNameDataToFile(fid,'r0C0',r0C0);
+        fid = writeNameDataToFile(fid,'v0C0',v0C0);
+        fid = writeNameDataToFile(fid,'JC0',JC0);
+        fid = writeNameDataToFile(fid,'HC0',HC0);
+
+        fid = writeStructFieldNameFieldDataToFile(fid,fpeInfo);
+                
+        fclose(fid)
+        
+        flag_writeFirstCompleteFPESolutionToFile = 0;
+      end
+      
     end
   end  
   

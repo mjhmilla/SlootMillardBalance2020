@@ -16,11 +16,13 @@ subjectsToProcess = { 'configPilot1',...
                       'configP09',...
                       'configP10'};
 
+
 forceLowerBound           = 0.5; %As in half body weight
 
-barefootPadCompressionMax = 0.5*(25*0.5/1000 + 15*0.5/1000);  
-shodPadCompressionMax     = 2*barefootPadCompressionMax;  
+barefootPadCompressionMax = (2.0*max(25*0.5/1000,15*0.5/1000)); %A high limit to detect clear lift off
+shodPadCompressionMax     = barefootPadCompressionMax+5/1000;  
 
+minimumNumberOfPoints = 150;
 
 
 %%
@@ -52,7 +54,7 @@ panelWidth  = 7;
 panelHeight = panelWidth*2*(16/14.5);
 
 
-numberOfFiguresPerPage        = 2;
+numberOfFiguresPerPage        = 3;
 numberOfVerticalPlotRows      = 1;
 numberOfHorizontalPlotColumns = numberOfFiguresPerPage;    
 assert(numberOfVerticalPlotRows*numberOfHorizontalPlotColumns ...
@@ -82,8 +84,9 @@ cd(codeDir);
 %Output figures
 %%
 
-figureBare = figure;
-figureShod = figure;
+figureBareFoot = figure;
+figureRunningShoe = figure;
+figureHikingShoe = figure;
 figFootware = figure;
 
 normFootAxis = [-0.7,0.7,-0.4,0.9];
@@ -92,11 +95,12 @@ normYTicks = [ normFootAxis(1,3):0.1:normFootAxis(1,4)];
 
 indexRightFoot = 2;
 footType = {'leftFoot','rightFoot'};
-footwareType = {'shod','bare'};
+footwareType = {'run','hike','bare'};
 
-indexBare = 2;
+indexBare = 3;
 
-dataStruct = struct('convhull',[],'convhullNorm',[],'markers',[],'markersNorm',[],'x0',[],'y0',[]);
+
+dataStruct = struct('convhull',[],'convhullNorm',[],'markers',[],'markersNorm',[],'x0',[],'y0',[],'isValid',0);
 dataStructNorm=struct('convhullNorm',[],'markersNorm',[],...
                       'x',[],'y',[],'xErr',[],'yErr',[],...
                       'xHeel',[],'yHeel',[],'xToe',[],'yToe',[],...
@@ -109,30 +113,38 @@ for indexFoot=1:1:length(footType)
   footStruct.(footType{indexFoot}) =dataStruct;
 end
 
-subjectData(length(subjectsToProcess)) = struct('shod',footStruct, ... 
+subjectData(length(subjectsToProcess)) = struct('run',footStruct, ... 
+                                                'hike',footStruct, ... 
                                                 'bare',footStruct);
 
-groupData = struct('shod',footStruct,...
+groupData = struct('run',footStruct,...
+                   'hike',footStruct,...
                    'bare',footStruct);
 
-footData = struct('shod',dataStructNorm,...
+footData = struct('run',dataStructNorm,...
+                  'hike',dataStructNorm,...
                   'bare',dataStructNorm);
                  
                                               
 for indexSubject=1:1:length(subjectsToProcess)
-  subjectData(indexSubject).shod = footStruct;
+  subjectData(indexSubject).run = footStruct;
+  subjectData(indexSubject).hike = footStruct;  
   subjectData(indexSubject).bare = footStruct;  
 end
-           
-groupData.shod = footStruct;
+
+groupData.run = footStruct;
+groupData.hike = footStruct;
 groupData.bare = footStruct;
-footData.shod = dataStructNorm;
+
+footData.run = dataStructNorm;
+footData.hike = dataStructNorm;
 footData.bare = dataStructNorm;
 
 gorgeousGreen       = [102 204 0]./255; 
 bellaBlue           = [51 153 255]./255; 
 ostentatiousOrange  = [255 128 0]./255;              
-red = [1,0,0];  
+red = [1,0,0];
+
 grey = [1,1,1].*0.5;
 n1 = 0.0;
 n2 = 0.25;
@@ -152,9 +164,9 @@ subjectColor = [(gorgeousGreen.*(1-n1)+bellaBlue.*(n1));...
                 (red.*(1-n3)+ostentatiousOrange.*n3);...
                 (red.*(1-n4)+ostentatiousOrange.*n4)];
 footTypeLineType = {'-','-','--'};
-footwareLineWidth = [0.5,0.5,0.5];  
+footwareLineWidth = [0.5,0.5,0.5];              
 
-flag_markersLabelled = [0,0;0,0];
+flag_markersLabelled = [0,0;0,0;0,0];
 
 for indexSubject = 1:1:length(subjectsToProcess)
   cd(inputDirRelative);
@@ -169,19 +181,27 @@ for indexSubject = 1:1:length(subjectsToProcess)
     
   
   for indexTrial = 1:1:length(trialData)
-    
-    %Hiking shoes: script not generalized for these yet
-    if(withShoes(indexTrial,1)==2)
-      trialData(indexTrial).isValid=0;
-    end
-    
     if(trialData(indexTrial).isValid==1)
       footware = '';
       for indexFoot = 1:1:length(footType)
-        footware = 'bare';
-        if(withShoes(indexTrial,1)==1)
-          footware = 'shod';
+        
+        if(indexTrial > length(withShoes))
+          here=1;
         end
+        
+        switch withShoes(indexTrial,1)
+          case 0
+            footware = 'bare';
+          case 1
+            footware = 'run';            
+          case 2
+            footware = 'hike';
+          otherwise
+            assert(0)
+        end
+            
+        
+        
         
         fprintf('%i,%i\n',indexTrial,indexFoot);
         flag_outlier = 0;
@@ -201,7 +221,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
                            < trialData(indexTrial).angleXUB ...
                       & abs(trialData(indexTrial).(footType{indexFoot}).ea321(:,2)) ...
                           < trialData(indexTrial).angleYUB);          
-            if(length(idxBos)>0)
+            if(length(idxBos)>minimumNumberOfPoints)
 
               footLength = trialData(indexTrial).footLength;
               footWidth  = trialData(indexTrial).footWidth;
@@ -287,17 +307,23 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
               end
               
-              indexFootware=1;
-              if(withShoes(indexTrial,1)==1)
-                indexFootware=2;
-              end
+
               
-              if(withShoes(indexTrial,1)==1)
-                figure(figureShod);
-              else
-                figure(figureBare);
+              switch withShoes(indexTrial,1)
+                case 0
+                  indexFootware=1;
+                  figure(figureBareFoot);
+                case 1
+                  indexFootware=2;
+                  figure(figureRunningShoe);
+                case 2
+                  indexFootware=2;
+                  figure(figureHikingShoe);
+                otherwise
+                  assert(0);
               end
-              
+                  
+                            
               [row,col] = find(subPlotPanelIndex==indexFoot);          
               subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
               subplot('Position',subPlotVec); 
@@ -375,13 +401,17 @@ for indexSubject = 1:1:length(subjectsToProcess)
     for indexFootware = 1:1:length(footwareType)
       
 
-      
-      
-      if(indexFootware==1)        
-        figure(figureShod);       
-      else
-        figure(figureBare); 
+      switch indexFootware
+        case 1
+          figure(figureRunningShoe); 
+        case 2
+          figure(figureHikingShoe); 
+        case 3
+          figure(figureBareFoot);
+        otherwise
+          assert(0);
       end
+      
       footware = footwareType{indexFootware};
 
       
@@ -394,18 +424,20 @@ for indexSubject = 1:1:length(subjectsToProcess)
       lineType  = '-';%footTypeLineType{1,indexFoot};
       lineWidth = 3*footwareLineWidth(1,indexFootware);
 
+
       
-      
-      plot(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,1),...
-        subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,2),...
-        lineType,'Color',[1,1,1],'LineWidth',lineWidth*3);
-      hold on;
-      
-      plot(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,1),...
-        subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,2),...
-        lineType,'Color',lineColor,'LineWidth',lineWidth);
-      hold on;
-      axis(normFootAxis);
+      if(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).isValid==1)
+        plot(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,1),...
+          subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,2),...
+          lineType,'Color',[1,1,1],'LineWidth',lineWidth*3);
+        hold on;
+
+        plot(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,1),...
+          subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,2),...
+          lineType,'Color',lineColor,'LineWidth',lineWidth);
+        hold on;
+        axis(normFootAxis);
+      end
     end    
  end
 
@@ -431,109 +463,141 @@ for indexFoot = 1:1:length(footType)
     bosCenterX = zeros(1,length(subjectsToProcess));
     bosCenterY = zeros(1,length(subjectsToProcess));
 
-    markersNorm = subjectData(1).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm;
+    markersNorm = subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm;
     markerFields = fields(markersNorm);
     for z=1:1:length(markerFields)
       markersNorm.(markerFields{z}) = zeros(length(subjectsToProcess),4);
     end
     
-    setOfValidSubjects = [];
+    indicesOfValidSubjectData = [];
     
     for indexSubject = 1:1:length(subjectsToProcess)
-      
-      for z=1:1:length(markerFields)
-        x    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));
-        xStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));        
-        y    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
-        yStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
-        
-        markersNorm.(markerFields{z})(indexSubject,:) = [x,y,xStd,yStd];
-      end
-      
-      x0 = 0;
-      y0 = 0;
-      if(indexFoot == indexRightFoot)
-        if(indexFootware == indexBare)
-          groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.0;
-        else
-          groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.15;
+      if(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).isValid==1)
+        for z=1:1:length(markerFields)
+          x    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));
+          xStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));        
+          y    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
+          yStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
+
+          markersNorm.(markerFields{z})(indexSubject,:) = [x,y,xStd,yStd];
         end
-        groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0 = 0.3;
-      else
-        if(indexFootware == indexBare)
-          groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.0;
+
+        x0 = 0;
+        y0 = 0;
+        if(indexFoot == indexRightFoot)
+          switch indexFootware
+            case 1
+              %run
+              groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.15;
+            case 2
+              %hike
+              groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.15;
+            case 3
+              %bare
+              groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.0;
+            otherwise
+              assert(0);
+          end
+          groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0 = 0.3;
+
         else
-          groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = -0.15;
+          switch indexFootware
+            case 1
+              %run
+              groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = -0.15;
+            case 2
+              %hike
+              groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = -0.15;
+            case 3
+              %bare
+              groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.0;
+            otherwise
+              assert(0);
+          end
+          groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0 = 0.3;
+
         end
-        groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0 = 0.3;        
-      end
-      
-      x0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0;
-      y0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0;
-      
-      bosXY = subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm;
-      bosXY = bosXY-[x0,y0];
-      
-      minX = min(bosXY(:,1));
-      maxX = max(bosXY(:,1));
-      minY = min(bosXY(:,2));
-      maxY = max(bosXY(:,2));
-      
-      isValid=0;
-      if(minX < 0 && maxX > 0 && minY < 0 && maxY > 0)
-        isValid=1;
-        setOfValidSubjects = [setOfValidSubjects;indexSubject];
-      end
-      
-      if(isValid==1)
+
+        x0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0;
+        y0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0;
+
+        bosXY = subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm;
+        bosXY = bosXY-[x0,y0];
+
+        flag_bosValid = 0;
+        minX = min(bosXY(:,1));
+        maxX = max(bosXY(:,1));
+        minY = min(bosXY(:,2));
+        maxY = max(bosXY(:,2));
+
+        if(minX < 0 && minY < 0 && maxX > 0 && maxY > 0)
+          flag_bosValid = 1;
+          indicesOfValidSubjectData = [indicesOfValidSubjectData;...
+                                       indexSubject];
+        else
+          fprintf('Rejected: %i\tSubject\t%i\tTrial\n',indexSubject,indexTrial);
+        end
+
+        subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).isValid = ...
+          flag_bosValid;
+
         angleBos = atan2(bosXY(:,2),bosXY(:,1));
         [angleBosSorted,idxSorted]=sort(angleBos);
         bosXYSorted = bosXY(idxSorted,:);
         radiusBosSorted = (bosXYSorted(:,1).^2+bosXYSorted(:,2).^2).^0.5;
-        for j=1:1:nAngles                
-          pt = calcRayToConvexHullIntersectionPoint(angles(j,1),angleBosSorted,radiusBosSorted);
-          xPts(j,indexSubject) = pt(1,1);
-          yPts(j,indexSubject) = pt(1,2);           
-          radius(j,indexSubject) = sqrt(pt(1,1)*pt(1,1) + pt(1,2)*pt(1,2));
+        for j=1:1:nAngles      
+          if(flag_bosValid==1)
+            pt = calcRayToConvexHullIntersectionPoint(angles(j,1),angleBosSorted,radiusBosSorted);
+            xPts(j,indexSubject) = pt(1,1);
+            yPts(j,indexSubject) = pt(1,2);           
+            radius(j,indexSubject) = sqrt(pt(1,1)*pt(1,1) + pt(1,2)*pt(1,2));
+          else
+            xPts(j,indexSubject) = NaN;
+            yPts(j,indexSubject) = NaN;           
+            radius(j,indexSubject) = NaN;          
+          end
         end
         if(flag_debugGroup==1)
           figure(figDebugGroup)
           clf(figDebugGroup);  
 
-          plot(bosXY(:,1),bosXY(:,2),'k');
-          hold on;
-          plot(xPts(:,indexSubject),yPts(:,indexSubject),'xm');
-          hold on;
-          xlabel('X');
-          ylabel('Y');
-          here=1;
+          if(flag_boxValid==1)
+            plot(bosXY(:,1),bosXY(:,2),'k');
+            hold on;
+            plot(xPts(:,indexSubject),yPts(:,indexSubject),'xm');
+            hold on;
+            xlabel('X');
+            ylabel('Y');
+            here=1;
+          end
         end
       end
 
     end
 
-    radiusMean = mean(radius(:,setOfValidSubjects),2);
-    
-    x0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0;
-    y0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0;
-    
-    xPtsMean = radiusMean.*cos(angles)+x0;
-    yPtsMean = radiusMean.*sin(angles)+y0;    
-    
-    idxCH = convhull(xPtsMean,yPtsMean);
-    
-    groupData.(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm = ...
-        [xPtsMean(idxCH,1),yPtsMean(idxCH,1)];
-      
-    groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm = ...
-      markersNorm;
-    
-    for z=1:1:length(markerFields)
-      groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z}) = ...
-        mean(markersNorm.(markerFields{z}),1) ;
-    end    
-    
+    if(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).isValid==1)
+      radiusMean = mean(radius(:,indicesOfValidSubjectData),2);
 
+      x0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0;
+      y0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0;
+
+      xPtsMean = radiusMean.*cos(angles)+x0;
+      yPtsMean = radiusMean.*sin(angles)+y0;    
+
+      idxCH = convhull(xPtsMean,yPtsMean);
+
+      groupData.(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm = ...
+          [xPtsMean(idxCH,1),yPtsMean(idxCH,1)];
+
+      groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm = ...
+        markersNorm;
+
+      for z=1:1:length(markerFields)
+        groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z}) = ...
+          mean(markersNorm.(markerFields{z}),1) ;
+      end    
+
+    end
     here=1;
   end
 end
@@ -549,10 +613,13 @@ for indexSubject = 1:1:length(subjectsToProcess)
           [row,col] = find(subPlotPanelIndex==indexFootware);          
             subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
             subplot('Position',subPlotVec);
-          plot(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,1).*xSign(1,indexFoot),...
-               subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,2),...
-               '-','Color',[1,1,1].*0.75);
-          hold on;    
+            
+          if(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).isValid==1)
+            plot(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,1).*xSign(1,indexFoot),...
+                 subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,2),...
+                 '-','Color',[1,1,1].*0.75);
+            hold on;    
+          end
     end
   end
 end
@@ -571,59 +638,67 @@ for indexFootware = 1:1:length(footwareType)
   markerSummary = struct('FAL',[],'TAM',[],'FCC',[],'FM1',[],'FM2',[],'FM5',[]);
   markerSummaryFields = fields(markerSummary);
   
+  
   for indexFoot = 1:1:length(footType)    
        
     bosXY      = groupData.(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm;
-    bosXY(:,1) = bosXY(:,1).*xSign(1,indexFoot);
+    if(isempty(bosXY)==0)
+      bosXY(:,1) = bosXY(:,1).*xSign(1,indexFoot);
+
+      bosXY    = bosXY-[bosCenterX,bosCenterY];
+      angleBos = atan2(bosXY(:,2),bosXY(:,1));
+      [angleBosSorted,idxSorted]=sort(angleBos);
+      bosXYSorted = bosXY(idxSorted,:);
+      radiusBosSorted = (bosXYSorted(:,1).^2+bosXYSorted(:,2).^2).^0.5;
+      for j=1:1:nAngles                
+        pt = calcRayToConvexHullIntersectionPoint(angles(j,1),angleBosSorted,radiusBosSorted);
+        xPts(j,indexFoot) = pt(1,1);
+        yPts(j,indexFoot) = pt(1,2);           
+        radius(j,indexFoot) = sqrt(pt(1,1)*pt(1,1) + pt(1,2)*pt(1,2));
+      end    
+    end
     
-    bosXY    = bosXY-[bosCenterX,bosCenterY];
-    angleBos = atan2(bosXY(:,2),bosXY(:,1));
-    [angleBosSorted,idxSorted]=sort(angleBos);
-    bosXYSorted = bosXY(idxSorted,:);
-    radiusBosSorted = (bosXYSorted(:,1).^2+bosXYSorted(:,2).^2).^0.5;
-    for j=1:1:nAngles                
-      pt = calcRayToConvexHullIntersectionPoint(angles(j,1),angleBosSorted,radiusBosSorted);
-      xPts(j,indexFoot) = pt(1,1);
-      yPts(j,indexFoot) = pt(1,2);           
-      radius(j,indexFoot) = sqrt(pt(1,1)*pt(1,1) + pt(1,2)*pt(1,2));
-    end    
+    
+    
 
     
-    
-    
-    markerFields = fields(groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm);
        
-    for idxMarker=1:1:length(markerFields)           
-      
-      markerInfo = groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{idxMarker});
-      x0 = markerInfo(1,1).*xSign(1,indexFoot);
-      y0 = markerInfo(1,2);
-      xStd = markerInfo(1,3);
-      yStd = markerInfo(1,4);
-      
-      %mkrEllipse = getEllipse([x0,y0],[xStd,yStd],20);
-                
-      %fill( mkrEllipse(:,1),...
-      %      mkrEllipse(:,2),...
-      %      [1,1,1].*0.75,'EdgeColor',[1,1,1].*0.5);
-      %hold on;
-            
-      found = 0;
-      for z=1:1:length(markerSummaryFields)
-        if(contains(markerFields{idxMarker},markerSummaryFields{z}))
-          assert(found==0);
-          found = 1;
-          if(isempty(markerSummary.(markerSummaryFields{z}))==1)
-            markerSummary.(markerSummaryFields{z}) = [x0,y0,xStd,yStd];
-          else
-            markerSummary.(markerSummaryFields{z}) = ...
-              [markerSummary.(markerSummaryFields{z})(:,:);...
-                x0,y0,xStd,yStd];            
+    if(isfield(groupData.(footwareType{indexFootware}).(footType{indexFoot}),'markersNorm'))
+      if(isempty(groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm)==0)
+        markerFields = fields(groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm);
+        for idxMarker=1:1:length(markerFields)           
+
+          markerInfo = groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{idxMarker});
+          x0 = markerInfo(1,1).*xSign(1,indexFoot);
+          y0 = markerInfo(1,2);
+          xStd = markerInfo(1,3);
+          yStd = markerInfo(1,4);
+
+          %mkrEllipse = getEllipse([x0,y0],[xStd,yStd],20);
+
+          %fill( mkrEllipse(:,1),...
+          %      mkrEllipse(:,2),...
+          %      [1,1,1].*0.75,'EdgeColor',[1,1,1].*0.5);
+          %hold on;
+
+          found = 0;
+          for z=1:1:length(markerSummaryFields)
+            if(contains(markerFields{idxMarker},markerSummaryFields{z}))
+              assert(found==0);
+              found = 1;
+              if(isempty(markerSummary.(markerSummaryFields{z}))==1)
+                markerSummary.(markerSummaryFields{z}) = [x0,y0,xStd,yStd];
+              else
+                markerSummary.(markerSummaryFields{z}) = ...
+                  [markerSummary.(markerSummaryFields{z})(:,:);...
+                    x0,y0,xStd,yStd];            
+              end
+            end
           end
-        end
+
+        end 
       end
-      
-    end  
+    end
   end
   radiusMean = mean(radius,2);
 
@@ -777,9 +852,9 @@ save([outputPath,'/normBosModel.mat'],'footData');
 for indexFoot = 1:1:length(footType)    
   for indexFootware = 1:1:length(footwareType) 
     if(indexFootware==1)        
-      figure(figureShod);       
+      figure(figureRunningShoe);       
     else
-      figure(figureBare); 
+      figure(figureBareFoot); 
     end
 
     [row,col] = find(subPlotPanelIndex==indexFoot);          
@@ -817,10 +892,10 @@ save( [outputPath,'/averageSubjectData.mat'] ,'groupData');
 %   ylabel('Norm. Length');
 %   title(['Norm. Functional Bos: ',footwareType{indexFootware},' foot']);
 % end
-figure(figureBare);
+figure(figureBareFoot);
 configPlotExporter;
 print('-dpdf',[outputPath,'/normFunctionalBosBarefootLeftRight.pdf']);  
-figure(figureShod);
+figure(figureRunningShoe);
 configPlotExporter;
 print('-dpdf',[outputPath,'/normFunctionalBosShodLeftRight.pdf']);  
 figure(figFootware);
