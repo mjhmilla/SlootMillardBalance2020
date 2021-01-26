@@ -68,5 +68,8 @@ indexRightForcePlate = ones(length(inputC3DFiles),1).*1;
 %inputC3DOffsetFile   = 'test0014_done.c3d';
 %inputOffsetTimeIndex = 1;
 
+updateFootScale = zeros(length(inputC3DFiles),3);
+updateFootScale(1,:) = bareFootFrame;
+
 
 processedOutliers = [];

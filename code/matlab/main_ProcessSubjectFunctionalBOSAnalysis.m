@@ -12,7 +12,7 @@ shodPadCompressionMax     = barefootPadCompressionMax+5/1000;
 
 flag_limitFootAngle = 1;
 
-lowPassFilterFrequencyHz = 10; %as in 10 Hz
+lowPassFilterFrequencyHz = -1; %as in 10 Hz
 
 minimumNumberOfPoints = 150;
 
@@ -27,18 +27,22 @@ pathToBTK='/home/mjhmilla/dev/BTKRoot/BTKCore-install/share/btk-0.3dev/Wrapping/
 addpath(pathToBTK);
 
 
-subjectsToProcess = { 'configPilot1',...
-                      'configPilot2',...
-                      'configP01',...
-                      'configP02',...
-                      'configP03',...
-                      'configP04',...
-                      'configP05',...
-                      'configP06',...
-                      'configP07',...
+subjectsToProcess = { 'configP07',...
                       'configP08',...
                       'configP09',...
                       'configP10'};
+% subjectsToProcess = { 'configPilot1',...
+%                       'configPilot2',...
+%                       'configP01',...
+%                       'configP02',...
+%                       'configP03',...
+%                       'configP04',...
+%                       'configP05',...
+%                       'configP06',...
+%                       'configP07',...
+%                       'configP08',...
+%                       'configP09',...
+%                       'configP10'};
  
 
 %From inputData/COP_SubAnalysis/main_lframe.m : avg
@@ -139,6 +143,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
   angleXUB = 0;
   angleYUB = 0;
   
+  
   for indexTrial = 1:1:length(inputC3DFiles)
 
     trialData(indexTrial).isValid = trialIsValid(indexTrial,1);
@@ -146,7 +151,10 @@ for indexSubject = 1:1:length(subjectsToProcess)
     
     if(trialIsValid(indexTrial,1)==1)
       
-      if(updateFootFrames(indexTrial,1)==1)
+      %%
+      % Update the foot reference frame
+      %%
+      if(updateFootFrames(indexTrial,1)==1 )
 
         c3dFileNameAndPathRef = [inputPath,'/',inputFolder,...
           '/',inputC3DFiles{updateFootFrames(indexTrial,2)}];
@@ -157,8 +165,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
         flag_MetersRadiansRef=1; 
         flag_grfDataRecordedRef=1;
         flag_verboseRef=1;
-        
-        
+                
         [c3dTimeRef, c3dMarkersRef,c3dMarkerNamesRef, c3dMarkerUnitsRef, c3dForcePlatesRef,...
          c3dForcePlateInfoRef, c3dGrfRef, c3dGrfDataAvailableRef] = ...
             preprocessC3DData(  c3dFileNameAndPathRef, ...
@@ -169,7 +176,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
                             c3dRbdlPlanarSettingsRef, c3dRbdlPathRef,...                       
                             flag_MetersRadiansRef, flag_grfDataRecordedRef,...
                             flag_verboseRef );          
-        
+          
         [frameLeftOffset, frameRightOffset]=...
           getFootOffsetFrames(updateFootFrames(indexTrial,3), ...
                                 c3dMarkersRef,c3dMarkerNamesRef); 
@@ -180,71 +187,72 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
          [functionalBosLeft, functionalBosRight] = ...
           getFunctionalFootBaseOfSupport2(updateFootFrames(indexTrial,3),...
-            c3dMarkersRef, c3dMarkerNamesRef, frameLeft, frameRight);  
-         idxRef = updateFootFrames(indexTrial,3);
-         
-         rLenL = frameLeft.E'*(...
-                   0.5.*(c3dMarkersRef.('L_FM1')(idxRef,:)' ...
-                        +c3dMarkersRef.('L_FM5')(idxRef,:)')...
-                  -0.5.*(c3dMarkersRef.('L_FAL')(idxRef,:)' ...
-                        +c3dMarkersRef.('L_TAM')(idxRef,:)'));         
-         midFootLengthL = rLenL(2,1);
-                  
-         rLenR = frameRight.E'*(...
-                   0.5.*(c3dMarkersRef.('R_FM1')(idxRef,:)' ...
-                        +c3dMarkersRef.('R_FM5')(idxRef,:)') ...
-                  -0.5.*(c3dMarkersRef.('R_FAL')(idxRef,:)' ...
-                        +c3dMarkersRef.('R_TAM')(idxRef,:)'));         
-                      
-         midFootLengthR = rLenR(2,1);
-         
-         rLenL = frameLeft.E'*(c3dMarkersRef.('L_FM2')(idxRef,:)' ...
-                              -c3dMarkersRef.('L_FCC')(idxRef,:)');         
-         footLengthL = rLenL(2,1);
-         rLenR = frameRight.E'*(c3dMarkersRef.('R_FM2')(idxRef,:)' ...
-                              -c3dMarkersRef.('R_FCC')(idxRef,:)');         
-         footLengthR = rLenR(2,1);
-         footLength = 0.5*(footLengthL+footLengthR);
-         
-         rWL = 0.5.*frameLeft.E'*(c3dMarkersRef.('L_FM1')(idxRef,:)'...
-                              -c3dMarkersRef.('L_FM5')(idxRef,:)') ...
-              +0.5.*frameLeft.E'*(c3dMarkersRef.('L_TAM')(idxRef,:)'...
-                              -c3dMarkersRef.('L_FAL')(idxRef,:)');          
-         footWidthL = rWL(1,1);
-         rWR = 0.5.*frameRight.E'*(c3dMarkersRef.('R_FM5')(idxRef,:)'...
-                              -c3dMarkersRef.('R_FM1')(idxRef,:)') ...
-              +0.5.*frameRight.E'*(c3dMarkersRef.('R_FAL')(idxRef,:)'...
-                              -c3dMarkersRef.('R_TAM')(idxRef,:)');         
-         footWidthR = rWR(1,1);
-         here=1;
-         
-         midFootLength = 0.5*(midFootLengthL+midFootLengthR);
-         footWidth  = 0.5*(footWidthL+footWidthR);
-      
-         footCompressionMax = 0;
-         switch(withShoes(indexTrial,1))
-           case 0
-            footCompressionMax = barefootPadCompressionMax;
-           case 1
-            footCompressionMax = shodPadCompressionMax;
-           case 2
-             footCompressionMax = shodPadCompressionMax;
-           otherwise
-             assert(0)            
-         end
-         
-         %Doubled to allow for foot flexibility
-         angleXUB = atan2(footCompressionMax,midFootLength);
-         angleYUB = atan2(footCompressionMax,footWidth);
+            c3dMarkersRef, c3dMarkerNamesRef, frameLeft, frameRight);             
 
-         if(flag_limitFootAngle == 0)
-           footCompressionMax = Inf;
-           angleXUB = Inf;
-           angleYUB = Inf;
-         end
-         
       end
       
+      %%
+      % Update the size of the foot
+      %%
+      if(updateFootScale(indexTrial,1)==1 )
+
+        c3dFileNameAndPathRef = [inputPath,'/',inputFolder,...
+          '/',inputC3DFiles{updateFootScale(indexTrial,2)}];
+        
+        flag_createC3DFilesForRBDLRef = 0;
+        c3dRbdlPlanarSettingsRef=[]; 
+        c3dRbdlPathRef=[];
+        flag_MetersRadiansRef=1; 
+        flag_grfDataRecordedRef=1;
+        flag_verboseRef=1;
+                
+        [c3dTimeRef, c3dMarkersRef,c3dMarkerNamesRef, c3dMarkerUnitsRef, c3dForcePlatesRef,...
+         c3dForcePlateInfoRef, c3dGrfRef, c3dGrfDataAvailableRef] = ...
+            preprocessC3DData(  c3dFileNameAndPathRef, ...
+                            fpAtIndex1ErrorStruct,...
+                            fpAtIndex2ErrorStruct,...
+                            lowPassFilterFrequencyHz,...
+                            flag_createC3DFilesForRBDLRef,...
+                            c3dRbdlPlanarSettingsRef, c3dRbdlPathRef,...                       
+                            flag_MetersRadiansRef, flag_grfDataRecordedRef,...
+                            flag_verboseRef );          
+
+        [frameLeftOffsetTemp, frameRightOffsetTemp]=...
+          getFootOffsetFrames(updateFootScale(indexTrial,3), ...
+                                c3dMarkersRef,c3dMarkerNamesRef); 
+
+        [frameLeftTemp,frameRightTemp] = ...
+          getFootFrames(updateFootScale(indexTrial,3),c3dMarkersRef,...
+            c3dMarkerNamesRef,frameLeftOffsetTemp,frameRightOffsetTemp);  
+
+        idxRefTemp = updateFootScale(indexTrial,3);
+        [footLength, midFootLength, footWidth] = ...
+         getFootSize(idxRefTemp, frameLeftTemp, frameRightTemp, c3dMarkersRef);
+         
+         
+        footCompressionMax = 0;
+        switch(withShoes(indexTrial,1))
+          case 0
+            footCompressionMax = barefootPadCompressionMax;
+          case 1
+            footCompressionMax = shodPadCompressionMax;
+          case 2
+            footCompressionMax = shodPadCompressionMax;
+          otherwise
+            assert(0)            
+        end
+         
+        %Doubled to allow for foot flexibility
+        angleXUB = atan2(footCompressionMax,midFootLength);
+        angleYUB = atan2(footCompressionMax,footWidth);
+
+        if(flag_limitFootAngle == 0)
+          footCompressionMax = Inf;
+          angleXUB = Inf;
+          angleYUB = Inf;
+        end
+         
+      end      
 
 
       
@@ -642,7 +650,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
 
         configPlotExporter;
-        print('-djpeg',[plotNameAndPath,'.jpeg']);  
+        print('-djpeg',[plotNameAndPath,'.jpeg']);
+        print('-dpdf',[plotNameAndPath,'.pdf']);
       end
 
       %%
@@ -855,11 +864,9 @@ for indexSubject = 1:1:length(subjectsToProcess)
       legend('Running shoes','Barefoot');      
     end
     
-    
-    legend('Hiking Shoes','Running Shoes','Barefoot');
 
-    xlabel('X (m)');
-    ylabel('Y (m)');
+    xlabel('X (cm)');
+    ylabel('Y (cm)');
     title('Right Foot');
 
     netBosPlot=[outputPath,'/',outputFolder,'/bosBarefootShoes'];
@@ -867,6 +874,7 @@ for indexSubject = 1:1:length(subjectsToProcess)
 
     configPlotExporter;
     print('-djpeg',[netBosPlot,'.jpeg']);    
+    print('-dpdf',[netBosPlot,'.pdf']);
   end
   
 end

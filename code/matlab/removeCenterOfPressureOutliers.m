@@ -14,8 +14,8 @@ end
 
 [rhoSorted,indexRhoSorted]=sort(rho,'descend');
 
-idxMax = max( (size(cop,1)*acceptFraction), 1 );
+idxMax = round(max( (size(cop,1)*acceptFraction), 1 ));
 
 
-idxMainCluster = sort(indexRhoSorted(1:1:idxMax));
+idxMainCluster = sort(indexRhoSorted(1:idxMax));
 idxExcluded = sort(indexRhoSorted((idxMax+1):end,1));

@@ -59,6 +59,9 @@ updateFootFrames(6,:)  = [0,0,0];
 updateFootFrames(7,:)  = hikingShoeFrame; 
 updateFootFrames(8,:)  = runningShoeFrame; 
 
+updateFootScale = zeros(length(inputC3DFiles),3);
+updateFootScale(1,:) = bareFootFrame;
+
 
 oneFoot = [1,3,4];
 

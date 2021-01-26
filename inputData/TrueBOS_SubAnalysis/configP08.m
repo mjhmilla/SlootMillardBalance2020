@@ -65,6 +65,11 @@ oneFoot = [1,3,4];
 indexLeftForcePlate  = ones(length(inputC3DFiles),1).*2;
 indexRightForcePlate = ones(length(inputC3DFiles),1).*1;
 
+
+updateFootScale = zeros(length(inputC3DFiles),3);
+updateFootScale(1,:) = bareFootFrame;
+
+
 %inputC3DOffsetFile   = 'test0014_done.c3d';
 %inputOffsetTimeIndex = 1;
 

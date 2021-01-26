@@ -48,6 +48,8 @@ withShoes(1:12,1)=1;
 %2: stiff soled shoes - hiking shoes              
 
 
+
+
 trialIsValid = ones(length(inputC3DFiles),1);
 trialIsValid(9,1)=0;  %10
 
@@ -67,6 +69,9 @@ updateFootFrames(13,:) = [1,13,546];
 
 %inputC3DOffsetFile   = 'test0014_done.c3d';
 %inputOffsetTimeIndex = 546;
+
+updateFootScale = zeros(length(inputC3DFiles),3);
+updateFootScale(1,:) = [1,13,546];
 
 indexLeftForcePlate  = ones(length(inputC3DFiles),1).*2;
 indexRightForcePlate = ones(length(inputC3DFiles),1).*1;

@@ -43,7 +43,6 @@ indexRightForcePlate = ones(length(inputC3DFiles),1).*1;
 
 
 
-
 trialIsValid = ones(length(inputC3DFiles),1);
 trialIsValid(18,1)=0;
 trialIsValid(19,1)=0;
@@ -52,5 +51,10 @@ updateFootFrames = zeros(length(inputC3DFiles),3);
 % update flag (0/1), index of c3d file to use, index of time sample to use
 updateFootFrames(1,:)  = [1,1,1];
 updateFootFrames(13,:) = [1,13,1];
+
+
+updateFootScale = zeros(length(inputC3DFiles),3);
+updateFootScale(1,:) = [1,1,1];
+
 
 processedOutliers = [7,11,10];

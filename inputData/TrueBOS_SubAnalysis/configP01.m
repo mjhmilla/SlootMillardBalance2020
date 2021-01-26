@@ -35,8 +35,12 @@ trialIsValid = ones(length(inputC3DFiles),1);
 
 updateFootFrames = zeros(length(inputC3DFiles),3);
 % update flag (0/1), index of c3d file to use, index of time sample to use
-updateFootFrames(1,:)  = [1,2, (2161-2161+1)]; %Note 2161 is the first data sample: earlier data was chopped
+updateFootFrames(1,:)   = [1,2, (2161-2161+1)]; %Note 2161 is the first data sample: earlier data was chopped
 updateFootFrames(end,:) = [1,5,(463-417+1)]; %Note 417 is the first data sample
+
+
+updateFootScale       = zeros(length(inputC3DFiles),3);
+updateFootScale(1,:)  = [1,2,1];
 
 %inputC3DOffsetFile   = 'test0014_done.c3d';
 %inputOffsetTimeIndex = 1;

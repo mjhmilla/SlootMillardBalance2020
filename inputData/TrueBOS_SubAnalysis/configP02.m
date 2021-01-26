@@ -41,27 +41,31 @@ trialIsValid = ones(length(inputC3DFiles),1);
 %trialIsValid(7,1)=0; %'Hik_2F_med.c3d',...  
 %trialIsValid(8,1)=0; %'Run_2F_med.c3d'};
 
+% Index
+% 1: 0/1 Update the foot reference frame
+% 2: Index of inputC3DFiles for the reference trial
+% 3: Index of the sample to use within the trial
+% 4: 0/1 Update the footLength and footWidth 
 updateFootFrames = zeros(length(inputC3DFiles),3);
-% update flag (0/1), index of c3d file to use, index of time sample to use
 
 bareFootFrame     = [1,6,1];
 hikingShoeFrame   = [1,7,1];
 runningShoeFrame  = [1,8,1];
 
-
-updateFootFrames(1,:)  = bareFootFrame; 
-updateFootFrames(2,:)  = [0, 0,   0]; 
+updateFootFrames(1,:)    = bareFootFrame; 
+updateFootFrames(2,:)  = [0, 0, 0]; 
 updateFootFrames(3,:)  = hikingShoeFrame; 
 updateFootFrames(4,:)  = runningShoeFrame; 
 updateFootFrames(5,:)  = bareFootFrame; 
-updateFootFrames(6,:)  = [0,0,0]; 
+updateFootFrames(6,:)  = [0, 0, 0]; 
 updateFootFrames(7,:)  = hikingShoeFrame; 
 updateFootFrames(8,:)  = runningShoeFrame; 
 
-
 indexLeftForcePlate  = ones(length(inputC3DFiles),1).*2;
-
 indexRightForcePlate = ones(length(inputC3DFiles),1).*1;
+
+updateFootScale = zeros(length(inputC3DFiles),3);
+updateFootScale(1,:) = bareFootFrame;
 
 %inputC3DOffsetFile   = 'test0014_done.c3d';
 %inputOffsetTimeIndex = 1;

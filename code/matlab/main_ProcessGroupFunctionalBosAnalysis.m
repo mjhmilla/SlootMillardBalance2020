@@ -13,8 +13,8 @@ subjectsToProcess = { 'configPilot1',...
                       'configP06',...
                       'configP07',...
                       'configP08',...
-                      'configP09',...
                       'configP10'};
+%                      'configP09',...
 
 forceLowerBound           = 0.5; %As in half body weight
 
@@ -96,11 +96,15 @@ footwareType = {'shod','bare'};
 
 indexBare = 2;
 
-dataStruct = struct('convhull',[],'convhullNorm',[],'markers',[],'markersNorm',[],'x0',[],'y0',[]);
+dataStruct = struct('convhull',[],'convhullNorm',[],...
+                    'markers',[],'markersNorm',[],...
+                    'x0',[],'y0',[],...
+                    'x',[],'y',[]);
+                  
 dataStructNorm=struct('convhullNorm',[],'markersNorm',[],...
-                      'x',[],'y',[],'xErr',[],'yErr',[],...
-                      'xHeel',[],'yHeel',[],'xToe',[],'yToe',[],...
-                      'xLat',[],'yLat',[],'xMed',[],'yMed',[]);
+      'x',[],'y',[],'xStd',[],'yStd',[],...
+      'heelXY',[],'toeXY',[],'latXY',[],'medXY',[],...
+      'heelXYStd',[],'toeXYStd',[],'latXYStd',[],'medXYStd',[]);
 
 footStruct = struct('leftFoot',dataStruct,'rightFoot',dataStruct);
 
@@ -226,10 +230,12 @@ for indexSubject = 1:1:length(subjectsToProcess)
               idxCH = convhull(trialX,trialY);
                 trialXConvHull = trialX(idxCH,:);
                 trialYConvHull = trialY(idxCH,:);
-        
+       
+                
               trialXNorm = [trialData(indexTrial).(footType{indexFoot}).rFCF(idxBos,1)./footWidth];
               trialYNorm = [trialData(indexTrial).(footType{indexFoot}).rFCF(idxBos,2)./footLength];
-                
+                              
+              
               idxCh = convhull(trialXNorm,trialYNorm);
                 trialXNormConvHull = trialXNorm(idxCH,:);
                 trialYNormConvHull = trialYNorm(idxCH,:);
@@ -395,17 +401,18 @@ for indexSubject = 1:1:length(subjectsToProcess)
       lineWidth = 3*footwareLineWidth(1,indexFootware);
 
       
-      
-      plot(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,1),...
-        subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,2),...
-        lineType,'Color',[1,1,1],'LineWidth',lineWidth*3);
-      hold on;
-      
-      plot(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,1),...
-        subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,2),...
-        lineType,'Color',lineColor,'LineWidth',lineWidth);
-      hold on;
-      axis(normFootAxis);
+      if(isempty(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm)==0)
+        plot(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,1),...
+          subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,2),...
+          lineType,'Color',[1,1,1],'LineWidth',lineWidth*3);
+        hold on;
+
+        plot(subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,1),...
+          subjectData(indexSubject).(footware).(footType{indexFoot}).convhullNorm(:,2),...
+          lineType,'Color',lineColor,'LineWidth',lineWidth);
+        hold on;
+        axis(normFootAxis);
+      end
     end    
  end
 
@@ -441,84 +448,106 @@ for indexFoot = 1:1:length(footType)
     
     for indexSubject = 1:1:length(subjectsToProcess)
       
-      for z=1:1:length(markerFields)
-        x    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));
-        xStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));        
-        y    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
-        yStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
-        
-        markersNorm.(markerFields{z})(indexSubject,:) = [x,y,xStd,yStd];
-      end
-      
-      x0 = 0;
-      y0 = 0;
-      if(indexFoot == indexRightFoot)
-        if(indexFootware == indexBare)
-          groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.0;
-        else
-          groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.15;
-        end
-        groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0 = 0.3;
-      else
-        if(indexFootware == indexBare)
-          groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.0;
-        else
-          groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = -0.15;
-        end
-        groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0 = 0.3;        
-      end
-      
-      x0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0;
-      y0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0;
-      
-      bosXY = subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm;
-      bosXY = bosXY-[x0,y0];
-      
-      minX = min(bosXY(:,1));
-      maxX = max(bosXY(:,1));
-      minY = min(bosXY(:,2));
-      maxY = max(bosXY(:,2));
-      
-      isValid=0;
-      if(minX < 0 && maxX > 0 && minY < 0 && maxY > 0)
-        isValid=1;
-        setOfValidSubjects = [setOfValidSubjects;indexSubject];
-      end
-      
-      if(isValid==1)
-        angleBos = atan2(bosXY(:,2),bosXY(:,1));
-        [angleBosSorted,idxSorted]=sort(angleBos);
-        bosXYSorted = bosXY(idxSorted,:);
-        radiusBosSorted = (bosXYSorted(:,1).^2+bosXYSorted(:,2).^2).^0.5;
-        for j=1:1:nAngles                
-          pt = calcRayToConvexHullIntersectionPoint(angles(j,1),angleBosSorted,radiusBosSorted);
-          xPts(j,indexSubject) = pt(1,1);
-          yPts(j,indexSubject) = pt(1,2);           
-          radius(j,indexSubject) = sqrt(pt(1,1)*pt(1,1) + pt(1,2)*pt(1,2));
-        end
-        if(flag_debugGroup==1)
-          figure(figDebugGroup)
-          clf(figDebugGroup);  
+      if( isempty(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm) == 0)
 
-          plot(bosXY(:,1),bosXY(:,2),'k');
-          hold on;
-          plot(xPts(:,indexSubject),yPts(:,indexSubject),'xm');
-          hold on;
-          xlabel('X');
-          ylabel('Y');
-          here=1;
+        for z=1:1:length(markerFields)
+          x    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));
+          xStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));        
+          y    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
+          yStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,2));
+
+          markersNorm.(markerFields{z})(indexSubject,:) = [x,y,xStd,yStd];
+        end
+
+        x0 = 0;
+        y0 = 0;
+        if(indexFoot == indexRightFoot)
+          if(indexFootware == indexBare)
+            groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.0;
+          else
+            groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.15;
+          end
+          groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0 = 0.3;
+        else
+          if(indexFootware == indexBare)
+            groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = 0.0;
+          else
+            groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0 = -0.15;
+          end
+          groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0 = 0.3;        
+        end
+
+        x0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0;
+        y0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0;
+
+        bosXY = subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm;
+        bosXY = bosXY-[x0,y0];
+
+        minX = min(bosXY(:,1));
+        maxX = max(bosXY(:,1));
+        minY = min(bosXY(:,2));
+        maxY = max(bosXY(:,2));
+
+        isValid=0;
+        if(minX < 0 && maxX > 0 && minY < 0 && maxY > 0)
+          isValid=1;
+          setOfValidSubjects = [setOfValidSubjects;indexSubject];
+        end
+
+        if(isValid==1)
+          angleBos = atan2(bosXY(:,2),bosXY(:,1));
+          [angleBosSorted,idxSorted]=sort(angleBos);
+          bosXYSorted = bosXY(idxSorted,:);
+          radiusBosSorted = (bosXYSorted(:,1).^2+bosXYSorted(:,2).^2).^0.5;
+          for j=1:1:nAngles                
+            pt = calcRayToConvexHullIntersectionPoint(angles(j,1),angleBosSorted,radiusBosSorted);
+            xPts(j,indexSubject) = pt(1,1);
+            yPts(j,indexSubject) = pt(1,2);           
+            radius(j,indexSubject) = sqrt(pt(1,1)*pt(1,1) + pt(1,2)*pt(1,2));
+          end
+          if(flag_debugGroup==1)
+            figure(figDebugGroup)
+            clf(figDebugGroup);  
+
+            plot(bosXY(:,1),bosXY(:,2),'k');
+            hold on;
+            plot(xPts(:,indexSubject),yPts(:,indexSubject),'xm');
+            hold on;
+            xlabel('X');
+            ylabel('Y');
+            here=1;
+          end
         end
       end
-
     end
 
     radiusMean = mean(radius(:,setOfValidSubjects),2);
+
+    radiusStd = std(radius(:,setOfValidSubjects),[],2);
     
     x0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).x0;
     y0 = groupData.(footwareType{indexFootware}).(footType{indexFoot}).y0;
     
     xPtsMean = radiusMean.*cos(angles)+x0;
-    yPtsMean = radiusMean.*sin(angles)+y0;    
+    yPtsMean = radiusMean.*sin(angles)+y0;  
+    
+    xPtsStd = radiusStd.*cos(angles);
+    yPtsStd = radiusStd.*sin(angles);  
+    
+    groupData.(footwareType{indexFootware}).(footType{indexFoot}).x...
+      =zeros(size(radius,1),length(setOfValidSubjects));
+    groupData.(footwareType{indexFootware}).(footType{indexFoot}).y...
+      =zeros(size(radius,1),length(setOfValidSubjects));
+    
+    for w=1:1:length(setOfValidSubjects)
+      groupData.(footwareType{indexFootware}).(footType{indexFoot}).x(:,w)...
+        = radius(:,setOfValidSubjects(w,1)).*cos(angles)+x0;
+      groupData.(footwareType{indexFootware}).(footType{indexFoot}).y(:,w)...
+        = radius(:,setOfValidSubjects(w,1)).*sin(angles)+y0;      
+    end
+    
+    
+    
     
     idxCH = convhull(xPtsMean,yPtsMean);
     
@@ -549,10 +578,13 @@ for indexSubject = 1:1:length(subjectsToProcess)
           [row,col] = find(subPlotPanelIndex==indexFootware);          
             subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
             subplot('Position',subPlotVec);
-          plot(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,1).*xSign(1,indexFoot),...
-               subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,2),...
-               '-','Color',[1,1,1].*0.75);
-          hold on;    
+            
+          if(isempty(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm)==0)
+            plot(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,1).*xSign(1,indexFoot),...
+                 subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).convhullNorm(:,2),...
+                 '-','Color',[1,1,1].*0.75);
+            hold on;    
+          end
     end
   end
 end
@@ -562,14 +594,23 @@ for indexFootware = 1:1:length(footwareType)
   angles = [-0.5:0.01:0.5]'.*(2*pi);
     
   nAngles=length(angles);
-  xPts = zeros(nAngles,2);
-  yPts = zeros(nAngles,2);
-  radius= zeros(nAngles,2);
+  xPts = zeros(nAngles,length(footType));
+  yPts = zeros(nAngles,length(footType));
+  radius= zeros(nAngles,length(footType));
 
+  
+  radiusMean = zeros(nAngles,length(footType));
+  radiusStd  = zeros(nAngles,length(footType));
+  
   bosCenterX = 0;
   bosCenterY = 0.2;
   markerSummary = struct('FAL',[],'TAM',[],'FCC',[],'FM1',[],'FM2',[],'FM5',[]);
   markerSummaryFields = fields(markerSummary);
+  
+  xBosMean = zeros(size(groupData.(footwareType{indexFootware}).(footType{1}).x,1),length(footType));
+  xBosStd  = zeros(size(groupData.(footwareType{indexFootware}).(footType{1}).x,1),length(footType));
+  yBosMean = zeros(size(groupData.(footwareType{indexFootware}).(footType{1}).y,1),length(footType));
+  yBosStd  = zeros(size(groupData.(footwareType{indexFootware}).(footType{1}).y,1),length(footType));
   
   for indexFoot = 1:1:length(footType)    
        
@@ -588,8 +629,19 @@ for indexFootware = 1:1:length(footwareType)
       radius(j,indexFoot) = sqrt(pt(1,1)*pt(1,1) + pt(1,2)*pt(1,2));
     end    
 
+    xBosMean(:,indexFoot) = xSign(1,indexFoot).*mean(groupData.(footwareType{indexFootware}).(footType{indexFoot}).x,2);
+    yBosMean(:,indexFoot) = mean(                    groupData.(footwareType{indexFootware}).(footType{indexFoot}).y,2);
     
+    angleBos = atan2(yBosMean(:,indexFoot)-mean(yBosMean(:,indexFoot)),...
+                     xBosMean(:,indexFoot)-mean(xBosMean(:,indexFoot)));
+    [angleBosSorted,idxSorted]=sort(angleBos);
+    xBosMean(:,indexFoot) = xBosMean(idxSorted,indexFoot); 
+    yBosMean(:,indexFoot) = yBosMean(idxSorted,indexFoot); 
     
+    xBosStd(:,indexFoot) = std( groupData.(footwareType{indexFootware}).(footType{indexFoot}).x,0,2);
+    yBosStd(:,indexFoot) = std( groupData.(footwareType{indexFootware}).(footType{indexFoot}).y,0,2);
+    xBosStd(:,indexFoot) = xBosStd(idxSorted,indexFoot);
+    yBosStd(:,indexFoot) = yBosStd(idxSorted,indexFoot);
     
     markerFields = fields(groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm);
        
@@ -626,6 +678,11 @@ for indexFootware = 1:1:length(footwareType)
     end  
   end
   radiusMean = mean(radius,2);
+  
+  xBosMeanMean = mean(xBosMean,2);
+  yBosMeanMean = mean(yBosMean,2);
+  xBosMeanStd = mean(xBosStd,2);
+  yBosMeanStd = mean(yBosStd,2);
 
   xPtsMean = radiusMean.*cos(angles)+bosCenterX;
   yPtsMean = radiusMean.*sin(angles)+bosCenterY;    
@@ -633,80 +690,77 @@ for indexFootware = 1:1:length(footwareType)
   footData.(footwareType{indexFootware}).x = zeros(size(radius,1),size(radius,2));
   footData.(footwareType{indexFootware}).y = zeros(size(radius,1),size(radius,2));  
   
-  footData.(footwareType{indexFootware}).xHeel = zeros(1,size(radius,2));
-  footData.(footwareType{indexFootware}).yHeel = zeros(1,size(radius,2));
-  
-  footData.(footwareType{indexFootware}).xToe = zeros(1,size(radius,2));
-  footData.(footwareType{indexFootware}).yToe = zeros(1,size(radius,2));
-
-  footData.(footwareType{indexFootware}).xMed = zeros(1,size(radius,2));
-  footData.(footwareType{indexFootware}).yMed = zeros(1,size(radius,2));
-
-  footData.(footwareType{indexFootware}).xLat = zeros(1,size(radius,2));
-  footData.(footwareType{indexFootware}).yLat = zeros(1,size(radius,2));
+  footData.(footwareType{indexFootware}).xStd = zeros(size(radius,1),size(radius,2));
+  footData.(footwareType{indexFootware}).yStd = zeros(size(radius,1),size(radius,2));  
   
   for z=1:1:size(radius,2)
-    footData.(footwareType{indexFootware}).x(:,z) = ...
-      radius(:,z).*cos(angles)+bosCenterX;    
-    footData.(footwareType{indexFootware}).y(:,z) = ...
-      radius(:,z).*sin(angles)+bosCenterY;    
+    footData.(footwareType{indexFootware}).x(:,z) = xBosMean(:,z);
+    %  radius(:,z).*cos(angles)+bosCenterX;    
+    footData.(footwareType{indexFootware}).y(:,z) = yBosMean(:,z);
+    %  radius(:,z).*sin(angles)+bosCenterY;    
     
-    footData.(footwareType{indexFootware}).xErr(:,z) = ...
-      footData.(footwareType{indexFootware}).x(:,z) ...
-      - xPtsMean;    
-    footData.(footwareType{indexFootware}).yErr(:,z) = ...
-      footData.(footwareType{indexFootware}).y(:,z) ...
-      - yPtsMean;    
+    footData.(footwareType{indexFootware}).xStd(:,z) = xBosStd(:,z); 
+    
+    footData.(footwareType{indexFootware}).yStd(:,z) = yBosStd(:,z);    
 
-    %'xHeel',[],'yHeel',[],'xToe',[],'yToe',[],...
-    %                      'xLat',[],'yLat',[],'xMed',[],'yMed',[]    
-    
+
     [val,idxHeel] = min(footData.(footwareType{indexFootware}).y(:,z));
 
-    footData.(footwareType{indexFootware}).xHeel(1,z) = ...
-      footData.(footwareType{indexFootware}).x(idxHeel,z);
-    footData.(footwareType{indexFootware}).yHeel(1,z) = ...
-      footData.(footwareType{indexFootware}).y(idxHeel,z);    
+    footData.(footwareType{indexFootware}).heelXY(:,z) = ...
+      [footData.(footwareType{indexFootware}).x(idxHeel,z);...
+       footData.(footwareType{indexFootware}).y(idxHeel,z)];    
 
+    footData.(footwareType{indexFootware}).heelXYStd(:,z) = ...
+      [footData.(footwareType{indexFootware}).xStd(idxHeel,z);...
+       footData.(footwareType{indexFootware}).yStd(idxHeel,z)];
+     
     [val,idxToe] = max(footData.(footwareType{indexFootware}).y(:,z));
 
-    footData.(footwareType{indexFootware}).xToe(1,z) = ...
-      footData.(footwareType{indexFootware}).x(idxToe,z);
-    footData.(footwareType{indexFootware}).yToe(1,z) = ...
-      footData.(footwareType{indexFootware}).y(idxToe,z);    
-    
+    footData.(footwareType{indexFootware}).toeXY(:,z) = ...
+      [footData.(footwareType{indexFootware}).x(idxToe,z);...
+       footData.(footwareType{indexFootware}).y(idxToe,z)]; 
+     
+    footData.(footwareType{indexFootware}).toeXYStd(:,z) = ...
+      [footData.(footwareType{indexFootware}).xStd(idxToe,z);...
+       footData.(footwareType{indexFootware}).yStd(idxToe,z)];     
+     
     [val,idxLat] = min(footData.(footwareType{indexFootware}).x(:,z));
 
-    footData.(footwareType{indexFootware}).xLat(1,z) = ...
-      footData.(footwareType{indexFootware}).x(idxLat,z);
-    footData.(footwareType{indexFootware}).yLat(1,z) = ...
-      footData.(footwareType{indexFootware}).y(idxLat,z);    
+    footData.(footwareType{indexFootware}).latXY(:,z) = ...
+      [footData.(footwareType{indexFootware}).x(idxLat,z);...
+       footData.(footwareType{indexFootware}).y(idxLat,z)]; 
 
+    footData.(footwareType{indexFootware}).latXYStd(:,z) = ...
+      [footData.(footwareType{indexFootware}).xStd(idxLat,z);...
+       footData.(footwareType{indexFootware}).yStd(idxLat,z)];     
+     
     [val,idxMed] = max(footData.(footwareType{indexFootware}).x(:,z));
 
-    footData.(footwareType{indexFootware}).xMed(1,z) = ...
-      footData.(footwareType{indexFootware}).x(idxMed,z);
-    footData.(footwareType{indexFootware}).yMed(1,z) = ...
-      footData.(footwareType{indexFootware}).y(idxMed,z);    
+    footData.(footwareType{indexFootware}).medXY(:,z) = ...
+      [footData.(footwareType{indexFootware}).x(idxMed,z);...
+       footData.(footwareType{indexFootware}).y(idxMed,z)];    
     
+    footData.(footwareType{indexFootware}).medXYStd(:,z) = ...
+      [footData.(footwareType{indexFootware}).xStd(idxMed,z);...
+       footData.(footwareType{indexFootware}).yStd(idxMed,z)];
+    
+     
   end
   
   disp(['Norm. Foot Template Heel Stats: ',footwareType{indexFootware}]);
-  fprintf('  %1.3f: err mean\n',mean(footData.(footwareType{indexFootware}).yHeel));
-  fprintf('  %1.3f: err min\n',  min(footData.(footwareType{indexFootware}).yHeel));
-  fprintf('  %1.3f: err max\n',  max(footData.(footwareType{indexFootware}).yHeel));  
-  fprintf('All: \n');
-  disp(footData.(footwareType{indexFootware}).yHeel);
+  fprintf('  %1.3f: err mean\n', mean(footData.(footwareType{indexFootware}).heelXY(2,:)));
+  fprintf('  %1.3f: err std\n',  mean(footData.(footwareType{indexFootware}).heelXYStd(2,:)));
+
   
-  
-  idxCH = convhull(xPtsMean,yPtsMean);    
-  footData.(footwareType{indexFootware}).convhullNorm = [xPtsMean(idxCH,1),yPtsMean(idxCH,1)];
+  idxCH = convhull(xBosMeanMean,yBosMeanMean);   
+  footData.(footwareType{indexFootware}).convhullNorm ...
+    = [xBosMeanMean(idxCH,1),yBosMeanMean(idxCH,1)];
   
   [row,col] = find(subPlotPanelIndex==indexFootware);          
     subPlotVec = reshape(subPlotPanel(row,col,:),1,4);         
     subplot('Position',subPlotVec);
 
-    footData.(footwareType{indexFootware}).markersNorm=markerSummary;
+  footData.(footwareType{indexFootware}).markersNorm=markerSummary;
     
   for z=1:1:length(markerSummaryFields)
     x0    = mean(markerSummary.(markerSummaryFields{z})(:,1));
@@ -743,6 +797,65 @@ for indexFootware = 1:1:length(footwareType)
        footData.(footwareType{indexFootware}).convhullNorm(:,2),...
        '-','Color',[0,0,0],'LineWidth',2);
   hold on;
+  
+
+  
+  pointMetrics = {'heel','toe','med','lat'};
+  direction = [2;2;1;1];
+  hAlign='';
+  vAlign='';
+  for w=1:1:length(pointMetrics)
+  %Plot the standard deviations at the heel, toe, med, la
+    xA = mean(footData.(footwareType{indexFootware}).([pointMetrics{w},'XY'])(1,:));
+    xB = mean(footData.(footwareType{indexFootware}).([pointMetrics{w},'XY'])(1,:));  
+
+    yA = mean(footData.(footwareType{indexFootware}).([pointMetrics{w},'XY'])(2,:));
+    yB = mean(footData.(footwareType{indexFootware}).([pointMetrics{w},'XY'])(2,:));      
+    
+    delta = 0;
+    xLbl = 0;
+    yLbl = 0;
+    dirLabel='';
+    if(direction(w,1)==2)
+      delta = mean(footData.(footwareType{indexFootware}).([pointMetrics{w},'XYStd'])(2,:));
+      yA = yA -delta;
+      yB = yB +delta;
+      
+      xLbl = xA;
+      if(w ==1)
+        yLbl = yA;
+        vAlign = 'top';
+      else
+        yLbl = yB;
+        vAlign = 'bottom';
+      end
+      hAlign = 'center';
+      dirLabel = 'Y';
+    else
+      delta = mean(footData.(footwareType{indexFootware}).([pointMetrics{w},'XYStd'])(1,:));
+      xA = xA -delta;
+      xB = xB +delta;
+      
+      yLbl = yA;
+      
+      vAlign = 'bottom';
+      if(w ==3)
+        hAlign = 'right';
+        xLbl = xB;
+      else
+        hAlign = 'left';        
+        xLbl = xA;
+      end
+      dirLabel = 'X';
+    end
+    plot( [xA;xB], [yA;yB],'-','Color',[0,0,0],'LineWidth',1); 
+    hold on;
+    text( xLbl, yLbl, sprintf('%s%1.3f%s',['$\sigma_',dirLabel,'='],delta,'$'),...
+         'HorizontalAlignment',hAlign,...
+         'VerticalAlignment',vAlign);
+    hold on;
+  end
+  
   
   plot(0,0,'ok','MarkerFaceColor','k');
   hold on;
