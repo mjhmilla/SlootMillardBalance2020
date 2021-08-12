@@ -4,7 +4,7 @@ close all;
 clear all;
 
 
-flag_motionSequence = 1; %0. Sit to stand
+flag_motionSequence = 0; %0. Sit to stand
                          %1. Stand to sit
 motionSequenceTag = '';
 outputPlotFolder  = '';

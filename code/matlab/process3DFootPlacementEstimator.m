@@ -203,7 +203,7 @@ if(flag_loadFromFile==0)
 
         fid = writeStructFieldNameFieldDataToFile(fid,fpeInfo);
                 
-        fclose(fid)
+        fclose(fid);
         
         flag_writeFirstCompleteFPESolutionToFile = 0;
       end

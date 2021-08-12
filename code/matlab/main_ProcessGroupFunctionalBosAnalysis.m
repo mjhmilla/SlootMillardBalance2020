@@ -4,16 +4,16 @@ clear all;
 
 
 subjectsToProcess = { 'configPilot1',...
-                      'configPilot2',...
-                      'configP01',...
-                      'configP02',...
-                      'configP03',...
-                      'configP04',...
-                      'configP05',...
-                      'configP06',...
-                      'configP07',...
-                      'configP08',...
-                      'configP10'};
+                      'configPilot2'};%,...
+%                      'configP01',...
+%                      'configP02',...
+%                       'configP03',...
+%                       'configP04',...
+%                       'configP05',...
+%                       'configP06',...
+%                       'configP07',...
+%                       'configP08',...
+%                       'configP10'};
 %                      'configP09',...
 
 forceLowerBound           = 0.5; %As in half body weight
@@ -99,12 +99,13 @@ indexBare = 2;
 dataStruct = struct('convhull',[],'convhullNorm',[],...
                     'markers',[],'markersNorm',[],...
                     'x0',[],'y0',[],...
-                    'x',[],'y',[]);
+                    'x',[],'y',[],'length',[],'width',[]);
                   
 dataStructNorm=struct('convhullNorm',[],'markersNorm',[],...
       'x',[],'y',[],'xStd',[],'yStd',[],...
       'heelXY',[],'toeXY',[],'latXY',[],'medXY',[],...
-      'heelXYStd',[],'toeXYStd',[],'latXYStd',[],'medXYStd',[]);
+      'heelXYStd',[],'toeXYStd',[],'latXYStd',[],'medXYStd',[],...
+      'length',[],'width',[],'lengthStd',[],'widthStd',[]);
 
 footStruct = struct('leftFoot',dataStruct,'rightFoot',dataStruct);
 
@@ -260,7 +261,8 @@ for indexSubject = 1:1:length(subjectsToProcess)
               end
 
 
-
+              subjectData(indexSubject).(footware).(footType{indexFoot}).length = footLength;
+              subjectData(indexSubject).(footware).(footType{indexFoot}).width = footWidth;
               %Update the convex hull of the norm. functional BOS         
               idxCH = convhull(dataX,dataY);
               subjectData(indexSubject).(footware).(footType{indexFoot}).convhull = ...
@@ -445,12 +447,24 @@ for indexFoot = 1:1:length(footType)
       markersNorm.(markerFields{z}) = zeros(length(subjectsToProcess),4);
     end
     
+    footLengthSet = zeros(length(subjectsToProcess),1).*NaN;
+    footWidthSet  = zeros(length(subjectsToProcess),1).*NaN;
+    
     setOfValidSubjects = [];
     
     for indexSubject = 1:1:length(subjectsToProcess)
       
       if( isempty(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm) == 0)
 
+        if( isempty(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).length)==0)
+          footLengthSet(indexSubject,1) = subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).length;          
+        end
+        
+        if( isempty(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).width)==0)
+          footWidthSet(indexSubject,1)  = subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).width;        
+        end
+        
+        
         for z=1:1:length(markerFields)
           x    = mean(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));
           xStd = std(subjectData(indexSubject).(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z})(:,1));        
@@ -563,6 +577,9 @@ for indexFoot = 1:1:length(footType)
       groupData.(footwareType{indexFootware}).(footType{indexFoot}).markersNorm.(markerFields{z}) = ...
         mean(markersNorm.(markerFields{z}),1) ;
     end    
+    
+    groupData.(footwareType{indexFootware}).(footType{indexFoot}).length = footLengthSet;
+    groupData.(footwareType{indexFootware}).(footType{indexFoot}).width  = footWidthSet;
     
 
     here=1;
@@ -682,12 +699,12 @@ for indexFootware = 1:1:length(footwareType)
       
     end  
   end
-  radiusMean = mean(radius,2);
+  radiusMean = mean(radius,length(footType));
   
-  xBosMeanMean = mean(xBosMean,2);
-  yBosMeanMean = mean(yBosMean,2);
-  xBosMeanStd = mean(xBosStd,2);
-  yBosMeanStd = mean(yBosStd,2);
+  xBosMeanMean = mean(xBosMean, length(footType));
+  yBosMeanMean = mean(yBosMean, length(footType));
+  xBosMeanStd  = mean(xBosStd,  length(footType));
+  yBosMeanStd  = mean(yBosStd,  length(footType));
 
   xPtsMean = radiusMean.*cos(angles)+bosCenterX;
   yPtsMean = radiusMean.*sin(angles)+bosCenterY;    
@@ -697,6 +714,25 @@ for indexFootware = 1:1:length(footwareType)
   
   footData.(footwareType{indexFootware}).xStd = zeros(size(radius,1),size(radius,2));
   footData.(footwareType{indexFootware}).yStd = zeros(size(radius,1),size(radius,2));  
+
+  footData.(footwareType{indexFootware}).x = zeros(size(radius,1),size(radius,2));
+  footData.(footwareType{indexFootware}).y = zeros(size(radius,1),size(radius,2));  
+  
+  
+  indicesValidFootLengths = find(~isnan(groupData.(footwareType{indexFootware}).(footType{indexFoot}).length));
+  indicesValidFootWidths  = find(~isnan(groupData.(footwareType{indexFootware}).(footType{indexFoot}).width));
+  
+  footLengthMean = mean( groupData.(footwareType{indexFootware}).(footType{indexFoot}).length(indicesValidFootLengths));
+  footLengthStd  =  std( groupData.(footwareType{indexFootware}).(footType{indexFoot}).length(indicesValidFootLengths));
+  footWidthMean  = mean( groupData.(footwareType{indexFootware}).(footType{indexFoot}).width(indicesValidFootLengths));
+  footWidthStd   =  std( groupData.(footwareType{indexFootware}).(footType{indexFoot}).width(indicesValidFootLengths));
+  
+  footData.(footwareType{indexFootware}).length     = footLengthMean;
+  footData.(footwareType{indexFootware}).lengthStd  = footLengthStd;
+  footData.(footwareType{indexFootware}).width      = footWidthMean;
+  footData.(footwareType{indexFootware}).widthStd   = footWidthStd;
+  
+  here=1;
   
   for z=1:1:size(radius,2)
     footData.(footwareType{indexFootware}).x(:,z) = xBosMean(:,z);

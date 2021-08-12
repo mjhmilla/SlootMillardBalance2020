@@ -131,7 +131,7 @@ flag_verbose                    = 0;
 flag_writeComDataForMeshup = 1;
 
 %FPE processing
-flag_loadFpeDataFromFile   = 0;
+flag_loadFpeDataFromFile   = 1;
 flag_writeFpeDataForMeshup = 1;
 
 %Capture point processing
@@ -140,13 +140,13 @@ flag_writeCapDataForMeshup = 1;
 
 %Calc distance between key ground points and the convex hull of the feet.
 %Here the key ground points are: CoM ground projection, CoP, Fpe, Cap
-flag_loadKeyPointDistanceToFootConvexHull = 1;
+flag_loadKeyPointDistanceToFootConvexHull = 0;
 
 %Motion segmentation
 flag_loadSegmentedMotionDataFromFile = 1;
 
 %Motion sequence identification
-flag_loadMovementSequenceFromFile =0;
+flag_loadMovementSequenceFromFile =1;
 flag_writeCsvSequenceFile         =1;
 
 %Plotting

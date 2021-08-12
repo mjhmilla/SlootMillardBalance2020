@@ -34,7 +34,7 @@ numberOfPhases = 2;
 indexPhaseToAnalyze=NaN;
 phaseNames = {''};
 
-flag_motionSequence = 1; %0. Sit to stand
+flag_motionSequence = 0; %0. Sit to stand
                          %1. Stand to sit
                          
 flag_motionSegmentEmphasis = NaN;
@@ -138,7 +138,7 @@ angZSpeedOneSided = mean( [abs(mean(quietStandingData.angZSpeed(3,:))),...
 % Configure the plots
 %%
 
-flag_plotConfig = 3; 
+flag_plotConfig = 0; 
 % 0. Frontiers balance metrics
 % 1. Com velocity
 % 2. Com angular velocity

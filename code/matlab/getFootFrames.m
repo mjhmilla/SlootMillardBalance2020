@@ -29,7 +29,7 @@ assert( abs(ey*ey'-1) < 1e-6);
 assert( abs(ez*ez'-1) < 1e-6);
 
 %Offset
-frameRight.E = frameRightOffset.E*[ex', ey', ez'];
+frameRight.E = [ex', ey', ez']*frameRightOffset.E;
 
 frameRight.r = frameRight.r + frameRight.E*frameRightOffset.r;
 
@@ -57,7 +57,7 @@ assert( abs(ex*ex'-1) < 1e-6);
 assert( abs(ey*ey'-1) < 1e-6);
 assert( abs(ez*ez'-1) < 1e-6);
 
-frameLeft.E = frameLeftOffset.E*[ex', ey', ez'];
+frameLeft.E = [ex', ey', ez']*frameLeftOffset.E;
 frameLeft.r = frameLeft.r + frameLeft.E*frameLeftOffset.r;
 
 

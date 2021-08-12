@@ -12,6 +12,8 @@ output = struct('distance', zeros(size(r0P0,1),1),...
 r0L0 = zeros(size(normFootBosLeft.shod.convhullNorm,1),3);
 r0R0 = zeros(size(normFootBosLeft.shod.convhullNorm,1),3);
 
+
+
 footLength = footGeometry.length;
 footWidth = footGeometry.width;
 
@@ -120,10 +122,9 @@ for i=1:1:size(r0P0,1)
      ylabel('Y');
      zlabel('Z');
      grid on;
-     axis equal;
-     axis square;
-     
+     axis equal;     
      here=1;
+     clf(figDebug);
   end
   
   

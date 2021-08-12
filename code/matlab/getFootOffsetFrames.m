@@ -50,7 +50,7 @@ assert( abs(eyD*eyD'-1) < 1e-6);
 assert( abs(ezD*ezD'-1) < 1e-6);
 
 %Offset
-frameRightOffset.E = [exD',eyD',ezD']*([ex',ey',ez']');
+frameRightOffset.E = ([ex',ey',ez']')*[exD',eyD',ezD'];
 frameRightOffset.r = [0;0;-r(3,1)];
 
 %Left frame
@@ -97,7 +97,7 @@ assert( abs(eyD*eyD'-1) < 1e-6);
 assert( abs(ezD*ezD'-1) < 1e-6);
 
 
-frameLeftOffset.E = [exD',eyD',ezD']*([ex',ey',ez']');
+frameLeftOffset.E = ([ex',ey',ez']')*[exD',eyD',ezD'];
 frameLeftOffset.r = [0;0;-r(3,1)];
 
 
